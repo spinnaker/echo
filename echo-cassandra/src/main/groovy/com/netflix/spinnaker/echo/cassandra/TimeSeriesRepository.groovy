@@ -3,6 +3,7 @@ package com.netflix.spinnaker.echo.cassandra
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.astyanax.Keyspace
+import com.netflix.astyanax.connectionpool.OperationResult
 import com.netflix.astyanax.connectionpool.exceptions.BadRequestException
 import com.netflix.astyanax.model.ColumnFamily
 import com.netflix.astyanax.serializers.IntegerSerializer
@@ -54,16 +55,18 @@ class TimeSeriesRepository implements ApplicationListener<ContextRefreshedEvent>
 
         event.details.type = event.details.type ?: 'UNKNOWN'
 
-        runQuery """
+        String cql = """
             INSERT INTO events_time_series(
             type, event_time, inserted_time, keys_and_values)
             VALUES(
                 '${event.details.type}',
                 ${event.details.created},
                 dateof(now()),
-                '${mapper.writeValueAsString(event)}'
+                ?
             ) USING TTL $TTL_DURATION;
         """
+
+        runQuery([cql: cql, values: [mapper.writeValueAsString(event)]])
     }
 
     List<Map> eventsByType(String type, long startTime) {
@@ -79,6 +82,14 @@ class TimeSeriesRepository implements ApplicationListener<ContextRefreshedEvent>
     @VisibleForTesting
     private runQuery(String query) {
         keyspace.prepareQuery(CF_APPLICATION).withCql(query).execute()
+    }
+
+    private OperationResult runQuery(Map query) {
+        def preparedQuery = keyspace.prepareQuery(CF_APPLICATION).withCql(query.cql).asPreparedStatement()
+        query.values.each {
+            preparedQuery = preparedQuery.withStringValue(it)
+        }
+        preparedQuery.execute()
     }
 
 }

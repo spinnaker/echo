@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import com.netflix.spinnaker.SpinnakerProjectPlugin.JarFinder
+
 buildscript {
     repositories {
         jcenter()
@@ -27,6 +29,8 @@ apply from: "$rootDir/gradle/groovy-module.gradle"
 apply plugin: 'spring-boot'
 apply plugin: 'project-report'
 
+applicationDefaultJvmArgs = ['-javaagent:/Users/clin/.gradle/caches/modules-2/files-2.1/com.github.stephenc/jamm/0.2.5/422d3543c01df2f1d8bd1f3064adb54fb9e93f3/jamm-0.2.5.jar']
+
 springBoot {
     mainClass = 'com.netflix.spinnaker.echo.Application'
 }
@@ -34,7 +38,22 @@ springBoot {
 configurations.all {
     resolutionStrategy {
         force 'org.antlr:antlr-runtime:3.4'
-        force 'com.google.guava:guava:14.0.1'
+        force 'com.google.guava:guava:15.0'
+    }
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir 'src/main/resources'
+            srcDir 'config'
+        }
+    }
+}
+
+jar {
+    doFirst {
+        exclude "${rootProject.name}.yml"
     }
 }
 
@@ -44,11 +63,7 @@ dependencies {
     compile project(':echo-model')
     compile project(':echo-cassandra')
     compile project(':echo-elasticsearch')
-    compile project(':echo-stomp')
-    compile spinnaker.dependency('bootActuator')
-    compile spinnaker.dependency('bootWeb')
-    compile commonDependencies.springWeb
-    compile commonDependencies.jacksonDatabind
-    testCompile commonDependencies.spockSpring
-    testCompile commonDependencies.springTest
+    spinnaker.group 'bootWeb'
+    compile spinnaker.dependency("kork")
 }
+
