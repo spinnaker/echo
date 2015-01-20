@@ -29,8 +29,6 @@ apply from: "$rootDir/gradle/groovy-module.gradle"
 apply plugin: 'spring-boot'
 apply plugin: 'project-report'
 
-applicationDefaultJvmArgs = ['-javaagent:/Users/clin/.gradle/caches/modules-2/files-2.1/com.github.stephenc/jamm/0.2.5/422d3543c01df2f1d8bd1f3064adb54fb9e93f3/jamm-0.2.5.jar']
-
 springBoot {
     mainClass = 'com.netflix.spinnaker.echo.Application'
 }
