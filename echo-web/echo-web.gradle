@@ -23,7 +23,7 @@ apply plugin: 'project-report'
 apply plugin: 'nebula.ospackage'
 
 applicationName = 'echo'
-applicationDefaultJvmArgs = ["-Djava.security.egd=file:/dev/./urandom", "-Dspring.config.location=/opt/spinnaker/config/"]
+applicationDefaultJvmArgs = ["-Djava.security.egd=file:/dev/./urandom"]
 applicationDistribution.from(project.file('config')) {
     into 'config'
 }
