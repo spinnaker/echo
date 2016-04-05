@@ -26,6 +26,9 @@ trait RetrofitStubs {
   final Trigger disabledStashTrigger = new Trigger(false, null, 'git', 'master', 'job', null, null, null, 'stash', 'project', 'slug', null, null, null, null, null)
   final Trigger enabledDockerTrigger = new Trigger(true, null, 'docker', null, null, null, null, null, null, null, null, null, 'registry', 'repository', 'tag', null)
   final Trigger disabledDockerTrigger = new Trigger(false, null, 'git', null, null, null, null, null, null, null, null, null, 'registry', 'repository', 'tag', null)
+  final Trigger enabledGenericBuildTrigger = new Trigger(true, null, 'teamcity', 'master', 'job', null, null, null, null, null, null, null, null, null, null, null)
+  final Trigger disabledGenericBuildTrigger = new Trigger(false, null, 'teamcity', 'master', 'job', null, null, null, null, null, null, null, null, null, null, null)
+  final Trigger nonGenericBuildTrigger = new Trigger(true, null, 'not teamcity', 'master', 'job', null, null, null, null, null, null, null, null, null, null, null)
 
   private nextId = new AtomicInteger(1)
 

@@ -33,7 +33,8 @@ public class Trigger {
     CRON("cron"),
     GIT("git"),
     JENKINS("jenkins"),
-    DOCKER("docker");
+    DOCKER("docker"),
+    WEBHOOK("webhook");
 
     private final String type;
 

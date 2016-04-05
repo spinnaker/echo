@@ -59,6 +59,9 @@ class WebhooksController {
         event.content.repoProject = postedEvent.repository.owner.name
         event.content.slug = postedEvent.repository.name
       }
+    } else if (type == 'build'){
+      //event.details.application = postedEvent.
+
     }
 
     log.info("Webhook ${source}:${type}:${event.content}")

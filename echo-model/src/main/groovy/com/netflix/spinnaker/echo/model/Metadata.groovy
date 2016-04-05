@@ -23,6 +23,7 @@ package com.netflix.spinnaker.echo.model
 class Metadata {
     String source
     String type
+    String triggeredBy
     String created = new Date().time
     String organization
     String project
