@@ -26,7 +26,7 @@ import lombok.experimental.Wither;
 @JsonDeserialize(builder = Trigger.TriggerBuilder.class)
 @Builder
 @Wither
-@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "registry", "repository", "tag"}, includeFieldNames = false)
+@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "registry", "repository", "tag", "category"}, includeFieldNames = false)
 @Value
 public class Trigger {
   public enum Type {
@@ -64,17 +64,22 @@ public class Trigger {
   String repository;
   String tag;
   String digest;
+  String category;
 
   public Trigger atBuildNumber(final int buildNumber) {
-    return new Trigger(enabled, id, type, master, job, buildNumber, propertyFile, cronExpression, source, project, slug, null, registry, repository, null, digest);
+    return new Trigger(enabled, id, type, master, job, buildNumber, propertyFile, cronExpression, source, project, slug, null, registry, repository, null, digest, null);
   }
 
   public Trigger atHash(final String hash) {
-    return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, hash, registry, repository, null, digest);
+    return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, hash, registry, repository, null, digest, null);
   }
 
   public Trigger atTag(final String tag) {
-    return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, null, registry, repository, tag, digest);
+    return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, null, registry, repository, tag, digest, null);
+  }
+
+  public Trigger inCategory(final String type, final String category, final String source) {
+    return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, null, registry, repository, tag, null, category);
   }
 
   @JsonPOJOBuilder(withPrefix = "")

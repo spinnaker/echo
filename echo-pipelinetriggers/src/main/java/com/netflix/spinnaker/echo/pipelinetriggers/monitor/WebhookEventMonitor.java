@@ -56,15 +56,13 @@ public class WebhookEventMonitor extends TriggerMonitor {
   @Override
   public void processEvent(Event event) {
     super.validateEvent(event);
-    log.info("In processEvent " +  event.getDetails().getType());
-    log.info("In processEvent " + event.getDetails().getSource());
-    log.info("In processEvent " + event.getDetails().getTriggeredBy());
-    if (event.getDetails().getTriggeredBy() == null ||
-        !event.getDetails().getTriggeredBy().equalsIgnoreCase(WebhookEvent.TYPE)) {
+    if (event.getDetails().getType() == null ||
+        !event.getDetails().getType().equalsIgnoreCase(WebhookEvent.TYPE)) {
       return;
     }
 
     WebhookEvent webhookEvent = objectMapper.convertValue(event, WebhookEvent.class);
+
     Observable.just(webhookEvent)
       .doOnNext(this::onEchoResponse)
       .subscribe(triggerEachMatchFrom(pipelineCache.getPipelines()));
@@ -72,43 +70,45 @@ public class WebhookEventMonitor extends TriggerMonitor {
 
   @Override
   protected boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
-//    WebhookEvent webhookEvent = (WebhookEvent) event;
-//    String type = webhookEvent.getContent().getDigest();
-//    return digest != null && !digest.isEmpty();
     return true;
   }
 
   @Override
   protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
-    //WebhookEvent webhookEvent = (WebhookEvent) event;
-    log.info("In buildTrigger " +  event.getDetails().getType());
-    log.info("In buildTrigger " +  event.getDetails().getSource());
-    return trigger -> pipeline.withTrigger(trigger.atTag(null));
+    WebhookEvent webhookEvent = (WebhookEvent) event;
+    return trigger -> pipeline.withTrigger(trigger.inCategory(
+        webhookEvent.getDetails().getType().toLowerCase(),
+        webhookEvent.getDetails().getCategory(),
+        webhookEvent.getDetails().getSource()
+    ));
   }
 
   @Override
   protected boolean isValidTrigger(final Trigger trigger) {
-    log.info("In isValidTrigger " +  trigger.getType());
-    log.info("In isValidTrigger " +  trigger.getSource());
     return trigger.isEnabled() &&
       (
-        (//TRIGGER_TYPE.equals(trigger.getType()) &&
+        (TRIGGER_TYPE.equals(trigger.getType()) &&
           trigger.getType() != null &&
+          trigger.getCategory() != null &&
           trigger.getSource() != null)
       );
+
   }
 
   @Override
   protected Predicate<Trigger> matchTriggerFor(final TriggerEvent event) {
     WebhookEvent webhookEvent = (WebhookEvent) event;
-    String type = webhookEvent.getContent().getType();
-    String source = webhookEvent.getContent().getSource();
+    String type = webhookEvent.getDetails().getType();
+    String category = webhookEvent.getDetails().getCategory();
+    String source = webhookEvent.getDetails().getSource();
 
-    log.info("In matchTriggerFor " +  webhookEvent.getContent().getType());
-    log.info("In matchTriggerFor " +  webhookEvent.getContent().getSource());
+    log.info("In matchTriggerFor " +  type);
+    log.info("In matchTriggerFor " +  category);
+    log.info("In matchTriggerFor " +  source);
+    log.info("In matchTriggerFor " +  webhookEvent.getContent());
 
-    return trigger -> trigger.getType().equals(TRIGGER_TYPE) &&
-      trigger.getType().equals(type) &&
+    return trigger -> trigger.getType().equalsIgnoreCase(TRIGGER_TYPE) &&
+      trigger.getCategory().equals(category) &&
       trigger.getSource().equals(source);
   }
 
@@ -117,9 +117,9 @@ public class WebhookEventMonitor extends TriggerMonitor {
     val id = registry.createId("pipelines.triggered")
       .withTag("application", pipeline.getApplication())
       .withTag("name", pipeline.getName());
-//    id.withTag("imageId", pipeline.getTrigger().getRegistry() + "/" +
-//      pipeline.getTrigger().getRepository() + ":" +
-//      pipeline.getTrigger().getTag());
+    id.withTag("source", pipeline.getTrigger().getSource())
+      .withTag("type", pipeline.getTrigger().getType())
+      .withTag("category", pipeline.getTrigger().getCategory());
     registry.counter(id).increment();
   }
 }

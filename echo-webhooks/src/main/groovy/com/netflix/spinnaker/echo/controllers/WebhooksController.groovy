@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
+import com.netflix.spinnaker.echo.model.trigger.WebhookEvent
 
 @RestController
 @Slf4j
@@ -59,12 +60,44 @@ class WebhooksController {
         event.content.repoProject = postedEvent.repository.owner.name
         event.content.slug = postedEvent.repository.name
       }
-    } else if (type == 'build'){
-      //event.details.application = postedEvent.
-
     }
 
-    log.info("Webhook ${source}:${type}:${event.content}")
+    log.info("Webhook ${type}:${source}:${event.content}")
+
+    if (sendEvent) {
+      propagator.processEvent(event)
+    }
+  }
+
+  @RequestMapping(value = '/webhooks/trigger/{category}/{source}', method = RequestMethod.POST)
+  void forwardWebHookEvent(@PathVariable String category, @PathVariable String source, @RequestBody Map postedEvent) {
+    Event event = new Event()
+    boolean sendEvent = true
+    event.details = new Metadata()
+    event.details.type = WebhookEvent.TYPE
+    event.details.category = category
+    event.details.source = source
+    event.content = postedEvent
+
+    if (category == 'git') {
+      if (source == 'stash') {
+        event.content.hash = postedEvent.refChanges?.first().toHash
+        event.content.branch = postedEvent.refChanges?.first().refId.replace('refs/heads/', '')
+        event.content.repoProject = postedEvent.repository.project.key
+        event.content.slug = postedEvent.repository.slug
+        if (event.content.hash.toString().startsWith('000000000')) {
+          sendEvent = false
+        }
+      }
+      if (source == 'github') {
+        event.content.hash = postedEvent.after
+        event.content.branch = postedEvent.ref.replace('refs/heads/', '')
+        event.content.repoProject = postedEvent.repository.owner.name
+        event.content.slug = postedEvent.repository.name
+      }
+    }
+
+    log.info("Webhook ${WebhookEvent.TYPE}:${category}:${source}::${event.content}")
 
     if (sendEvent) {
       propagator.processEvent(event)

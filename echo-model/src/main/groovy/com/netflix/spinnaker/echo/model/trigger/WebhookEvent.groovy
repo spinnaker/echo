@@ -30,6 +30,7 @@ class WebhookEvent extends TriggerEvent {
   @JsonIgnoreProperties(ignoreUnknown = true)
   static class Content {
     String type
+    String category
     String source
 
   }
