@@ -33,13 +33,12 @@ import org.springframework.stereotype.Component;
 import rx.Observable;
 import rx.functions.Action1;
 
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 @Component @Slf4j
 public class WebhookEventMonitor extends TriggerMonitor {
-
-  public static final String TRIGGER_TYPE = "webhook";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -56,12 +55,16 @@ public class WebhookEventMonitor extends TriggerMonitor {
   @Override
   public void processEvent(Event event) {
     super.validateEvent(event);
-    if (event.getDetails().getType() == null ||
-        !event.getDetails().getType().equalsIgnoreCase(WebhookEvent.TYPE)) {
+    if (event.getDetails().getType() == null) {
       return;
     }
 
+    log.info("In processEvent " + event);
+
+    /* Need to create WebhookEvent, since TriggerEvent is abstract */
     WebhookEvent webhookEvent = objectMapper.convertValue(event, WebhookEvent.class);
+    webhookEvent.setDetails(event.getDetails());
+    webhookEvent.setPayload(event.getContent());
 
     Observable.just(webhookEvent)
       .doOnNext(this::onEchoResponse)
@@ -75,42 +78,70 @@ public class WebhookEventMonitor extends TriggerMonitor {
 
   @Override
   protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
-    WebhookEvent webhookEvent = (WebhookEvent) event;
-    return trigger -> pipeline.withTrigger(trigger.inCategory(
-        webhookEvent.getDetails().getType().toLowerCase(),
-        webhookEvent.getDetails().getCategory(),
-        webhookEvent.getDetails().getSource()
-    ));
+    log.info("In buildTrigger " + event);
+    log.info("In buildTrigger " + event.getDetails().getType());
+    log.info("In buildTrigger " + event.getDetails().getSource());
+    log.info("In buildTrigger " + event.getPayload());
+    return trigger -> pipeline.withTrigger(trigger.atExtras(event.getPayload()));
   }
 
   @Override
   protected boolean isValidTrigger(final Trigger trigger) {
-    return trigger.isEnabled() &&
+    boolean valid =  trigger.isEnabled() &&
       (
-        (TRIGGER_TYPE.equals(trigger.getType()) &&
           trigger.getType() != null &&
-          trigger.getCategory() != null &&
-          trigger.getSource() != null)
+          trigger.getSource() != null
       );
 
+    log.info("In isValidTrigger " +  trigger.getType());
+    log.info("In isValidTrigger " +  trigger.getSource());
+    log.info("In isValidTrigger " +  trigger.getExtras());
+    log.info("In isValidTrigger " +  valid);
+
+    return valid;
   }
 
   @Override
   protected Predicate<Trigger> matchTriggerFor(final TriggerEvent event) {
-    WebhookEvent webhookEvent = (WebhookEvent) event;
-    String type = webhookEvent.getDetails().getType();
-    String category = webhookEvent.getDetails().getCategory();
-    String source = webhookEvent.getDetails().getSource();
+    String type = event.getDetails().getType();
+    String source = event.getDetails().getSource();
 
     log.info("In matchTriggerFor " +  type);
-    log.info("In matchTriggerFor " +  category);
     log.info("In matchTriggerFor " +  source);
-    log.info("In matchTriggerFor " +  webhookEvent.getContent());
+    log.info("In matchTriggerFor " +  event.getPayload());
 
-    return trigger -> trigger.getType().equalsIgnoreCase(TRIGGER_TYPE) &&
-      trigger.getCategory().equals(category) &&
-      trigger.getSource().equals(source);
+    return trigger ->
+      trigger.getType().equals(type) &&
+      trigger.getSource().equals(source) &&
+        (
+          // The Extras in the Trigger could be null. That's OK.
+          trigger.getExtras() == null ||
+
+            // If the Extras are present, check that there are equivalents in the webhook payload.
+            (  trigger.getExtras() != null &&
+               isExtraInPayload(trigger.getExtras(), event.getPayload())
+            )
+
+        );
+
   }
+
+  /**
+   * Check that there is an item in the payload for each extra declared in a Trigger.
+   * @param extras A map of extras configured in the Trigger (eg, created in Deck).
+   * @param payload A map of the payload contents POST'd in the Webhook.
+   * @return Whether every key in the extras map is represented in the payload.
+     */
+  protected boolean isExtraInPayload(final Map extras, final Map payload) {
+    for (Object key : extras.keySet()){
+      if (!payload.containsKey(key) || payload.get(key) == null) {
+        log.info("Webhook trigger ignored. Item " + key.toString() + " was not found in payload");
+        return false;
+      }
+    }
+    return true;
+  }
+
 
   protected void onMatchingPipeline(Pipeline pipeline) {
     super.onMatchingPipeline(pipeline);
@@ -118,8 +149,7 @@ public class WebhookEventMonitor extends TriggerMonitor {
       .withTag("application", pipeline.getApplication())
       .withTag("name", pipeline.getName());
     id.withTag("source", pipeline.getTrigger().getSource())
-      .withTag("type", pipeline.getTrigger().getType())
-      .withTag("category", pipeline.getTrigger().getCategory());
+      .withTag("type", pipeline.getTrigger().getType());
     registry.counter(id).increment();
   }
 }

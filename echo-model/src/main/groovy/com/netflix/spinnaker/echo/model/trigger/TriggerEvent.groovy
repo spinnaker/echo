@@ -20,4 +20,5 @@ import com.netflix.spinnaker.echo.model.Metadata
 
 abstract class TriggerEvent {
   Metadata details
+  Map payload
 }

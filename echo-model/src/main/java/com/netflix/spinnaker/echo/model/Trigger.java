@@ -22,11 +22,12 @@ import lombok.Builder;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Wither;
+import java.util.Map;
 
 @JsonDeserialize(builder = Trigger.TriggerBuilder.class)
 @Builder
 @Wither
-@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "registry", "repository", "tag", "category"}, includeFieldNames = false)
+@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "registry", "repository", "tag", "extras"}, includeFieldNames = false)
 @Value
 public class Trigger {
   public enum Type {
@@ -64,7 +65,8 @@ public class Trigger {
   String repository;
   String tag;
   String digest;
-  String category;
+  Map extras;
+
 
   public Trigger atBuildNumber(final int buildNumber) {
     return new Trigger(enabled, id, type, master, job, buildNumber, propertyFile, cronExpression, source, project, slug, null, registry, repository, null, digest, null);
@@ -78,8 +80,8 @@ public class Trigger {
     return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, null, registry, repository, tag, digest, null);
   }
 
-  public Trigger inCategory(final String type, final String category, final String source) {
-    return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, null, registry, repository, tag, null, category);
+  public Trigger atExtras(final Map extras) {
+    return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, null, registry, repository, tag, null, extras);
   }
 
   @JsonPOJOBuilder(withPrefix = "")

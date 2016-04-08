@@ -23,15 +23,4 @@ import groovy.transform.Canonical
 @JsonIgnoreProperties(ignoreUnknown = true)
 class WebhookEvent extends TriggerEvent {
   public static final String TYPE = "WEBHOOK"
-
-  Content content
-
-  @Canonical
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  static class Content {
-    String type
-    String category
-    String source
-
-  }
 }
