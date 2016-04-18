@@ -27,7 +27,7 @@ import java.util.Map;
 @JsonDeserialize(builder = Trigger.TriggerBuilder.class)
 @Builder
 @Wither
-@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "registry", "repository", "tag", "extras"}, includeFieldNames = false)
+@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "registry", "repository", "tag"}, includeFieldNames = false)
 @Value
 public class Trigger {
   public enum Type {
@@ -65,7 +65,7 @@ public class Trigger {
   String repository;
   String tag;
   String digest;
-  Map extras;
+  Map constraints;
 
 
   public Trigger atBuildNumber(final int buildNumber) {
@@ -80,8 +80,8 @@ public class Trigger {
     return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, null, registry, repository, tag, digest, null);
   }
 
-  public Trigger atExtras(final Map extras) {
-    return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, null, registry, repository, tag, null, extras);
+  public Trigger atConstraints(final Map constraints) {
+    return new Trigger(enabled, id, type, master, job, null, propertyFile, cronExpression, source, project, slug, null, registry, repository, tag, null, constraints);
   }
 
   @JsonPOJOBuilder(withPrefix = "")

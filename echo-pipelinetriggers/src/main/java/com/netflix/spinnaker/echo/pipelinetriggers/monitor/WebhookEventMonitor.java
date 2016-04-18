@@ -25,7 +25,6 @@ import com.netflix.spinnaker.echo.model.trigger.WebhookEvent;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
 import lombok.NonNull;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,8 +58,6 @@ public class WebhookEventMonitor extends TriggerMonitor {
       return;
     }
 
-    log.info("In processEvent " + event);
-
     /* Need to create WebhookEvent, since TriggerEvent is abstract */
     WebhookEvent webhookEvent = objectMapper.convertValue(event, WebhookEvent.class);
     webhookEvent.setDetails(event.getDetails());
@@ -78,25 +75,15 @@ public class WebhookEventMonitor extends TriggerMonitor {
 
   @Override
   protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
-    log.info("In buildTrigger " + event);
-    log.info("In buildTrigger " + event.getDetails().getType());
-    log.info("In buildTrigger " + event.getDetails().getSource());
-    log.info("In buildTrigger " + event.getPayload());
-    return trigger -> pipeline.withTrigger(trigger.atExtras(event.getPayload()));
+    return trigger -> pipeline.withTrigger(trigger.atConstraints(event.getPayload()));
   }
 
   @Override
   protected boolean isValidTrigger(final Trigger trigger) {
     boolean valid =  trigger.isEnabled() &&
       (
-          trigger.getType() != null &&
-          trigger.getSource() != null
+          trigger.getType() != null
       );
-
-    log.info("In isValidTrigger " +  trigger.getType());
-    log.info("In isValidTrigger " +  trigger.getSource());
-    log.info("In isValidTrigger " +  trigger.getExtras());
-    log.info("In isValidTrigger " +  valid);
 
     return valid;
   }
@@ -104,22 +91,16 @@ public class WebhookEventMonitor extends TriggerMonitor {
   @Override
   protected Predicate<Trigger> matchTriggerFor(final TriggerEvent event) {
     String type = event.getDetails().getType();
-    String source = event.getDetails().getSource();
-
-    log.info("In matchTriggerFor " +  type);
-    log.info("In matchTriggerFor " +  source);
-    log.info("In matchTriggerFor " +  event.getPayload());
 
     return trigger ->
       trigger.getType().equals(type) &&
-      trigger.getSource().equals(source) &&
         (
-          // The Extras in the Trigger could be null. That's OK.
-          trigger.getExtras() == null ||
+          // The Constraints in the Trigger could be null. That's OK.
+          trigger.getConstraints() == null ||
 
-            // If the Extras are present, check that there are equivalents in the webhook payload.
-            (  trigger.getExtras() != null &&
-               isExtraInPayload(trigger.getExtras(), event.getPayload())
+            // If the Constraints are present, check that there are equivalents in the webhook payload.
+            (  trigger.getConstraints() != null &&
+               isConstraintInPayload(trigger.getConstraints(), event.getPayload())
             )
 
         );
@@ -127,29 +108,32 @@ public class WebhookEventMonitor extends TriggerMonitor {
   }
 
   /**
-   * Check that there is an item in the payload for each extra declared in a Trigger.
-   * @param extras A map of extras configured in the Trigger (eg, created in Deck).
+   * Check that there is a key in the payload for each constraint declared in a Trigger.
+   * Also check that if there is a value for a given key, that the value matches the value in the payload.
+   * @param constraints A map of constraints configured in the Trigger (eg, created in Deck).
    * @param payload A map of the payload contents POST'd in the Webhook.
-   * @return Whether every key in the extras map is represented in the payload.
+   * @return Whether every key (and value if applicable) in the constraints map is represented in the payload.
      */
-  protected boolean isExtraInPayload(final Map extras, final Map payload) {
-    for (Object key : extras.keySet()){
+  protected boolean isConstraintInPayload(final Map constraints, final Map payload) {
+    for (Object key : constraints.keySet()){
       if (!payload.containsKey(key) || payload.get(key) == null) {
         log.info("Webhook trigger ignored. Item " + key.toString() + " was not found in payload");
+        return false;
+      }
+      if (!constraints.get(key).equals("") && (!constraints.get(key).equals(payload.get(key)))){
+        log.info("Webhook trigger ignored. Value of item " + key.toString() + " in payload does not match constraint");
         return false;
       }
     }
     return true;
   }
 
-
   protected void onMatchingPipeline(Pipeline pipeline) {
     super.onMatchingPipeline(pipeline);
     val id = registry.createId("pipelines.triggered")
       .withTag("application", pipeline.getApplication())
       .withTag("name", pipeline.getName());
-    id.withTag("source", pipeline.getTrigger().getSource())
-      .withTag("type", pipeline.getTrigger().getType());
+    id.withTag("type", pipeline.getTrigger().getType());
     registry.counter(id).increment();
   }
 }
