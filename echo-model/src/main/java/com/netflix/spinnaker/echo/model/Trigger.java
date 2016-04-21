@@ -27,7 +27,7 @@ import java.util.Map;
 @JsonDeserialize(builder = Trigger.TriggerBuilder.class)
 @Builder
 @Wither
-@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "registry", "repository", "tag"}, includeFieldNames = false)
+@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "registry", "repository", "tag", "constraints"}, includeFieldNames = false)
 @Value
 public class Trigger {
   public enum Type {
