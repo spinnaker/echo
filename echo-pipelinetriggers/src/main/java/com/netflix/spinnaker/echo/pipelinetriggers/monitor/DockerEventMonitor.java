@@ -88,6 +88,15 @@ public class DockerEventMonitor extends TriggerMonitor {
       );
   }
 
+  private boolean matchTags(String suppliedTag, String incomingTag) {
+    try {
+      // use matches to handle regex or basic string compare
+      return incomingTag.matches(suppliedTag);
+    } catch (PatternSyntaxException e) {
+      return false;
+    }
+  }
+
   @Override
   protected Predicate<Trigger> matchTriggerFor(final TriggerEvent event) {
     DockerEvent dockerEvent = (DockerEvent) event;
@@ -98,7 +107,7 @@ public class DockerEventMonitor extends TriggerMonitor {
       trigger.getRepository().equals(repository) &&
       trigger.getRegistry().equals(registry) &&
       ((trigger.getTag() == null && !tag.equals("latest"))
-        || trigger.getTag() != null && trigger.getTag().equals(tag));
+        || trigger.getTag() != null && matchTags(trigger.getTag(), tag));
   }
 
   protected void onMatchingPipeline(Pipeline pipeline) {
