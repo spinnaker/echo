@@ -18,15 +18,19 @@ ext {
   springConfigLocation = System.getProperty('spring.config.location', "${System.getProperty('user.home')}/.spinnaker/")
 }
 
+apply plugin: 'application'
 apply plugin: 'spring-boot'
 apply plugin: 'project-report'
 apply plugin: 'nebula.ospackage'
 
-applicationName = 'echo'
-applicationDefaultJvmArgs = ["-Djava.security.egd=file:/dev/./urandom"]
-applicationDistribution.from(project.file('config')) {
-    into 'config'
+ext {
+    applicationName = 'echo'
+    applicationDefaultJvmArgs = ["-Djava.security.egd=file:/dev/./urandom"]
 }
+
+//applicationDistribution.from(project.file('config')) {
+//    into 'config'
+//}
 
 springBoot {
     mainClass = 'com.netflix.spinnaker.echo.Application'
@@ -75,6 +79,7 @@ sourceSets {
 }
 
 jar {
+    baseName applicationName
     doFirst {
         exclude "${rootProject.name}.yml"
     }

@@ -16,14 +16,14 @@
 
 buildscript {
     ext {
-        springBootVersion = "1.2.5.RELEASE"
+        springBootVersion = "1.4.1.RELEASE"
     }
     repositories {
         jcenter()
         maven { url 'http://spinnaker.bintray.com/gradle/' }
     }
     dependencies {
-        classpath 'com.netflix.spinnaker.gradle:spinnaker-gradle-project:3.5.0'
+        classpath 'com.netflix.spinnaker.gradle:spinnaker-gradle-project:3.7.0'
         classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
     }
 }
@@ -34,9 +34,20 @@ allprojects {
     apply plugin: 'jacoco'
     group = "com.netflix.spinnaker.echo"
 
-    spinnaker {
-        dependenciesVersion = "0.42.0"
+    ext {
+        spinnakerDependenciesVersion = "0.54.0-dev.2+boot-1.4-upgrade.02896b4"
     }
+
+    if (spinnakerDependenciesVersion.indexOf('-dev') != -1) {
+        repositories {
+            mavenLocal()
+        }
+    }
+
+    spinnaker {
+        dependenciesVersion = spinnakerDependenciesVersion
+    }
+
     test {
       testLogging {
         exceptionFormat = 'full'
@@ -50,6 +61,14 @@ allprojects {
         exclude group: 'org.slf4j', module: 'slf4j-simple'
         resolutionStrategy {
             force 'com.google.guava:guava:15.0'
+            eachDependency {
+                if (it.requested.group.startsWith('org.apache.tomcat')) {
+                    it.useVersion spinnaker.version('tomcat')
+                }
+                if (it.requested.group == 'com.netflix.spinnaker.kork') {
+                    it.useVersion '1.69.0-SNAPSHOT'
+                }
+            }
         }
     }
 }
