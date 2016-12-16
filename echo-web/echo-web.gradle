@@ -134,7 +134,10 @@ ospackage {
 
 }
 
-
 buildDeb {
+  dependsOn installDist
+}
+
+buildRpm {
   dependsOn installDist
 }
