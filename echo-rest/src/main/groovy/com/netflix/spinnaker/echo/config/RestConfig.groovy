@@ -68,16 +68,37 @@ class RestConfig {
         .setLogLevel(retrofitLogLevel)
         .setConverter(new JacksonConverter())
 
+
+      Map<String, String> headers = new HashMap<>()
+
       if (endpoint.username && endpoint.password) {
-        RequestInterceptor authInterceptor = new RequestInterceptor() {
-          @Override
-          public void intercept(RequestInterceptor.RequestFacade request) {
-            String auth = "Basic " + Base64.encodeBase64String("${endpoint.username}:${endpoint.password}".getBytes())
-            request.addHeader("Authorization", auth)
+        String auth = "Basic " + Base64.encodeBase64String("${endpoint.username}:${endpoint.password}".getBytes())
+        headers["Authorization"] = auth
+      }
+
+      if (endpoint.headers) {
+        headers += endpoint.headers
+      }
+
+      if (endpoint.headersFile) {
+        new File(endpoint.headersFile).eachLine { line ->
+          def pair = line.split(":")
+          if (pair.length == 2) {
+            headers[pair[0]]= pair[1].trim()
           }
         }
+      }
 
-        restAdapterBuilder.setRequestInterceptor(authInterceptor)
+      if (headers) {
+        RequestInterceptor headerInterceptor = new RequestInterceptor() {
+          @Override
+          public void intercept(RequestInterceptor.RequestFacade request) {
+            headers.each { k, v ->
+              request.addHeader(k, v)
+            }
+          }
+        }
+        restAdapterBuilder.setRequestInterceptor(headerInterceptor)
       }
 
       restUrls.services.add(
