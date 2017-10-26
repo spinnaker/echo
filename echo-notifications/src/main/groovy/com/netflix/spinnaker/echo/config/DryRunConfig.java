@@ -16,12 +16,17 @@
 
 package com.netflix.spinnaker.echo.config;
 
+import java.util.List;
 import com.netflix.spinnaker.echo.notification.DryRunNotificationAgent;
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService;
 import com.netflix.spinnaker.echo.services.Front50Service;
+import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import com.squareup.okhttp.OkHttpClient;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import retrofit.Endpoint;
@@ -30,26 +35,47 @@ import retrofit.client.OkClient;
 import static retrofit.Endpoints.newFixedEndpoint;
 
 @Configuration
-@ConditionalOnProperty("dryRun.enabled:false")
+@EnableConfigurationProperties(DryRunConfig.DryRunProperties.class)
+@ConditionalOnProperty("dryrun.enabled")
+@Slf4j
 public class DryRunConfig {
 
   @Bean
-  Endpoint dryRunEndpoint(@Value("dryRun.url") String url) {
-    return newFixedEndpoint(url);
+  Endpoint dryRunEndpoint(DryRunProperties properties) {
+    return newFixedEndpoint(properties.getBaseUrl());
   }
 
   @Bean DryRunNotificationAgent dryRunNotificationAgent(
     Front50Service front50,
     OkHttpClient okHttpClient,
     RestAdapter.LogLevel retrofitLogLevel,
-    Endpoint dryRunEndpoint)
+    Endpoint dryRunEndpoint,
+    DryRunProperties properties)
   {
+    log.info("Pipeline dry runs will execute at {}", dryRunEndpoint.getUrl());
     OrcaService orca = new RestAdapter.Builder()
       .setEndpoint(dryRunEndpoint)
       .setClient(new OkClient(okHttpClient))
       .setLogLevel(retrofitLogLevel)
+      .setLog(new Slf4jRetrofitLogger(OrcaService.class))
       .build()
       .create(OrcaService.class);
-    return new DryRunNotificationAgent(front50, orca);
+    return new DryRunNotificationAgent(front50, orca, properties);
+  }
+
+  @ConfigurationProperties("dryrun")
+  @Data
+  public static class DryRunProperties {
+    String baseUrl;
+    List<Notification> notifications;
+  }
+
+  // seems like I have to do this as Spring can't parse lists of strings from YAML
+  @Data
+  public static class Notification {
+    String type;
+    String address;
+    String level;
+    List<String> when;
   }
 }
