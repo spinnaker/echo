@@ -23,8 +23,19 @@ import groovy.transform.Canonical
 @Canonical
 class SlackMessage {
 
-  String body
-  String color = '#cccccc'
+  String text
+  String color
+  String fallback
+  String title
+  String footer = "Spinnaker"
+  String footer_icon = "https://avatars0.githubusercontent.com/u/7634182?s=200&v=4" // From https://github.com/spinnaker
+  long ts = System.currentTimeMillis() / 1000
+
+  public SlackMessage(String title, String text, String color = '#cccccc') {
+    this.title = title
+    this.text = this.fallback = text
+    this.color = color
+  }
 
   /**
    * To display a message with a colored vertical bar on the left, Slack expects the message to be in an "attachments"
@@ -34,12 +45,12 @@ class SlackMessage {
    */
   String buildMessage() {
     new JsonBuilder([
-        [
-          fallback: body,
-          text: body,
-          color: color,
-          mrkdwn_in: ["text"]
-        ]
-      ]).toString()
+      [
+        fallback: text,
+        text: text,
+        color: color,
+        mrkdwn_in: ["text"]
+      ]
+    ]).toString()
   }
 }

@@ -34,7 +34,7 @@ class SlackNotificationAgentSpec extends Specification {
     given:
     def actualMessage = new BlockingVariable<String>()
     slack.sendMessage(*_) >> { token, message, channel, asUser ->
-      actualMessage.set(message)
+      actualMessage.set(message.buildMessage())
     }
 
     when:
@@ -60,7 +60,7 @@ class SlackNotificationAgentSpec extends Specification {
     given:
     def actualMessage = new BlockingVariable<String>()
     slack.sendMessage(*_) >> { token, message, channel, asUser ->
-      actualMessage.set(message)
+      actualMessage.set(message.buildMessage())
     }
 
     when:
@@ -89,7 +89,7 @@ class SlackNotificationAgentSpec extends Specification {
     given:
     def actualMessage = new BlockingVariable<String>()
     slack.sendMessage(*_) >> { token, message, channel, asUser ->
-      actualMessage.set(message)
+      actualMessage.set(message.buildMessage())
     }
 
     when:

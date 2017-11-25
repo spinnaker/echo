@@ -18,21 +18,9 @@
 package com.netflix.spinnaker.echo.slack
 
 import groovy.transform.Canonical
-import retrofit.client.Response
 
 @Canonical
-class SlackService {
-
-  SlackClient slackClient
-  boolean useIncomingWebHook
-
-  Response sendMessage(String token, SlackMessage message, String channel, boolean asUser) {
-    useIncomingWebHook ?
-      slackClient.sendUsingIncomingWebHook(token, new SlackRequest([message], channel)) :
-      slackClient.sendMessage(token, message.buildMessage(), channel, asUser)
-  }
-
-  boolean useIncomingWebHook() {
-    useIncomingWebHook
-  }
+class SlackRequest {
+  List<SlackMessage> attachments
+  String channel
 }
