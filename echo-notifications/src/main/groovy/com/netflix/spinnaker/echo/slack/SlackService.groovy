@@ -17,6 +17,7 @@
 
 package com.netflix.spinnaker.echo.slack
 
+import groovy.json.JsonBuilder
 import groovy.transform.Canonical
 import retrofit.client.Response
 
@@ -26,13 +27,13 @@ class SlackService {
   SlackClient slackClient
   boolean useIncomingWebHook
 
-  Response sendMessage(String token, SlackMessage message, String channel, boolean asUser) {
+  Response sendMessage(String token, SlackAttachment message, String channel, boolean asUser) {
     useIncomingWebHook ?
       slackClient.sendUsingIncomingWebHook(token, new SlackRequest([message], channel)) :
-      slackClient.sendMessage(token, message.buildMessage(), channel, asUser)
+      slackClient.sendMessage(token, toJson(message), channel, asUser)
   }
 
-  boolean useIncomingWebHook() {
-    useIncomingWebHook
+  def static toJson(message) {
+    "[" + new JsonBuilder(message).toPrettyString() + "]"
   }
 }

@@ -21,6 +21,6 @@ import groovy.transform.Canonical
 
 @Canonical
 class SlackRequest {
-  List<SlackMessage> attachments
+  List<SlackAttachment> attachments
   String channel
 }

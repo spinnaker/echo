@@ -17,40 +17,30 @@
 
 package com.netflix.spinnaker.echo.slack
 
-import groovy.json.JsonBuilder
 import groovy.transform.Canonical
 
+/**
+ * This is formatted automatically to JSON when being sent to Slack as an attachment message.
+ */
 @Canonical
-class SlackMessage {
+class SlackAttachment {
 
+  String title
   String text
   String color
   String fallback
-  String title
+
+  // From https://github.com/spinnaker
+  String footer_icon = "https://avatars0.githubusercontent.com/u/7634182?s=200&v=4"
   String footer = "Spinnaker"
-  String footer_icon = "https://avatars0.githubusercontent.com/u/7634182?s=200&v=4" // From https://github.com/spinnaker
+  // Specify which fields Slack should format using markdown
+  List<String> mrkdwn_in = ["text"]
+  // The pretty date will appear in the footer
   long ts = System.currentTimeMillis() / 1000
 
-  public SlackMessage(String title, String text, String color = '#cccccc') {
+  public SlackAttachment(String title, String text, String color = '#cccccc') {
     this.title = title
     this.text = this.fallback = text
     this.color = color
-  }
-
-  /**
-   * To display a message with a colored vertical bar on the left, Slack expects the message to be in an "attachments"
-   * field as a JSON string of an array of objects, e.g.
-   *   [{"fallback":"plain-text summary", "text":"the message to send", "color":"#hexcolor"}]
-   * @return a stringified version of the JSON array containing the attachment
-   */
-  String buildMessage() {
-    new JsonBuilder([
-      [
-        fallback: text,
-        text: text,
-        color: color,
-        mrkdwn_in: ["text"]
-      ]
-    ]).toString()
   }
 }

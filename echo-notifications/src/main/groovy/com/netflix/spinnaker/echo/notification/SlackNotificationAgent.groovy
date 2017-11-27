@@ -16,10 +16,9 @@
 
 package com.netflix.spinnaker.echo.notification
 import com.netflix.spinnaker.echo.model.Event
-import com.netflix.spinnaker.echo.slack.SlackMessage
+import com.netflix.spinnaker.echo.slack.SlackAttachment
 import com.netflix.spinnaker.echo.slack.SlackService
 import groovy.util.logging.Slf4j
-import org.apache.commons.lang.WordUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -97,7 +96,7 @@ class SlackNotificationAgent extends AbstractEventNotificationAgent {
       String address = preference.address.startsWith('#') ? preference.address : "#${preference.address}"
 
       def title = getNotificationTitle(config.type, application, status)
-      def response = slackService.sendMessage(token, new SlackMessage(title, body, color), address, true)
+      def response = slackService.sendMessage(token, new SlackAttachment(title, body, color), address, true)
       log.info("Received response from Slack: {} {} for execution id {}. {}",
         response?.status, response?.reason, event.content?.execution?.id, response?.body)
 

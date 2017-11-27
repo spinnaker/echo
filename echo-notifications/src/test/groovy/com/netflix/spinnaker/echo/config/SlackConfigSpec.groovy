@@ -1,21 +1,7 @@
 package com.netflix.spinnaker.echo.config
 
-import com.netflix.spinnaker.echo.slack.SlackMessage
-import com.sun.jndi.toolkit.url.Uri
-import groovy.json.JsonSlurper
-import retrofit.RestAdapter
-import retrofit.client.Client
-import retrofit.client.OkClient
-import retrofit.client.Request
-import retrofit.client.Response
-import retrofit.mime.TypedByteArray
-import retrofit.mime.TypedOutput
 import spock.lang.Specification
 import spock.lang.Subject
-import spock.util.concurrent.BlockingVariable
-
-import static java.util.Collections.emptyList
-import static retrofit.RestAdapter.*
 
 class SlackConfigSpec extends Specification {
   @Subject SlackConfig slackConfig = new SlackConfig()
