@@ -29,10 +29,6 @@ import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-import javax.annotation.PostConstruct;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,26 +46,15 @@ public class PubsubMessageHandler {
   @Autowired
   private PubsubEventMonitor pubsubEventMonitor;
 
-  private MessageDigest digest;
-
   private static final String SET_IF_NOT_EXIST = "NX";
   private static final String SET_EXPIRE_TIME_MILLIS = "PX";
   private static final String SUCCESS = "OK";
 
-  @PostConstruct
-  void postConstruct() {
-    try {
-      digest = MessageDigest.getInstance("SHA-256");
-    } catch (NoSuchAlgorithmException nsa) {
-      log.error(nsa.getMessage());
-    }
-  }
-
   public void handleMessage(MessageDescription description,
                             MessageAcknowledger acknowledger,
-                            String identifier) {
-    String messageKey = makeKey(description.getMessagePayload(), description.getPubsubSystem(), description.getSubscriptionName());
-
+                            String identifier,
+                            String messageId) {
+    String messageKey = makeKey(description.getPubsubSystem(), description.getSubscriptionName(), messageId);
     if (!acquireMessageLock(messageKey, identifier, description.getAckDeadlineMillis())) {
       acknowledger.nack();
       return;
@@ -93,11 +78,8 @@ public class PubsubMessageHandler {
     }
   }
 
-  private String makeKey(String messagePayload, PubsubSystem pubsubSystem, String subscription) {
-    digest.reset();
-    digest.update(messagePayload.getBytes());
-    String messageHash = new String(Base64.getEncoder().encode(digest.digest()));
-    return String.format("%s:echo-pubsub:%s:%s", pubsubSystem.toString(), subscription, messageHash);
+  private String makeKey(PubsubSystem pubsubSystem, String subscription, String messageId) {
+    return String.format("%s:echo-pubsub:%s:%s", pubsubSystem.toString(), subscription, messageId);
   }
 
 
