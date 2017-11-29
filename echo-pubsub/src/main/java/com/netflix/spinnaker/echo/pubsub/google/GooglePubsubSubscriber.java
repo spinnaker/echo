@@ -143,6 +143,7 @@ public class GooglePubsubSubscriber implements PubsubSubscriber {
     @Override
     public void receiveMessage(PubsubMessage message, AckReplyConsumer consumer) {
       String messagePayload = message.getData().toStringUtf8();
+      String messageId = message.getMessageId();
       log.debug("Received message with payload: {}", messagePayload);
 
       MessageDescription description = MessageDescription.builder()
@@ -154,7 +155,7 @@ public class GooglePubsubSubscriber implements PubsubSubscriber {
           .artifacts(messageArtifactTranslator.parseArtifacts(messagePayload))
           .build();
       GoogleMessageAcknowledger acknowledger = new GoogleMessageAcknowledger(consumer);
-      pubsubMessageHandler.handleMessage(description, acknowledger, identity.getIdentity());
+      pubsubMessageHandler.handleMessage(description, acknowledger, identity.getIdentity(), messageId);
     }
   }
 
