@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.Counter
 import com.netflix.spectator.api.Id
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.echo.config.CalendarConfigurationProperties
 import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.model.Pipeline
+import com.netflix.spinnaker.echo.pipelinetriggers.calendar.BasicHolidayCalendarProvider
 import com.netflix.spinnaker.echo.pipelinetriggers.monitor.BuildEventMonitor
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import rx.functions.Action1
@@ -45,6 +47,39 @@ class BuildEventMonitorSpec extends Specification implements RetrofitStubs {
     event                         | trigger               | triggerType
     createBuildEventWith(SUCCESS) | enabledJenkinsTrigger | 'jenkins'
     createBuildEventWith(SUCCESS) | enabledTravisTrigger | 'travis'
+  }
+
+  def "should skip trigger pipelines for successful builds configured to skip on holidays"() {
+    given:
+    def pipeline = createPipelineWith(trigger)
+    pipelineCache.getPipelines() >> [pipeline]
+
+    and:
+    Calendar calendar = Calendar.getInstance()
+    calendar.set(Calendar.DAY_OF_MONTH, 25)
+    calendar.set(Calendar.MONTH, Calendar.DECEMBER)
+    calendar.set(Calendar.YEAR, 2017)
+    def basicHolidayCalendarProvider = new BasicHolidayCalendarProvider(
+      [
+        new CalendarConfigurationProperties.Basic.HolidaySpec(name: "Christmas Eve", day: 24, month: 12),
+        new CalendarConfigurationProperties.Basic.HolidaySpec(name: "Christmas", day: 25, month: 12)
+      ],
+      calendar
+    )
+    monitor.holidayCalendarProviders = [basicHolidayCalendarProvider]
+
+    when:
+    monitor.processEvent(objectMapper.convertValue(event, Event))
+
+    then:
+    count * subscriber.call({
+      it.application == pipeline.application && it.name == pipeline.name
+    })
+
+    where:
+    event                         | trigger                                     | triggerType | count
+    createBuildEventWith(SUCCESS) | enabledJenkinsTriggerWithSkippingOnHolidays | 'jenkins'   | 0
+    createBuildEventWith(SUCCESS) | enabledTravisTrigger                        | 'travis'    | 1
   }
 
   @Unroll

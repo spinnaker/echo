@@ -32,7 +32,8 @@ class PipelineTriggerConverter {
       triggerType          : trigger.type,
       triggerCronExpression: trigger.cronExpression,
       triggerTimeZoneId    : timeZoneId,
-      triggerEnabled       : Boolean.toString(trigger.enabled)
+      triggerEnabled       : Boolean.toString(trigger.enabled),
+      skipHolidays         : trigger.skipHolidays
     ]
     if (trigger.runAsUser) {
       params.runAsUser = trigger.runAsUser

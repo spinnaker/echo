@@ -21,6 +21,7 @@ trait RetrofitStubs {
 
   final String url = "http://echo"
   final Trigger enabledJenkinsTrigger = Trigger.builder().enabled(true).type('jenkins').master('master').job('job').build()
+  final Trigger enabledJenkinsTriggerWithSkippingOnHolidays = Trigger.builder().enabled(true).type('jenkins').skipHolidays(true).master('master').job('job').build()
   final Trigger disabledJenkinsTrigger = Trigger.builder().enabled(false).type('jenkins').master('master').job('job').build()
   final Trigger enabledTravisTrigger = Trigger.builder().enabled(true).type('travis').master('master').job('job').build()
   final Trigger disabledTravisTrigger = Trigger.builder().enabled(false).type('travis').master('master').job('job').build()

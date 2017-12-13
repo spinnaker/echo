@@ -22,9 +22,10 @@ import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
+import com.netflix.spinnaker.echo.pipelinetriggers.calendar.HolidayCalendarProvider;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import rx.Observable;
 import rx.functions.Action1;
@@ -46,6 +47,9 @@ abstract class TriggerMonitor implements EchoEventListener {
 
   protected final Action1<Pipeline> subscriber;
   protected final Registry registry;
+
+  @Autowired(required = false)
+  protected List<HolidayCalendarProvider> holidayCalendarProviders;
 
   protected void validateEvent(Event event) {
     if (event.getDetails() == null) {
@@ -92,12 +96,23 @@ abstract class TriggerMonitor implements EchoEventListener {
       if (pipeline.getTriggers() == null || pipeline.isDisabled()) {
         return Optional.empty();
       } else {
-        return pipeline.getTriggers()
+        Optional<Trigger> trigger = pipeline.getTriggers()
           .stream()
           .filter(this::isValidTrigger)
           .filter(matchTriggerFor(event, pipeline))
-          .findFirst()
-          .map(buildTrigger(pipeline, event));
+          .findFirst();
+
+        if (trigger.isPresent() && trigger.get().isSkipHolidays() && holidayCalendarProviders != null) {
+          HolidayCalendarProvider calendarProvider = holidayCalendarProviders.get(0);
+          if (calendarProvider != null && calendarProvider.isHoliday()) {
+            log.info("Using holiday calendar {}", calendarProvider.getClass().getName());
+            registry.counter("trigger.skippedOnHolidays").increment();
+            log.info("Pipeline {}:{} configured to be skipped on holidays", pipeline.getName(), pipeline.getId());
+            return Optional.empty();
+          }
+        }
+
+        return trigger.map(buildTrigger(pipeline, event));
       }
     };
   }
