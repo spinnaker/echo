@@ -65,7 +65,7 @@ public class GitHubArtifactExtractor implements WebhookArtifactExtractor {
 
   @Override
   public boolean handles(String type, String source) {
-    return type.equals("git") && source.equals("github");
+    return type.equals("file") && source.equals("github");
   }
 
   @Data
