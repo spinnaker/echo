@@ -29,7 +29,7 @@ import lombok.experimental.Wither;
 @JsonDeserialize(builder = Trigger.TriggerBuilder.class)
 @Builder(toBuilder = true)
 @Wither
-@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "account", "repository", "tag", "parameters", "constraints", "branch", "runAsUser", "subscriptionName", "pubsubSystem", "expectedArtifactIds"}, includeFieldNames = false)
+@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "account", "repository", "tag", "parameters", "constraints", "branch", "runAsUser", "subscriptionName", "pubsubSystem", "expectedArtifactIds", "skipHolidays"}, includeFieldNames = false)
 @Value
 public class Trigger {
   public enum Type {
@@ -74,6 +74,7 @@ public class Trigger {
   String branch;
   String runAsUser;
   String secret;
+  boolean skipHolidays;
 
   /**
    * Logical name given to the subscription by the user, not the locator
