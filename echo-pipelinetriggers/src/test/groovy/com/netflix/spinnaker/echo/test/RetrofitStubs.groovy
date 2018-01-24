@@ -80,10 +80,14 @@ trait RetrofitStubs {
     return res
   }
 
-  WebhookEvent createWebhookEvent(String type) {
+  WebhookEvent createWebhookEvent(final String source) {
+    return createWebhookEvent(source, [:])
+  }
+
+  WebhookEvent createWebhookEvent(final String source, final Map payload) {
     def res = new WebhookEvent()
-    res.details = new Metadata([type: type, source: "myCIServer"])
-    res.payload = [ application : "myApplicationName" ]
+    res.details = new Metadata([type: WebhookEvent.TYPE, source: source])
+    res.payload = payload
     return res
   }
 
