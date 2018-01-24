@@ -67,8 +67,6 @@ public class WebhookEventMonitor extends TriggerMonitor {
 
     /* Need to create WebhookEvent, since TriggerEvent is abstract */
     WebhookEvent webhookEvent = objectMapper.convertValue(event, WebhookEvent.class);
-    webhookEvent.setDetails(event.getDetails());
-    webhookEvent.setPayload(event.getContent());
 
     Observable.just(webhookEvent)
       .doOnNext(this::onEchoResponse)
@@ -89,12 +87,7 @@ public class WebhookEventMonitor extends TriggerMonitor {
 
   @Override
   protected boolean isValidTrigger(final Trigger trigger) {
-    boolean valid =  trigger.isEnabled() &&
-      (
-          TRIGGER_TYPE.equals(trigger.getType())
-      );
-
-    return valid;
+    return trigger.isEnabled() && TRIGGER_TYPE.equals(trigger.getType());
   }
 
   @Override
@@ -103,7 +96,7 @@ public class WebhookEventMonitor extends TriggerMonitor {
     String source = event.getDetails().getSource();
 
     return trigger ->
-      trigger.getType().equals(type) &&
+      trigger.getType().equalsIgnoreCase(type) &&
       trigger.getSource().equals(source) &&
         (
           // The Constraints in the Trigger could be null. That's OK.
