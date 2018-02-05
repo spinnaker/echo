@@ -20,6 +20,7 @@ import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hubspot.jinjava.Jinjava;
+import com.netflix.spinnaker.echo.exceptions.InvalidArtifactFormatException;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -87,7 +88,7 @@ public class MessageArtifactTranslator {
     try {
       return mapper.readValue(hydratedTemplate, artifactListReference);
     } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
+      throw new InvalidArtifactFormatException(ioe);
     }
   }
 }

@@ -25,7 +25,9 @@ dependencies {
   compile spinnaker.dependency("groovy")
   compile spinnaker.dependency("guava")
   compile spinnaker.dependency("jedis")
+  compile spinnaker.dependency('kork')
   compile spinnaker.dependency("korkJedisTest")
 
   compile 'com.google.cloud:google-cloud-pubsub:0.33.0-beta'
+  compile spinnaker.dependency("clouddriverAws")
 }
