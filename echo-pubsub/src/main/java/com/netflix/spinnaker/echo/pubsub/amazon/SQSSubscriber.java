@@ -20,6 +20,7 @@ import com.amazonaws.auth.policy.*;
 import com.amazonaws.auth.policy.actions.SQSActions;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -91,7 +92,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
   }
 
   public String getWorkerName() {
-    return queueARN.arn + "/" + SQSSubscriber.class.getSimpleName();
+    return queueARN.getArn() + "/" + SQSSubscriber.class.getSimpleName();
   }
 
   @Override
@@ -142,48 +143,59 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
       }
 
       receiveMessageResult.getMessages().forEach(message -> {
-        String messageId = message.getMessageId();
-        String messagePayload = unmarshallMessageBody(message.getBody());
-
-        Map<String, String> stringifiedMessageAttributes = message.getMessageAttributes().entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue())));
-
-        log.debug("Received Amazon sqs message: {} with payload: {}\n and attributes: {}", messageId, messagePayload, stringifiedMessageAttributes);
-
-        MessageDescription description = MessageDescription.builder()
-          .subscriptionName(subscriptionName())
-          .messagePayload(messagePayload)
-          .messageAttributes(stringifiedMessageAttributes)
-          .pubsubSystem(pubsubSystem)
-          .ackDeadlineMillis(5 * TimeUnit.SECONDS.toMillis(10)) // Set a high upper bound on message processing time.
-          .retentionDeadlineMillis(TimeUnit.DAYS.toMillis(7)) // Expire key after max retention time, which is 7 days.
-          .build();
-
-        AmazonMessageAcknowledger acknowledger = new AmazonMessageAcknowledger(amazonSQS, queueId, message);
-
-        if (subscription.getMessageFormat() != AmazonPubsubProperties.MessageFormat.NONE) {
-          List<Artifact> artifacts = messageArtifactTranslator.parseArtifacts(description.getMessagePayload());
-          if (artifacts == null) {
-            log.warn("No artifacts were found for subscription: {} and messageId: {}", subscription.getName(), messageId);
-          } else {
-            artifacts.forEach( a -> a.setArtifactAccount(subscription.getAccountName()));
-            description.setArtifacts(artifacts);
-            log.info("artifacts {}", String.join(", ", artifacts.stream().map(Artifact::toString).collect(Collectors.toList())));
-          }
-        }
-
-        pubsubMessageHandler.handleMessage(description, acknowledger, identity.getIdentity(), messageId);
+        handleMessage(message);
         registry.counter(getProcessedMetricId(subscriptionName())).increment();
       });
     }
+  }
+
+  private void handleMessage(Message message) {
+    String messageId = message.getMessageId();
+    String messagePayload = unmarshallMessageBody(message.getBody());
+
+    Map<String, String> stringifiedMessageAttributes = message.getMessageAttributes().entrySet().stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue())));
+
+    log.debug("Received Amazon sqs message: {} with payload: {}\n and attributes: {}", messageId, messagePayload, stringifiedMessageAttributes);
+
+    MessageDescription description = MessageDescription.builder()
+      .subscriptionName(subscriptionName())
+      .messagePayload(messagePayload)
+      .messageAttributes(stringifiedMessageAttributes)
+      .pubsubSystem(pubsubSystem)
+      .ackDeadlineMillis(5 * TimeUnit.SECONDS.toMillis(10)) // Set a high upper bound on message processing time.
+      .retentionDeadlineMillis(TimeUnit.DAYS.toMillis(7)) // Expire key after max retention time, which is 7 days.
+      .build();
+
+    AmazonMessageAcknowledger acknowledger = new AmazonMessageAcknowledger(amazonSQS, queueId, message);
+
+    if (subscription.getMessageFormat() != AmazonPubsubProperties.MessageFormat.NONE) {
+      description.setArtifacts(parseArtifacts(description.getMessagePayload(), messageId));
+    }
+    pubsubMessageHandler.handleMessage(description, acknowledger, identity.getIdentity(), messageId);
+  }
+
+  private List<Artifact> parseArtifacts(String messagePayload, String messageId){
+    List<Artifact> artifacts = messageArtifactTranslator.parseArtifacts(messagePayload);
+    if (artifacts == null) {
+      log.debug("No artifacts were found for subscription: {} and messageId: {}", subscription.getName(), messageId);
+    } else {
+      artifacts.forEach( a -> a.setArtifactAccount(subscription.getAccountName()));
+      log.debug(
+        "Artifacts found for subscription: {}: {}",
+        subscription.getName(),
+        String.join(", ", artifacts.stream().map(Artifact::toString).collect(Collectors.toList()))
+      );
+    }
+    return artifacts;
   }
 
   private String unmarshallMessageBody(String messageBody) {
     String messagePayload = messageBody;
     try {
       NotificationMessageWrapper wrapper = objectMapper.readValue(messagePayload, NotificationMessageWrapper.class);
-      if (wrapper != null && wrapper.message != null) {
-        messagePayload = wrapper.message;
+      if (wrapper != null && wrapper.getMessage() != null) {
+        messagePayload = wrapper.getMessage();
       }
     } catch (IOException e) {
       // Try to unwrap a notification message; if that doesn't work,
@@ -201,7 +213,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
                                           ARN queueARN,
                                           ARN topicARN,
                                           int sqsMessageRetentionPeriodSeconds) {
-    String queueUrl = amazonSQS.createQueue(queueARN.name).getQueueUrl();
+    String queueUrl = amazonSQS.createQueue(queueARN.getName()).getQueueUrl();
     log.debug("Created queue " + queueUrl);
 
     HashMap<String, String> attributes = new HashMap<>();
@@ -218,8 +230,8 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
   private static String subscribeToTopic(AmazonSNS amazonSNS,
                                          ARN topicARN,
                                          ARN queueARN) {
-    amazonSNS.subscribe(topicARN.arn, "sqs", queueARN.arn);
-    return topicARN.arn;
+    amazonSNS.subscribe(topicARN.getArn(), "sqs", queueARN.getArn());
+    return topicARN.getArn();
   }
 
   /**
@@ -229,14 +241,14 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
   private static Policy buildSQSPolicy(ARN queue, ARN topic) {
     Statement snsStatement = new Statement(Statement.Effect.Allow).withActions(SQSActions.SendMessage);
     snsStatement.setPrincipals(Principal.All);
-    snsStatement.setResources(Collections.singletonList(new Resource(queue.arn)));
+    snsStatement.setResources(Collections.singletonList(new Resource(queue.getArn())));
     snsStatement.setConditions(Collections.singletonList(
-      new Condition().withType("ArnEquals").withConditionKey("aws:SourceArn").withValues(topic.arn)
+      new Condition().withType("ArnEquals").withConditionKey("aws:SourceArn").withValues(topic.getArn())
     ));
 
     Statement sqsStatement = new Statement(Statement.Effect.Allow).withActions(SQSActions.SendMessage, SQSActions.GetQueueUrl);
     sqsStatement.setPrincipals(Principal.All);
-    sqsStatement.setResources(Collections.singletonList(new Resource(queue.arn)));
+    sqsStatement.setResources(Collections.singletonList(new Resource(queue.getArn())));
 
     return new Policy("allow-sns-or-sqs-send", Arrays.asList(snsStatement, sqsStatement));
   }

@@ -18,23 +18,25 @@ package com.netflix.spinnaker.echo.pubsub.amazon;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
+@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class NotificationMessageWrapper {
   @JsonProperty("Type")
-  String type;
+  private String type;
 
   @JsonProperty("MessageId")
-  String messageId;
+  private String messageId;
 
   @JsonProperty("TopicArn")
-  String topicArn;
+  private String topicArn;
 
   @JsonProperty("Subject")
-  String subject;
+  private String subject;
 
   @JsonProperty("Message")
-  String message;
+  private String message;
 
   public NotificationMessageWrapper() {
   }

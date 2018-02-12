@@ -43,20 +43,20 @@ public class AmazonPubsubProperties {
     private static final Logger log = LoggerFactory.getLogger(AmazonPubsubSubscription.class);
 
     @NotEmpty
-    String name;
+    private String name;
 
     @NotEmpty
-    String accountName;
+    private String accountName;
 
     @NotEmpty
-    String topicARN;
+    private  String topicARN;
 
     @NotEmpty
-    String queueARN;
+    private  String queueARN;
 
-    String templatePath;
+    private String templatePath;
 
-    MessageFormat messageFormat;
+    private MessageFormat messageFormat;
 
     int visibilityTimeout = 30;
     int sqsMessageRetentionPeriodSeconds = 120;

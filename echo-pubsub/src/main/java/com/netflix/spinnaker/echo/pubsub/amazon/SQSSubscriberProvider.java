@@ -91,13 +91,13 @@ public class SQSSubscriberProvider {
           .standard()
           .withCredentials(awsCredentialsProvider)
           .withClientConfiguration(new ClientConfiguration())
-          .withRegion(new ARN(subscription.getTopicARN()).region)
+          .withRegion(new ARN(subscription.getTopicARN()).getRegion())
           .build(),
         AmazonSQSClientBuilder
           .standard()
           .withCredentials(awsCredentialsProvider)
           .withClientConfiguration(new ClientConfiguration())
-          .withRegion(new ARN(subscription.getQueueARN()).region)
+          .withRegion(new ARN(subscription.getQueueARN()).getRegion())
           .build(),
         registry
       );

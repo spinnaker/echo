@@ -16,10 +16,6 @@
 
 package com.netflix.spinnaker.echo.pubsub.amazon;
 
-import com.netflix.spinnaker.clouddriver.aws.security.NetflixAmazonCredentials;
-import com.netflix.spinnaker.clouddriver.security.AccountCredentials;
-
-import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,11 +23,9 @@ public class ARN {
 
   static final Pattern PATTERN = Pattern.compile("arn:aws(?:-cn|-us-gov)?:.*:(.*):(\\d+):(.*)");
 
-  String arn;
-  String region;
-  String name;
-
-  NetflixAmazonCredentials account;
+  private String arn;
+  private String region;
+  private String name;
 
   ARN(String arn) {
     this.arn = arn;
@@ -45,4 +39,15 @@ public class ARN {
     this.name = sqsMatcher.group(3);
   }
 
+  public String getArn() {
+    return arn;
+  }
+
+  public String getRegion() {
+    return region;
+  }
+
+  public String getName() {
+    return name;
+  }
 }
