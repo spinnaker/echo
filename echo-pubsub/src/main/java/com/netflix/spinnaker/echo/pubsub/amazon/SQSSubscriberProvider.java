@@ -23,6 +23,8 @@ import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.config.amazon.AmazonPubsubProperties;
+import com.netflix.spinnaker.echo.discovery.DiscoveryActivated;
+import com.netflix.spinnaker.echo.model.pubsub.PubsubSystem;
 import com.netflix.spinnaker.echo.pubsub.PubsubMessageHandler;
 import com.netflix.spinnaker.echo.pubsub.PubsubSubscribers;
 import com.netflix.spinnaker.echo.pubsub.model.PubsubSubscriber;
@@ -42,7 +44,7 @@ import java.util.concurrent.RejectedExecutionException;
  * Starts the individual SQS workers (one for each subscription)
  */
 @Component
-public class SQSSubscriberProvider {
+public class SQSSubscriberProvider extends DiscoveryActivated {
   private static final Logger log = LoggerFactory.getLogger(SQSSubscriberProvider.class);
 
   private final ObjectMapper objectMapper;
@@ -67,6 +69,29 @@ public class SQSSubscriberProvider {
     this.registry = registry;
   }
 
+  @Override
+  public void enable() {
+    super.enable();
+    adjustSubscriberStatus(true);
+  }
+
+  @Override
+  public void disable() {
+    super.disable();
+    adjustSubscriberStatus(false);
+  }
+
+  public void adjustSubscriberStatus(Boolean instanceUp){
+      pubsubSubscribers.getAll().forEach((PubsubSubscriber subscriber) -> {
+          if (subscriber.pubsubSystem() == PubsubSystem.AMAZON) {
+            SQSSubscriber sqsSubscriber = (SQSSubscriber) subscriber;
+            String status = instanceUp ? "in service" : "out of service";
+            log.info("Worker {} is {}", sqsSubscriber.getWorkerName(), status);
+            sqsSubscriber.setInService(instanceUp);
+          }
+        });
+  }
+
   @PostConstruct
   public void start() {
     ExecutorService executorService = Executors.newFixedThreadPool(properties.getSubscriptions().size());
@@ -74,14 +99,14 @@ public class SQSSubscriberProvider {
     List<PubsubSubscriber> subscribers = new ArrayList<>();
 
     properties.getSubscriptions().forEach((AmazonPubsubProperties.AmazonPubsubSubscription subscription) -> {
-      log.info("Bootstrapping SQS for SNS topic: {} in account: {}",
-        subscription.getTopicARN(),
-        subscription.getAccountName());
+      log.info("Bootstrapping SQS for SNS topic: {}", subscription.getTopicARN());
       if (subscription.getTemplatePath() != null && !subscription.getTemplatePath().equals("")){
         log.info("Using template: {} for subscription: {}",
           subscription.getTemplatePath(),
           subscription.getName());
       }
+
+      ARN queueArn = new ARN(subscription.getQueueARN());
 
       SQSSubscriber worker = new SQSSubscriber(
         objectMapper,
@@ -91,13 +116,13 @@ public class SQSSubscriberProvider {
           .standard()
           .withCredentials(awsCredentialsProvider)
           .withClientConfiguration(new ClientConfiguration())
-          .withRegion(new ARN(subscription.getTopicARN()).getRegion())
+          .withRegion(queueArn.getRegion())
           .build(),
         AmazonSQSClientBuilder
           .standard()
           .withCredentials(awsCredentialsProvider)
           .withClientConfiguration(new ClientConfiguration())
-          .withRegion(new ARN(subscription.getQueueARN()).getRegion())
+          .withRegion(queueArn.getRegion())
           .build(),
         registry
       );

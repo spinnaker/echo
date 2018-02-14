@@ -19,6 +19,8 @@ package com.netflix.spinnaker.echo.pubsub.amazon;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiptHandleIsInvalidException;
+import com.netflix.spectator.api.Id;
+import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.pubsub.model.MessageAcknowledger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,16 @@ public class AmazonMessageAcknowledger implements MessageAcknowledger {
   private AmazonSQS amazonSQS;
   private String queueUrl;
   private Message message;
+  private Registry registry;
+  private String subscriptionName;
+
+  public AmazonMessageAcknowledger(AmazonSQS amazonSQS, String queueUrl, Message message, Registry registry, String subscriptionName) {
+    this.amazonSQS = amazonSQS;
+    this.queueUrl = queueUrl;
+    this.message = message;
+    this.registry = registry;
+    this.subscriptionName = subscriptionName;
+  }
 
   @Override
   public void ack() {
@@ -41,10 +53,12 @@ public class AmazonMessageAcknowledger implements MessageAcknowledger {
     try {
       amazonSQS.deleteMessage(queueUrl, message.getReceiptHandle());
       log.debug("Deleted message: {} from queue {}", message.getMessageId(), queueUrl);
+      registry.counter(getProcessedMetricId(subscriptionName)).increment();
     } catch (ReceiptHandleIsInvalidException e) {
       log.warn(
-        "Error deleting message: {}, reason: {} (receiptHandle: {})",
+        "Error deleting message: {}, queue: {}, reason: {} (receiptHandle: {})",
         message.getMessageId(),
+        queueUrl,
         e.getMessage(),
         message.getReceiptHandle()
       );
@@ -54,21 +68,26 @@ public class AmazonMessageAcknowledger implements MessageAcknowledger {
   @Override
   public void nack() {
     // Set visibility timeout to 0, so that the message can be processed by another worker
+    // Todo emjburns: is changing message visibility a needed optimization?
     try {
       amazonSQS.changeMessageVisibility(queueUrl, message.getReceiptHandle(), 0);
       log.debug("Changed visibility timeout of message: {} from queue: {}", message.getMessageId(), queueUrl);
+      registry.counter(getFailedMetricId(subscriptionName)).increment();
     } catch (ReceiptHandleIsInvalidException e) {
-      log.warn("Error nack-ing message: {}, reason: {} (receiptHandle: {})",
+      log.warn("Error nack-ing message: {}, queue: {}, reason: {} (receiptHandle: {})",
         message.getMessageId(),
+        queueUrl,
         e.getMessage(),
         message.getReceiptHandle()
       );
     }
   }
 
-  public AmazonMessageAcknowledger(AmazonSQS amazonSQS, String queueUrl, Message message) {
-    this.amazonSQS = amazonSQS;
-    this.queueUrl = queueUrl;
-    this.message = message;
+  Id getProcessedMetricId(String subscriptionName) {
+    return registry.createId("echo.pubsub.amazon.totalProcessed", "subscriptionName", subscriptionName);
+  }
+
+  Id getFailedMetricId(String subscriptionName) {
+    return registry.createId("echo.pubsub.amazon.totalFailed", "subscriptionName", subscriptionName);
   }
 }

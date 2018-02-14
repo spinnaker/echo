@@ -16,20 +16,16 @@
 
 package com.netflix.spinnaker.echo.config.amazon;
 
-import com.netflix.spinnaker.clouddriver.aws.bastion.BastionConfig;
-import com.netflix.spinnaker.clouddriver.aws.security.AmazonClientProvider;
-import lombok.extern.slf4j.Slf4j;
+import com.netflix.spinnaker.kork.aws.bastion.BastionConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import javax.validation.Valid;
 
 @Configuration
-@Slf4j
 @ConditionalOnProperty("pubsub.amazon.enabled")
 @Import(BastionConfig.class)
 @EnableConfigurationProperties(AmazonPubsubProperties.class)
@@ -38,9 +34,4 @@ public class AmazonPubsubConfig {
   @Valid
   @Autowired
   private AmazonPubsubProperties amazonPubsubProperties;
-
-  @Bean
-  public AmazonClientProvider amazonClientProvider() {
-    return new AmazonClientProvider();
-  }
 }

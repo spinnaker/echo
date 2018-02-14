@@ -46,10 +46,7 @@ public class AmazonPubsubProperties {
     private String name;
 
     @NotEmpty
-    private String accountName;
-
-    @NotEmpty
-    private  String topicARN;
+    private String topicARN;
 
     @NotEmpty
     private  String queueARN;
@@ -67,39 +64,41 @@ public class AmazonPubsubProperties {
 
     public AmazonPubsubSubscription(
       String name,
-      String accountName,
       String topicARN,
       String queueARN,
       String templatePath,
       MessageFormat messageFormat) {
       this.name = name;
-      this.accountName = accountName;
       this.topicARN = topicARN;
       this.queueARN = queueARN;
       this.templatePath = templatePath;
       this.messageFormat = messageFormat;
     }
 
-    private void determineMessageFormat(){
+    private MessageFormat determineMessageFormat(){
+      // Supplying a custom template overrides a MessageFormat choice
       if (!StringUtils.isEmpty(templatePath)) {
-        messageFormat = MessageFormat.CUSTOM;
+        return MessageFormat.CUSTOM;
       } else if (messageFormat == null || messageFormat.equals("")) {
-        messageFormat = MessageFormat.NONE;
+        return MessageFormat.NONE;
       }
-      log.info("Message format: {}", messageFormat);
+      return messageFormat;
     }
 
     public InputStream readTemplatePath() {
-      determineMessageFormat();
+      messageFormat = determineMessageFormat();
+      log.info("Using message format: {} to process artifacts for subscription: {}", messageFormat, name);
+
       try {
         if (messageFormat == MessageFormat.CUSTOM) {
             return new FileInputStream(new File(templatePath));
-        } else {
+        } else if (messageFormat.jarPath != null){
           return getClass().getResourceAsStream(messageFormat.jarPath);
         }
       } catch (IOException e) {
-        throw new RuntimeException("Failed to read template in subscription " + name + ": " + e.getMessage(), e);
+        throw new RuntimeException("Failed to read template in subscription " + name, e);
       }
+      return null;
     }
   }
 
@@ -108,7 +107,7 @@ public class AmazonPubsubProperties {
     CUSTOM(),
     NONE();
 
-    private String jarPath = "";
+    private String jarPath;
 
     MessageFormat(String jarPath) {
       this.jarPath = jarPath;

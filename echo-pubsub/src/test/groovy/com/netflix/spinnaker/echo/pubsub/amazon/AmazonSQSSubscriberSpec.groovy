@@ -37,7 +37,7 @@ class AmazonSQSSubscriberSpec extends Specification {
   ARN queueARN = new ARN("arn:aws:sqs:us-west-2:100:queueName")
   ARN topicARN = new ARN("arn:aws:sns:us-west-2:100:topicName")
   AmazonPubsubProperties.AmazonPubsubSubscription subscription =
-    new AmazonPubsubProperties.AmazonPubsubSubscription('aws_events', 'mgmt', topicARN.arn, queueARN.arn, "", null)
+    new AmazonPubsubProperties.AmazonPubsubSubscription('aws_events', topicARN.arn, queueARN.arn, "", null)
 
   @Shared
   def objectMapper = new ObjectMapper()
@@ -68,17 +68,19 @@ class AmazonSQSSubscriberSpec extends Specification {
 
   def 'should unmarshall an sns notification message'() {
     given:
-    String payload = "{\"Records\":[{" +
-      "\"eventVersion\":\"2.0\"," +
-      "\"eventSource\":\"aws:s3\"," +
-      "\"awsRegion\":\"us-west-2\"," +
-      "\"eventName\":\"ObjectCreated:Put\"," +
-      "\"s3\":{" +
-      "\"s3SchemaVersion\":\"1.0\"," +
-      "\"configurationId\":\"prestaging_front50_events\"," +
-      "\"bucket\":{\"name\":\"us-west-2.spinnaker-prod\",\"ownerIdentity\":{\"principalId\":\"A2TW6LBRCW9VEM\"},\"arn\":\"arn:aws:s3:::us-west-2.spinnaker-prod\"}," +
-      "\"object\":{\"key\":\"prestaging/front50/pipelines/31ef9c67-1d67-474f-a653-ac4b94c90817/pipeline-metadata.json\",\"versionId\":\"8eyu4_RfV8EUqTnClhkKfLK5V4El_mIW\"}}" +
-      "}]}"
+    String payload = '''
+      {\"Records\":[
+      \"eventVersion\":\"2.0\",
+      \"eventSource\":\"aws:s3\",
+      \"awsRegion\":\"us-west-2\","
+      \"eventName\":\"ObjectCreated:Put\","
+      \"s3\":{"
+      \"s3SchemaVersion\":\"1.0\","
+      \"configurationId\":\"prestaging_front50_events\","
+      \"bucket\":{\"name\":\"us-west-2.spinnaker-prod\",\"ownerIdentity\":{\"principalId\":\"A2TW6LBRCW9VEM\"},\"arn\":\"arn:aws:s3:::us-west-2.spinnaker-prod\"},"
+      \"object\":{\"key\":\"prestaging/front50/pipelines/31ef9c67-1d67-474f-a653-ac4b94c90817/pipeline-metadata.json\",\"versionId\":\"8eyu4_RfV8EUqTnClhkKfLK5V4El_mIW\"}}"
+      "}]}
+      '''
 
     NotificationMessageWrapper notificationMessage = new NotificationMessageWrapper(
       "Notification",

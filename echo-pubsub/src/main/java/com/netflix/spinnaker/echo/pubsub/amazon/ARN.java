@@ -26,17 +26,19 @@ public class ARN {
   private String arn;
   private String region;
   private String name;
+  private String account;
 
   ARN(String arn) {
     this.arn = arn;
 
-    Matcher sqsMatcher = PATTERN.matcher(arn);
-    if (!sqsMatcher.matches()) {
-      throw new IllegalArgumentException(arn + " is not a valid SNS or SQS ARN");
+    Matcher arnMatcher = PATTERN.matcher(arn);
+    if (!arnMatcher.matches()) {
+      throw new IllegalArgumentException(arn + " is not a valid ARN");
     }
 
-    this.region = sqsMatcher.group(1);
-    this.name = sqsMatcher.group(3);
+    this.region = arnMatcher.group(1);
+    this.account = arnMatcher.group(2);
+    this.name = arnMatcher.group(3);
   }
 
   public String getArn() {
@@ -49,5 +51,9 @@ public class ARN {
 
   public String getName() {
     return name;
+  }
+
+  public String getAccount() {
+    return account;
   }
 }

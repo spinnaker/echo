@@ -21,10 +21,10 @@ import com.amazonaws.auth.policy.actions.SQSActions;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.Message;
+import com.amazonaws.services.sqs.model.QueueDoesNotExistException;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.artifacts.MessageArtifactTranslator;
 import com.netflix.spinnaker.echo.config.amazon.AmazonPubsubProperties;
@@ -54,16 +54,16 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
   private static final int AWS_MAX_NUMBER_OF_MESSAGES = 10;
   static private final PubsubSystem pubsubSystem = PubsubSystem.AMAZON;
 
-  private ObjectMapper objectMapper;
-  private AmazonSNS amazonSNS;
-  private AmazonSQS amazonSQS;
+  private final ObjectMapper objectMapper;
+  private final AmazonSNS amazonSNS;
+  private final AmazonSQS amazonSQS;
 
-  private AmazonPubsubProperties.AmazonPubsubSubscription subscription;
+  private final AmazonPubsubProperties.AmazonPubsubSubscription subscription;
 
-  private PubsubMessageHandler pubsubMessageHandler;
-  private MessageArtifactTranslator messageArtifactTranslator;
+  private final PubsubMessageHandler pubsubMessageHandler;
+  private final MessageArtifactTranslator messageArtifactTranslator;
 
-  private NodeIdentity identity = new NodeIdentity();
+  private final NodeIdentity identity = new NodeIdentity();
 
   Registry registry;
 
@@ -71,6 +71,8 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
   private final ARN topicARN;
 
   private String queueId = null;
+
+  private boolean inService = false;
 
 
   public SQSSubscriber(ObjectMapper objectMapper,
@@ -110,26 +112,41 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     return getWorkerName();
   }
 
+  public void setInService(boolean inService) {
+    this.inService = inService;
+  }
+
   @Override
   public void run() {
     log.info("Starting " + getWorkerName());
+    initializeQueue();
 
     while (true) {
       try {
         listenForMessages();
-      } catch (Throwable e) {
-        log.error("Unexpected error running " + getWorkerName() + ", restarting", e);
+      } catch (QueueDoesNotExistException e){
+        log.warn("Queue {} does not exist, recreating", queueARN);
+        initializeQueue();
+      } catch (Exception e) {
+        log.error("Unexpected error running " + getWorkerName() + ", restarting worker", e);
+        try {
+          Thread.sleep(500);
+        } catch (InterruptedException e1) {
+          log.error("Thread {} interrupted while sleeping", getWorkerName(), e1);
+        }
       }
     }
   }
 
-  private void listenForMessages() {
+  private void initializeQueue() {
     this.queueId = ensureQueueExists(
       amazonSQS, queueARN, topicARN, subscription.getSqsMessageRetentionPeriodSeconds()
     );
     subscribeToTopic(amazonSNS, topicARN, queueARN);
+  }
 
-    while (true) {
+  private void listenForMessages() {
+    while (inService) {
       ReceiveMessageResult receiveMessageResult = amazonSQS.receiveMessage(
         new ReceiveMessageRequest(queueId)
           .withMaxNumberOfMessages(AWS_MAX_NUMBER_OF_MESSAGES)
@@ -138,49 +155,52 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
       );
 
       if (receiveMessageResult.getMessages().isEmpty()) {
-        log.debug("Received no messages");
+        log.debug("Received no messages for queue: {}", queueARN);
         continue;
       }
 
       receiveMessageResult.getMessages().forEach(message -> {
         handleMessage(message);
-        registry.counter(getProcessedMetricId(subscriptionName())).increment();
       });
     }
   }
 
   private void handleMessage(Message message) {
-    String messageId = message.getMessageId();
-    String messagePayload = unmarshallMessageBody(message.getBody());
+    try {
+      String messageId = message.getMessageId();
+      String messagePayload = unmarshallMessageBody(message.getBody());
 
-    Map<String, String> stringifiedMessageAttributes = message.getMessageAttributes().entrySet().stream()
-      .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue())));
+      Map<String, String> stringifiedMessageAttributes = message.getMessageAttributes().entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue())));
 
-    log.debug("Received Amazon sqs message: {} with payload: {}\n and attributes: {}", messageId, messagePayload, stringifiedMessageAttributes);
+      log.debug("Received Amazon sqs message: {} with payload: {} and attributes: {}", messageId, messagePayload, stringifiedMessageAttributes);
 
-    MessageDescription description = MessageDescription.builder()
-      .subscriptionName(subscriptionName())
-      .messagePayload(messagePayload)
-      .messageAttributes(stringifiedMessageAttributes)
-      .pubsubSystem(pubsubSystem)
-      .ackDeadlineMillis(5 * TimeUnit.SECONDS.toMillis(10)) // Set a high upper bound on message processing time.
-      .retentionDeadlineMillis(TimeUnit.DAYS.toMillis(7)) // Expire key after max retention time, which is 7 days.
-      .build();
+      MessageDescription description = MessageDescription.builder()
+        .subscriptionName(subscriptionName())
+        .messagePayload(messagePayload)
+        .messageAttributes(stringifiedMessageAttributes)
+        .pubsubSystem(pubsubSystem)
+        .ackDeadlineMillis(TimeUnit.SECONDS.toMillis(50)) // Set a high upper bound on message processing time.
+        .retentionDeadlineMillis(TimeUnit.DAYS.toMillis(7)) // Expire key after max retention time, which is 7 days.
+        .build();
 
-    AmazonMessageAcknowledger acknowledger = new AmazonMessageAcknowledger(amazonSQS, queueId, message);
+      AmazonMessageAcknowledger acknowledger = new AmazonMessageAcknowledger(amazonSQS, queueId, message, registry, getName());
 
-    if (subscription.getMessageFormat() != AmazonPubsubProperties.MessageFormat.NONE) {
-      description.setArtifacts(parseArtifacts(description.getMessagePayload(), messageId));
+      if (subscription.getMessageFormat() != AmazonPubsubProperties.MessageFormat.NONE) {
+        description.setArtifacts(parseArtifacts(description.getMessagePayload(), messageId));
+      }
+      pubsubMessageHandler.handleMessage(description, acknowledger, identity.getIdentity(), messageId);
+    } catch (Exception e) {
+      log.error("Message {} from queue {} failed to be handled", message, queueId);
+      // Todo emjburns: add dead-letter queue policy
     }
-    pubsubMessageHandler.handleMessage(description, acknowledger, identity.getIdentity(), messageId);
   }
 
   private List<Artifact> parseArtifacts(String messagePayload, String messageId){
     List<Artifact> artifacts = messageArtifactTranslator.parseArtifacts(messagePayload);
-    if (artifacts == null) {
+    if (artifacts == null || artifacts.size() == 0) {
       log.debug("No artifacts were found for subscription: {} and messageId: {}", subscription.getName(), messageId);
     } else {
-      artifacts.forEach( a -> a.setArtifactAccount(subscription.getAccountName()));
       log.debug(
         "Artifacts found for subscription: {}: {}",
         subscription.getName(),
@@ -202,13 +222,11 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
       // we're dealing with a message we can't parse. The template or
       // the pipeline potentially knows how to deal with it.
       log.error("Unable unmarshal NotificationMessageWrapper. Unknown message type. (body: {})", messageBody, e);
-      registry.counter(getNotAmazonNotificationMetricId(subscriptionName())).increment();
     }
     return messagePayload;
   }
 
-
-
+  // Todo emjburns: pull to kork-aws
   private static String ensureQueueExists(AmazonSQS amazonSQS,
                                           ARN queueARN,
                                           ARN topicARN,
@@ -227,6 +245,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     return queueUrl;
   }
 
+  // Todo emjburns: pull to kork-aws
   private static String subscribeToTopic(AmazonSNS amazonSNS,
                                          ARN topicARN,
                                          ARN queueARN) {
@@ -234,6 +253,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     return topicARN.getArn();
   }
 
+  // Todo emjburns: pull to kork-aws
   /**
    * This policy allows operators to choose whether or not to have pubsub messages to be sent via SNS for fanout, or
    * be sent directly to an SQS queue from the autoscaling group.
@@ -251,17 +271,5 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     sqsStatement.setResources(Collections.singletonList(new Resource(queue.getArn())));
 
     return new Policy("allow-sns-or-sqs-send", Arrays.asList(snsStatement, sqsStatement));
-  }
-
-  Id getProcessedMetricId(String subscriptionName) {
-    return registry.createId("echoAmazonPubSub.totalProcessed", "subscriptionName", subscriptionName);
-  }
-
-  Id getFailedMetricId(String subscriptionName) {
-    return registry.createId("echoAmazonPubSub.totalFailed", "subscriptionName", subscriptionName);
-  }
-
-  Id getNotAmazonNotificationMetricId(String subscriptionName) {
-    return registry.createId("echoAmazonPubSub.totalNotNotificationMessage", "subscriptionName", subscriptionName);
   }
 }
