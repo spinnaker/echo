@@ -27,6 +27,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 class AmazonSQSSubscriberSpec extends Specification {
 
   AmazonSNS amazonSNS = Mock()
@@ -49,6 +51,7 @@ class AmazonSQSSubscriberSpec extends Specification {
     pubsubMessageHandler,
     amazonSNS,
     amazonSQS,
+    {true},
     registry)
 
   void "should create queue if it does not exist"() {

@@ -28,14 +28,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * A component that starts doing something when the instance is up in discovery
  * and stops doing that thing when it goes down.
  */
-public class DiscoveryActivated implements ApplicationListener<RemoteStatusChangedEvent> {
+public interface DiscoveryActivated extends ApplicationListener<RemoteStatusChangedEvent> {
 
-  private final Logger log = LoggerFactory.getLogger(DiscoveryActivated.class);
+  Logger log = LoggerFactory.getLogger(DiscoveryActivated.class);
 
-  private AtomicBoolean enabled = new AtomicBoolean();
+  AtomicBoolean enabled = new AtomicBoolean();
 
   @Override
-  public void onApplicationEvent(RemoteStatusChangedEvent event) {
+  default void onApplicationEvent(RemoteStatusChangedEvent event) {
     if (event.getSource().getStatus() ==  InstanceInfo.InstanceStatus.UP) {
       log.info("Instance is {}... {} starting", event.getSource().getStatus(), DiscoveryActivated.class.getSimpleName());
       enable();
@@ -45,15 +45,11 @@ public class DiscoveryActivated implements ApplicationListener<RemoteStatusChang
     }
   }
 
-  public void enable() {
+  default void enable() {
     enabled.set(true);
   }
 
-  public void disable() {
+  default void disable() {
     enabled.set(false);
-  }
-
-  public Boolean isEnabled() {
-    return enabled.get();
   }
 }

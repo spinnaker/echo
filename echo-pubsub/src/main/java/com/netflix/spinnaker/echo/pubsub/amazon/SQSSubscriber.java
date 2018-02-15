@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -72,20 +73,21 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
 
   private String queueId = null;
 
-  private boolean inService = false;
-
+  private final Supplier<Boolean> isEnabled;
 
   public SQSSubscriber(ObjectMapper objectMapper,
                        AmazonPubsubProperties.AmazonPubsubSubscription subscription,
                        PubsubMessageHandler pubsubMessageHandler,
                        AmazonSNS amazonSNS,
                        AmazonSQS amazonSQS,
+                       Supplier<Boolean> isEnabled,
                        Registry registry) {
     this.objectMapper = objectMapper;
     this.subscription = subscription;
     this.pubsubMessageHandler = pubsubMessageHandler;
     this.amazonSNS = amazonSNS;
     this.amazonSQS = amazonSQS;
+    this.isEnabled = isEnabled;
     this.registry = registry;
 
     this.messageArtifactTranslator = new MessageArtifactTranslator(subscription.readTemplatePath());
@@ -110,10 +112,6 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
   @Override
   public String getName() {
     return getWorkerName();
-  }
-
-  public void setInService(boolean inService) {
-    this.inService = inService;
   }
 
   @Override
@@ -146,7 +144,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
   }
 
   private void listenForMessages() {
-    while (inService) {
+    while (isEnabled.get()) {
       ReceiveMessageResult receiveMessageResult = amazonSQS.receiveMessage(
         new ReceiveMessageRequest(queueId)
           .withMaxNumberOfMessages(AWS_MAX_NUMBER_OF_MESSAGES)
