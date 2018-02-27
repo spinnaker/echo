@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class ArtifactMatcher {
-  public static Boolean anyArtifactsMatchExpected(List<Artifact> messageArtifacts, Trigger trigger, Pipeline pipeline) {
+  public static Boolean anyArtifactsMatchExpected(List<? extends Artifact> messageArtifacts, Trigger trigger, Pipeline pipeline) {
     messageArtifacts = messageArtifacts == null ? new ArrayList<>() : messageArtifacts;
     List<String> expectedArtifactIds = trigger.getExpectedArtifactIds();
 
