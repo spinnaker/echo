@@ -20,19 +20,8 @@ package com.netflix.spinnaker.echo.model;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 
 import java.util.HashMap;
-import java.util.Map;
 
 public class Artifact extends com.netflix.spinnaker.kork.artifacts.model.Artifact {
-
-  @Override
-  public Map<String, Object> getMetadata() {
-    return super.getMetadata();
-  }
-
-  @Override
-  public void setMetadata(Map<String, Object> metadata) {
-    super.setMetadata(metadata);
-  }
 
   // Add extra data in the JSON from Igor to metadata:
   @JsonAnySetter
