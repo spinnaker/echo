@@ -19,7 +19,7 @@ package com.netflix.spinnaker.echo.model.trigger
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.netflix.spinnaker.echo.model.Artifact
+import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import groovy.transform.Canonical
 
 @Canonical

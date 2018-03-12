@@ -72,7 +72,7 @@ import java.util.Map;
   List<Map<String, Object>> notifications;
 
   @JsonProperty
-  List<? extends Artifact> receivedArtifacts;
+  List<Artifact> receivedArtifacts;
 
   @JsonProperty
   List<ExpectedArtifact> expectedArtifacts;

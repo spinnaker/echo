@@ -125,7 +125,7 @@ public class BuildEventMonitor extends TriggerMonitor {
     return Arrays.stream(BUILD_TRIGGER_TYPES).anyMatch(triggerType -> triggerType.equals(trigger.getType()));
   }
 
-  private List<? extends Artifact> getArtifacts(BuildEvent event) {
+  private List<Artifact> getArtifacts(BuildEvent event) {
     return Optional.ofNullable(event.getContent())
       .map(BuildEvent.Content::getProject)
       .map(BuildEvent.Project::getLastBuild)
