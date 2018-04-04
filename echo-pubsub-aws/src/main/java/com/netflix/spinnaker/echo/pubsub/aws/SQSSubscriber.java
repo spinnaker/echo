@@ -19,6 +19,8 @@ package com.netflix.spinnaker.echo.pubsub.aws;
 import com.amazonaws.auth.policy.*;
 import com.amazonaws.auth.policy.actions.SQSActions;
 import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.model.SetSubscriptionAttributesResult;
+import com.amazonaws.services.sns.model.SubscribeResult;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException;
@@ -140,7 +142,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     this.queueId = ensureQueueExists(
       amazonSQS, queueARN, topicARN, subscription.getSqsMessageRetentionPeriodSeconds()
     );
-    subscribeToTopic(amazonSNS, topicARN, queueARN);
+    setUpSubscription(amazonSNS, topicARN, queueARN, subscription);
   }
 
   private void listenForMessages() {
@@ -166,7 +168,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
   private void handleMessage(Message message) {
     try {
       String messageId = message.getMessageId();
-      String messagePayload = unmarshallMessageBody(message.getBody());
+      String messagePayload = unmarshalMessageBody(message.getBody());
 
       Map<String, String> stringifiedMessageAttributes = message.getMessageAttributes().entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue())));
@@ -208,7 +210,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     return artifacts;
   }
 
-  private String unmarshallMessageBody(String messageBody) {
+  private String unmarshalMessageBody(String messageBody) {
     String messagePayload = messageBody;
     try {
       NotificationMessageWrapper wrapper = objectMapper.readValue(messagePayload, NotificationMessageWrapper.class);
@@ -219,7 +221,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
       // Try to unwrap a notification message; if that doesn't work,
       // we're dealing with a message we can't parse. The template or
       // the pipeline potentially knows how to deal with it.
-      log.error("Unable unmarshal NotificationMessageWrapper. Unknown message type. (body: {})", messageBody, e);
+      log.error("Unable to unmarshal NotificationMessageWrapper. Unknown message type. (body: {})", messageBody, e);
     }
     return messagePayload;
   }
@@ -243,12 +245,44 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     return queueUrl;
   }
 
-  // Todo emjburns: pull to kork-aws
+  private void setUpSubscription(AmazonSNS amazonSNS,
+                                 ARN topicARN,
+                                 ARN queueARN,
+                                 AmazonPubsubProperties.AmazonPubsubSubscription subscription){
+    log.debug("Initializing subscription and updating filter policies for subscription {}", subscription.getName());
+    String subscriptionARN = subscribeToTopic(amazonSNS, topicARN, queueARN);
+    applyFilterPolicyToSubscription(amazonSNS, topicARN, queueARN, subscriptionARN, subscription.getFilterPolicy());
+  }
+
   private static String subscribeToTopic(AmazonSNS amazonSNS,
                                          ARN topicARN,
                                          ARN queueARN) {
-    amazonSNS.subscribe(topicARN.getArn(), "sqs", queueARN.getArn());
-    return topicARN.getArn();
+      SubscribeResult subscribeResult = amazonSNS.subscribe(topicARN.getArn(), "sqs", queueARN.getArn());
+      return subscribeResult.getSubscriptionArn();
+  }
+
+  private static void applyFilterPolicyToSubscription(AmazonSNS amazonSNS, ARN topicARN, ARN queueARN, String subscriptionArn, String filterPolicy) {
+    if (filterPolicy == null || filterPolicy.equals("")) {
+      // Refresh subscription to ensure old filterPolicies aren't taking effect.
+      // AWS SNS doesn't have an API for deleting filter policies.
+      refreshSubscription(amazonSNS, topicARN, queueARN, subscriptionArn);
+    } else {
+      try {
+        SetSubscriptionAttributesResult result = amazonSNS.setSubscriptionAttributes(subscriptionArn, "FilterPolicy", filterPolicy);
+      } catch (Exception e) {
+        log.error("Unable to set filter policy for subscription {}", subscriptionArn, e);
+      }
+    }
+  }
+
+  private static String refreshSubscription(AmazonSNS amazonSNS, ARN topicARN, ARN queueARN, String subscriptionArn){
+    log.debug("Refreshing subscription for topic {} and queue {}", topicARN, queueARN);
+    try {
+      amazonSNS.unsubscribe(subscriptionArn);
+    } catch (Exception e) {
+      log.error("Unable to unsubscribe from queue {} from topic {}.", queueARN, topicARN, e);
+    }
+    return subscribeToTopic(amazonSNS, topicARN, queueARN);
   }
 
   // Todo emjburns: pull to kork-aws
