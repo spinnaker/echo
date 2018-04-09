@@ -37,7 +37,7 @@ class AmazonSQSSubscriberSpec extends Specification {
   ARN queueARN = new ARN("arn:aws:sqs:us-west-2:100:queueName")
   ARN topicARN = new ARN("arn:aws:sns:us-west-2:100:topicName")
   AmazonPubsubProperties.AmazonPubsubSubscription subscription =
-    new AmazonPubsubProperties.AmazonPubsubSubscription('aws_events', topicARN.arn, queueARN.arn, "", null)
+    new AmazonPubsubProperties.AmazonPubsubSubscription('aws_events', topicARN.arn, queueARN.arn, "", null, null)
 
   @Shared
   def objectMapper = new ObjectMapper()
@@ -93,7 +93,7 @@ class AmazonSQSSubscriberSpec extends Specification {
     String snsMesssage = objectMapper.writeValueAsString(notificationMessage)
 
     when:
-    String result = subject.unmarshallMessageBody(snsMesssage)
+    String result = subject.unmarshalMessageBody(snsMesssage)
 
     then:
     0 * subject.log.error()

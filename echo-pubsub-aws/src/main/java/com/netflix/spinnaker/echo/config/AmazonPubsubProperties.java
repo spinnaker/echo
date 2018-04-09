@@ -24,10 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import javax.validation.Valid;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.List;
 
 @Data
@@ -48,12 +45,20 @@ public class AmazonPubsubProperties {
     @NotEmpty
     private String topicARN;
 
+    // TODO emburns: make optional and generate a good name if not given
     @NotEmpty
     private  String queueARN;
 
     private String templatePath;
 
     private MessageFormat messageFormat;
+
+    // TODO emburns: add option to give file path to policy file
+    /**
+     * Filter policy in a string as define in aws docs
+     * https://docs.aws.amazon.com/sns/latest/dg/message-filtering.html
+     */
+    private String filterPolicy;
 
     int visibilityTimeout = 30;
     int sqsMessageRetentionPeriodSeconds = 120;
@@ -67,15 +72,18 @@ public class AmazonPubsubProperties {
       String topicARN,
       String queueARN,
       String templatePath,
-      MessageFormat messageFormat) {
+      MessageFormat messageFormat,
+      String filterPolicy
+    ) {
       this.name = name;
       this.topicARN = topicARN;
       this.queueARN = queueARN;
       this.templatePath = templatePath;
       this.messageFormat = messageFormat;
+      this.filterPolicy = filterPolicy;
     }
 
-    private MessageFormat determineMessageFormat(){
+    private MessageFormat determineMessageFormat() {
       // Supplying a custom template overrides a MessageFormat choice
       if (!StringUtils.isEmpty(templatePath)) {
         return MessageFormat.CUSTOM;
