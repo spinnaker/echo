@@ -17,7 +17,9 @@
 package com.netflix.spinnaker.echo.pubsub;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -40,12 +42,17 @@ public class PubsubSubscriptionController {
     return pubsubSubscribers
         .getAll()
         .stream()
-        .map(s -> new PubsubSubscriptionBySystem(s.pubsubSystem().toString(), s.getName()))
+        .map(s -> PubsubSubscriptionBySystem.builder()
+          .pubsubSystem(s.pubsubSystem().toString())
+          .subscriptionName(s.getName())
+          .build())
         .collect(Collectors.toList());
   }
 
+  @Data
+  @Builder
+  @NoArgsConstructor
   @AllArgsConstructor
-  @Getter
   public static class PubsubSubscriptionBySystem {
     private String pubsubSystem;
     private String subscriptionName;
