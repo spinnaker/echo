@@ -194,7 +194,7 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
 
   def 'should be able to retrigger daily executions'() {
     def expr = new CronExpression('0 0 10 ? * * *')
-    expr.timeZone = TimeZone.getTimeZone(Clock.systemDefaultZone().zone)
+    expr.timeZone = TimeZone.getTimeZone('America/Los_Angeles')
 
     def lastExecutionTs = 1527008402073
     def lastExecution = new Date(lastExecutionTs) // day 1 at 10:00:02
