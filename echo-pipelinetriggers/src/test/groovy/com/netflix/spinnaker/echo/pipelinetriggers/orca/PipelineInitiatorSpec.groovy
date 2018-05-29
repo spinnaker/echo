@@ -1,16 +1,16 @@
 package com.netflix.spinnaker.echo.pipelinetriggers.orca
 
-import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.echo.model.Pipeline
 import spock.lang.Specification
 import spock.lang.Subject
-import com.netflix.spinnaker.echo.model.Pipeline
 import spock.lang.Unroll
 
 import static rx.Observable.empty
 
 class PipelineInitiatorSpec extends Specification {
 
-  def registry = new DefaultRegistry()
+  def registry = new NoopRegistry()
   def orca = Mock(OrcaService)
 
   @Unroll

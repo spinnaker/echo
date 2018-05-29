@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.echo.scheduler.actions.pipeline
 
-import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.Trigger
@@ -39,7 +39,7 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
   def pipelineCache = Mock(PipelineCache)
   def orcaService = Mock(OrcaService)
   def pipelineInitiator = Mock(PipelineInitiator)
-  Registry registry = new DefaultRegistry()
+  Registry registry = new NoopRegistry()
 
   def 'should trigger pipelines for all missed executions'() {
     given:

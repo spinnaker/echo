@@ -217,5 +217,4 @@ class PipelineConfigsPollingAgent extends AbstractPollingAgent {
       log.error("Exception occurred while creating new triggers", e)
     }
   }
-
 }

@@ -15,10 +15,11 @@
  */
 
 package com.netflix.spinnaker.echo.scheduler.actions.pipeline
+
 import com.netflix.scheduledactions.ActionInstance
 import com.netflix.scheduledactions.ActionsOperator
 import com.netflix.scheduledactions.triggers.CronTrigger
-import com.netflix.spectator.api.DefaultRegistry
+import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.Trigger
@@ -29,7 +30,7 @@ import spock.lang.Subject
 
 class PipelineConfigsPollingAgentSpec extends Specification {
 
-    Registry registry = new DefaultRegistry()
+    Registry registry = new NoopRegistry()
     def actionsOperator = Mock(ActionsOperator)
     def pipelineCache = Mock(PipelineCache)
     @Subject pollingAgent = new PipelineConfigsPollingAgent(registry, pipelineCache, actionsOperator, 1000000, 'America/Los_Angeles')
