@@ -32,7 +32,6 @@ buildscript {
 allprojects {
     apply plugin: "spinnaker.project"
     apply plugin: "groovy"
-    apply plugin: 'java'
     apply plugin: 'jacoco'
     group = "com.netflix.spinnaker.echo"
 
