@@ -39,7 +39,16 @@ public class ArtifactMatcher {
       return true;
     }
 
-    List<ExpectedArtifact> pipelineExpectedArtifacts = pipeline.getExpectedArtifacts();
+    List<ExpectedArtifact> pipelineExpectedArtifacts = pipeline.getExpectedArtifacts()
+        .stream()
+        .filter(e -> !e.isUsePriorArtifact())
+        .collect(Collectors.toList());
+
+    if ( pipelineExpectedArtifacts == null || pipelineExpectedArtifacts.isEmpty()) {
+      log.info("All pipeline expected artifacts are marked as UsePrior hence no need for matching.");
+      return true;
+    }
+
     List<ExpectedArtifact> expectedArtifacts = pipelineExpectedArtifacts == null ? new ArrayList<>() : pipelineExpectedArtifacts
         .stream()
         .filter(e -> expectedArtifactIds.contains(e.getId()))
