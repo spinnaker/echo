@@ -43,7 +43,13 @@ public class ArtifactMatcher {
     List<ExpectedArtifact> expectedArtifacts = pipelineExpectedArtifacts == null ? new ArrayList<>() : pipelineExpectedArtifacts
         .stream()
         .filter(e -> expectedArtifactIds.contains(e.getId()))
+        .filter(e -> !e.isUsePriorArtifact())
         .collect(Collectors.toList());
+
+    if ( expectedArtifacts == null || expectedArtifacts.isEmpty()) {
+      log.info("All expected artifacts are marked as UsePrior hence no need for matching.");
+      return true;
+    }
 
     if (messageArtifacts.size() > expectedArtifactIds.size()) {
       log.warn("Parsed message artifacts (size {}) greater than expected artifacts (size {}), continuing trigger anyway", messageArtifacts.size(), expectedArtifactIds.size());
