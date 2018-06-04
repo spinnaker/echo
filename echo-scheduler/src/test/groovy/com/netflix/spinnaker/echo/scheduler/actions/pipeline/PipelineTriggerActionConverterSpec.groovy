@@ -40,11 +40,12 @@ class PipelineTriggerActionConverterSpec extends Specification {
       .parallel(true)
       .build()
 
-    void 'toParameters() should return an equivalent map of parameters'() {
+    @Unroll
+    void 'toParameters() should return an equivalent map of parameters with triggerId=#triggerId'() {
         setup:
         Trigger trigger = Trigger.builder()
             .enabled(true)
-            .id('123-456')
+            .id(triggerId)
             .type('cron')
             .cronExpression('* 0/30 * * * ? *')
             .build()
@@ -54,11 +55,14 @@ class PipelineTriggerActionConverterSpec extends Specification {
 
         then:
         parameters.id == pipeline.id
-        parameters.triggerId == trigger.id
+        parameters.triggerId == trigger.getIdWithFallback()
         parameters.triggerType == trigger.type
         parameters.triggerCronExpression == trigger.cronExpression
         parameters.triggerTimeZoneId == 'America/New_York'
         parameters.triggerEnabled == Boolean.toString(trigger.enabled)
+
+        where:
+        triggerId << ['123-456', null]
     }
 
     void 'fromParameters() should return an equivalent valid Pipeline instance'() {
@@ -88,11 +92,11 @@ class PipelineTriggerActionConverterSpec extends Specification {
         pipelineWithTrigger.trigger.enabled == Boolean.valueOf(parameters.triggerEnabled)
     }
 
-    void 'toScheduledAction() should return an equivalent valid ActionInstance'() {
+    void 'toScheduledAction() should return an equivalent valid ActionInstance with triggerId=#triggerId'() {
         setup:
         Trigger trigger = Trigger.builder()
             .enabled(true)
-            .id('123-456')
+            .id(triggerId)
             .type('cron')
             .cronExpression('* 0/30 * * * ? *')
             .build()
@@ -101,7 +105,7 @@ class PipelineTriggerActionConverterSpec extends Specification {
         ActionInstance actionInstance = PipelineTriggerConverter.toScheduledAction(pipeline, trigger, 'America/Los_Angeles')
 
         then:
-        actionInstance.id == trigger.id
+        actionInstance.id == trigger.getIdWithFallback()
         actionInstance.name == 'Pipeline Trigger'
         actionInstance.group == pipeline.id
         actionInstance.action == PipelineTriggerAction.class
@@ -110,11 +114,14 @@ class PipelineTriggerActionConverterSpec extends Specification {
         ((CronTrigger) actionInstance.trigger).cronExpression == trigger.cronExpression
         actionInstance.parameters != null
         actionInstance.parameters.id == pipeline.id
-        actionInstance.parameters.triggerId == trigger.id
+        actionInstance.parameters.triggerId == trigger.getIdWithFallback()
         actionInstance.parameters.triggerType == trigger.type
         actionInstance.parameters.triggerCronExpression == trigger.cronExpression
         actionInstance.parameters.triggerTimeZoneId == 'America/Los_Angeles'
         actionInstance.parameters.triggerEnabled == Boolean.toString(trigger.enabled)
+
+        where:
+        triggerId << ['123-456', null]
     }
 
     @Unroll

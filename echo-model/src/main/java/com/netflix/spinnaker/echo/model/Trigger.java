@@ -21,15 +21,19 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.Builder;
 import lombok.ToString;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.experimental.Wither;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @JsonDeserialize(builder = Trigger.TriggerBuilder.class)
 @Builder(toBuilder = true)
 @Wither
-@ToString(of = {"type", "master", "job", "cronExpression", "source", "project", "slug", "account", "repository", "tag", "parameters", "payloadConstraints", "attributeConstraints", "branch", "runAsUser", "subscriptionName", "pubsubSystem", "expectedArtifactIds", "payload"}, includeFieldNames = false)
+@ToString(of = {"id", "type", "master", "job", "cronExpression", "source", "project", "slug", "account", "repository", "tag", "parameters", "payloadConstraints", "attributeConstraints", "branch", "runAsUser", "subscriptionName", "pubsubSystem", "expectedArtifactIds", "payload"}, includeFieldNames = false)
 @Value
 public class Trigger {
   public enum Type {
@@ -52,6 +56,8 @@ public class Trigger {
       return type;
     }
   }
+
+  private static final Logger log = LoggerFactory.getLogger(Trigger.class);
 
   boolean enabled;
   String id;
@@ -85,6 +91,23 @@ public class Trigger {
   String pubsubSystem;
   List<String> expectedArtifactIds;
   Map<String, ?> lastSuccessfulExecution;
+
+  // this is set after deserialization, not in the json representation
+  @NonFinal
+  Pipeline parent;
+
+  public String getIdWithFallback() {
+    if (id != null) {
+      return id;
+    }
+
+    if (parent == null) {
+      log.warn("Trigger with unknown parent: {}", this);
+      return UUID.nameUUIDFromBytes(this.toString().getBytes()).toString();
+    }
+
+    return UUID.nameUUIDFromBytes((parent.getId() + "/" + this.toString()).getBytes()).toString();
+  }
 
   public Trigger atBuildNumber(final int buildNumber) {
     return this.toBuilder()
