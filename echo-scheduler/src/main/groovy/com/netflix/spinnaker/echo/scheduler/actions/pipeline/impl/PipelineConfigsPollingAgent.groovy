@@ -181,7 +181,7 @@ class PipelineConfigsPollingAgent extends AbstractPollingAgent {
       Collection<Trigger> newTriggers = triggerRepo.triggers()
       newTriggers.each { trigger ->
         if (!Trigger.Type.CRON.toString().equalsIgnoreCase(trigger.type) || !trigger.enabled) {
-//          log.debug("Skipping disabled or non-cron trigger ${trigger}")
+          log.debug("Skipping disabled or non-cron trigger ${trigger}")
           return
         }
 
@@ -207,9 +207,5 @@ class PipelineConfigsPollingAgent extends AbstractPollingAgent {
     } catch (Exception e) {
       log.error("Exception occurred while creating new triggers", e)
     }
-  }
-
-  private void extractTriggerId(ActionInstance actionInstance) {
-    actionInstance.id.split(':')
   }
 }
