@@ -161,7 +161,6 @@ class PipelineConfigsPollingAgent extends AbstractPollingAgent {
           }
         } catch (Exception e) {
           registry.counter("updateTriggers.errors", "exception", e.getClass().getName()).increment()
-
           log.error("Exception occurred while updating ${trigger}", e)
         }
       }
