@@ -55,7 +55,7 @@ class PipelineTriggerActionConverterSpec extends Specification {
 
         then:
         parameters.id == pipeline.id
-        parameters.triggerId == trigger.getIdWithFallback()
+        parameters.triggerId == trigger.id
         parameters.triggerType == trigger.type
         parameters.triggerCronExpression == trigger.cronExpression
         parameters.triggerTimeZoneId == 'America/New_York'
@@ -92,6 +92,7 @@ class PipelineTriggerActionConverterSpec extends Specification {
         pipelineWithTrigger.trigger.enabled == Boolean.valueOf(parameters.triggerEnabled)
     }
 
+    @Unroll
     void 'toScheduledAction() should return an equivalent valid ActionInstance with triggerId=#triggerId'() {
         setup:
         Trigger trigger = Trigger.builder()
@@ -105,7 +106,7 @@ class PipelineTriggerActionConverterSpec extends Specification {
         ActionInstance actionInstance = PipelineTriggerConverter.toScheduledAction(pipeline, trigger, 'America/Los_Angeles')
 
         then:
-        actionInstance.id == trigger.getIdWithFallback()
+        actionInstance.id == trigger.id
         actionInstance.name == 'Pipeline Trigger'
         actionInstance.group == pipeline.id
         actionInstance.action == PipelineTriggerAction.class
@@ -114,7 +115,7 @@ class PipelineTriggerActionConverterSpec extends Specification {
         ((CronTrigger) actionInstance.trigger).cronExpression == trigger.cronExpression
         actionInstance.parameters != null
         actionInstance.parameters.id == pipeline.id
-        actionInstance.parameters.triggerId == trigger.getIdWithFallback()
+        actionInstance.parameters.triggerId == trigger.id
         actionInstance.parameters.triggerType == trigger.type
         actionInstance.parameters.triggerCronExpression == trigger.cronExpression
         actionInstance.parameters.triggerTimeZoneId == 'America/Los_Angeles'
@@ -168,5 +169,4 @@ class PipelineTriggerActionConverterSpec extends Specification {
         expect:
         isInSync(actionInstance, trigger, null)
     }
-
 }

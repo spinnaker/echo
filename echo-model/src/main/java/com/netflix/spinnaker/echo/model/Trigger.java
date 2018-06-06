@@ -30,10 +30,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * the values we include in toString are meaningful, they are hashed and become part of generateFallbackId()
+ */
 @JsonDeserialize(builder = Trigger.TriggerBuilder.class)
 @Builder(toBuilder = true)
 @Wither
-@ToString(of = {"id", "type", "master", "job", "cronExpression", "source", "project", "slug", "account", "repository", "tag", "parameters", "payloadConstraints", "attributeConstraints", "branch", "runAsUser", "subscriptionName", "pubsubSystem", "expectedArtifactIds", "payload"}, includeFieldNames = false)
+@ToString(of = {"id", "parent", "type", "master", "job", "cronExpression", "source", "project", "slug", "account", "repository", "tag", "parameters", "payloadConstraints", "attributeConstraints", "branch", "runAsUser", "subscriptionName", "pubsubSystem", "expectedArtifactIds", "payload"}, includeFieldNames = false)
 @Value
 public class Trigger {
   public enum Type {
@@ -93,20 +96,10 @@ public class Trigger {
   Map<String, ?> lastSuccessfulExecution;
 
   // this is set after deserialization, not in the json representation
-  @NonFinal
   Pipeline parent;
 
-  public String getIdWithFallback() {
-    if (id != null) {
-      return id;
-    }
-
-    if (parent == null) {
-      log.warn("Trigger with unknown parent: {}", this);
-      return UUID.nameUUIDFromBytes(this.toString().getBytes()).toString();
-    }
-
-    return UUID.nameUUIDFromBytes((parent.getId() + "/" + this.toString()).getBytes()).toString();
+  public String generateFallbackId() {
+    return UUID.nameUUIDFromBytes(this.toString().getBytes()).toString();
   }
 
   public Trigger atBuildNumber(final int buildNumber) {

@@ -8,19 +8,18 @@ import javax.annotation.Nullable
 
 @Slf4j
 class TriggerRepository {
-  private final Map<String, Trigger> triggersById;
+  private final Map<String, Trigger> triggersById
 
   TriggerRepository(List<Pipeline> pipelines) {
     triggersById = new HashMap<>()
     for (Pipeline pipeline : pipelines) {
       for (Trigger trigger : pipeline.triggers) {
-        if (trigger.parent == null) {
-          trigger.parent = pipeline
-        } else if (trigger.parent != pipeline) {
-          log.warn("pipeline ${pipeline} has trigger ${trigger}, but the trigger has parent pipeline ${trigger.parent}")
+        if (trigger.id == null) {
+          // see PipelineCache::decorateTriggers
+          throw new IllegalStateException("Trigger with null id ${trigger}")
         }
 
-        Trigger previous = triggersById.put(trigger.getIdWithFallback(), trigger)
+        Trigger previous = triggersById.put(trigger.id, trigger)
         if (previous) {
           log.warn("Duplicate trigger ids found: ${previous} with parent ${previous.parent} and ${trigger} with parent ${trigger.parent}")
         }

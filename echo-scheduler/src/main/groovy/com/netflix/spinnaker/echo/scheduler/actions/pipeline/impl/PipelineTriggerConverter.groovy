@@ -30,7 +30,7 @@ class PipelineTriggerConverter {
   static Map<String, String> toParameters(Pipeline pipeline, Trigger trigger, String timeZoneId) {
     def params = [
       id                   : pipeline.id,
-      triggerId            : trigger.getIdWithFallback(),
+      triggerId            : trigger.id,
       triggerType          : trigger.type,
       triggerCronExpression: trigger.cronExpression,
       triggerTimeZoneId    : timeZoneId,
@@ -63,7 +63,7 @@ class PipelineTriggerConverter {
 
   static ActionInstance toScheduledAction(Pipeline pipeline, Trigger trigger, String timeZoneId) {
     ActionInstance.ActionInstanceBuilder actionInstanceBuilder = ActionInstance.newActionInstance()
-      .withId(trigger.getIdWithFallback())
+      .withId(trigger.id)
       .withName("Pipeline Trigger")
       .withGroup(pipeline.id)
       .withAction(PipelineTriggerAction)
