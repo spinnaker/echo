@@ -21,7 +21,6 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
-import com.netflix.spinnaker.echo.pipelinetriggers.monitor.DockerEventMonitor
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import rx.Observable
@@ -43,7 +42,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def "triggers pipelines for successful builds for #triggerType"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
+    pipelineCache.getPipelines() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -60,7 +59,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
 
   def "attaches docker trigger to the pipeline"() {
     given:
-    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
+    pipelineCache.getPipelines() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -88,7 +87,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
 
   def "an event can trigger multiple pipelines"() {
     given:
-    pipelineCache.getPipelinesAsync() >> Observable.just(pipelines)
+    pipelineCache.getPipelines() >> Observable.just(pipelines)
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -111,7 +110,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger #description pipelines"() {
     given:
-    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
+    pipelineCache.getPipelines() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -131,7 +130,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger #description pipelines for docker"() {
     given:
-    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
+    pipelineCache.getPipelines() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -153,7 +152,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger a pipeline that has an enabled docker trigger with missing #field"() {
     given:
-    pipelineCache.getPipelinesAsync() >> Observable.just([badPipeline, goodPipeline])
+    pipelineCache.getPipelines() >> Observable.just([badPipeline, goodPipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -176,7 +175,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def "triggers a pipeline that has an enabled docker trigger with regex"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
+    pipelineCache.getPipelines() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -195,7 +194,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def "triggers a pipeline that has an enabled docker trigger with empty string for regex"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
+    pipelineCache.getPipelines() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -214,7 +213,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def "triggers a pipeline that has an enabled docker trigger with only whitespace for regex"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
+    pipelineCache.getPipelines() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -233,7 +232,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def "does not trigger a pipeline that has an enabled docker trigger with regex"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
+    pipelineCache.getPipelines() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))

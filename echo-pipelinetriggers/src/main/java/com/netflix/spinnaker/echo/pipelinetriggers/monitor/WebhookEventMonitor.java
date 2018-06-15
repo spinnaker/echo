@@ -74,7 +74,7 @@ public class WebhookEventMonitor extends TriggerMonitor {
 
     Observable.just(webhookEvent)
       .doOnNext(this::onEchoResponse)
-      .zipWith(pipelineCache.getPipelinesAsync(), TriggerMatchParameters::new)
+      .zipWith(pipelineCache.getPipelines(), TriggerMatchParameters::new)
       .subscribe(triggerEachMatch());
   }
 

@@ -143,7 +143,7 @@ class PipelineCacheSpec extends Specification implements RetrofitStubs {
 
     when:
     waitForTicks(3)
-    pipelineCache.getPipelinesAsync().subscribe(testSubscriber)
+    pipelineCache.getPipelines().subscribe(testSubscriber)
 
     then:
     front50.getPipelines() >> just([]) >> { throw unavailable() } >> just([pipeline])

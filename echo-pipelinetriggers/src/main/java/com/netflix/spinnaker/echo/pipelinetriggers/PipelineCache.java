@@ -108,7 +108,7 @@ public class PipelineCache implements MonitoredPoller {
    *
    * @return An observable emitting the pipelines as of the most recent polling cycle
    */
-  public Observable<List<Pipeline>> getPipelinesAsync() {
+  public Observable<List<Pipeline>> getPipelines() {
     return pipelineSubject.take(1);
   }
 

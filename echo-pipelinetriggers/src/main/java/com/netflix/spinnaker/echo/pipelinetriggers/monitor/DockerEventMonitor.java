@@ -68,7 +68,7 @@ public class DockerEventMonitor extends TriggerMonitor {
     DockerEvent dockerEvent = objectMapper.convertValue(event, DockerEvent.class);
     Observable.just(dockerEvent)
       .doOnNext(this::onEchoResponse)
-      .zipWith(pipelineCache.getPipelinesAsync(), TriggerMatchParameters::new)
+      .zipWith(pipelineCache.getPipelines(), TriggerMatchParameters::new)
       .subscribe(triggerEachMatch());
   }
 

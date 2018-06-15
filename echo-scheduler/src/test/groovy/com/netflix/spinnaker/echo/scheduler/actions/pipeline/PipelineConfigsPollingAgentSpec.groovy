@@ -45,7 +45,7 @@ class PipelineConfigsPollingAgentSpec extends Specification {
             .cronExpression('* 0/30 * * * ? *')
             .build()
         Pipeline pipeline = buildPipeline([trigger])
-        pipelineCache.getPipelinesAsync() >> Observable.just(PipelineCache.decorateTriggers([pipeline]))
+        pipelineCache.getPipelines() >> Observable.just(PipelineCache.decorateTriggers([pipeline]))
         actionsOperator.getActionInstances() >> []
 
         when:
@@ -71,7 +71,7 @@ class PipelineConfigsPollingAgentSpec extends Specification {
         Pipeline pipeline = buildPipeline([trigger], pipelineDisabled)
         def decoratedPipelines = PipelineCache.decorateTriggers([pipeline]) // new id for trigger will be generated here
         ActionInstance actionInstance = buildScheduledAction(decoratedPipelines[0].triggers[0].id, '* 0/30 * * * ? *', true)
-        pipelineCache.getPipelinesAsync() >> Observable.just(decoratedPipelines)
+        pipelineCache.getPipelines() >> Observable.just(decoratedPipelines)
         actionsOperator.getActionInstances() >> [actionInstance]
 
         when:
@@ -96,7 +96,7 @@ class PipelineConfigsPollingAgentSpec extends Specification {
         given:
         Pipeline pipeline = buildPipeline([])
         ActionInstance actionInstance = buildScheduledAction('t1', '* 0/30 * * * ? *', true)
-        pipelineCache.getPipelinesAsync() >> Observable.just(PipelineCache.decorateTriggers([pipeline]))
+        pipelineCache.getPipelines() >> Observable.just(PipelineCache.decorateTriggers([pipeline]))
         actionsOperator.getActionInstances() >> [actionInstance]
 
         when:
@@ -124,7 +124,7 @@ class PipelineConfigsPollingAgentSpec extends Specification {
         Pipeline pipeline = buildPipeline([trigger])
         def decoratedPipelines = PipelineCache.decorateTriggers([pipeline]) // new id for trigger will be generated here
         ActionInstance actionInstance = buildScheduledAction(changeTrigger ? trigger.id : decoratedPipelines[0].triggers[0].id, actionCron, actionEnabled)
-        pipelineCache.getPipelinesAsync() >> Observable.just(decoratedPipelines)
+        pipelineCache.getPipelines() >> Observable.just(decoratedPipelines)
         actionsOperator.getActionInstances() >> [actionInstance]
 
         when:
