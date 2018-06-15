@@ -7,6 +7,7 @@ import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
 import com.netflix.spinnaker.echo.pipelinetriggers.monitor.BuildEventMonitor
 import com.netflix.spinnaker.echo.test.RetrofitStubs
+import rx.Observable
 import rx.functions.Action1
 import spock.lang.Specification
 import spock.lang.Subject
@@ -27,7 +28,7 @@ class BuildEventMonitorSpec extends Specification implements RetrofitStubs {
   def "triggers pipelines for successful builds for #triggerType"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelines() >> [pipeline]
+    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -46,7 +47,7 @@ class BuildEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "attaches #triggerType trigger to the pipeline"() {
     given:
-    pipelineCache.getPipelines() >> [pipeline]
+    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -67,7 +68,7 @@ class BuildEventMonitorSpec extends Specification implements RetrofitStubs {
 
   def "an event can trigger multiple pipelines"() {
     given:
-    pipelineCache.getPipelines() >> pipelines
+    pipelineCache.getPipelinesAsync() >> Observable.just(pipelines)
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -90,7 +91,7 @@ class BuildEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger pipelines for #description builds"() {
     given:
-    pipelineCache.getPipelines() >> [pipeline]
+    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -113,7 +114,7 @@ class BuildEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger #description pipelines"() {
     given:
-    pipelineCache.getPipelines() >> [pipeline]
+    pipelineCache.getPipelinesAsync() >> Observable.just([pipeline])
 
     when:
     monitor.processEvent(objectMapper.convertValue(event, Event))
@@ -138,7 +139,7 @@ class BuildEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger a pipeline that has an enabled #triggerType trigger with missing #field"() {
     given:
-    pipelineCache.getPipelines() >> [badPipeline, goodPipeline]
+    pipelineCache.getPipelinesAsync() >> Observable.just([badPipeline, goodPipeline])
     println objectMapper.writeValueAsString(createBuildEventWith(SUCCESS))
 
     when:
