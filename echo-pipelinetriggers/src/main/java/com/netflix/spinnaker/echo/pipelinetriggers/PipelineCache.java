@@ -74,6 +74,7 @@ public class PipelineCache implements MonitoredPoller {
         .flatMap(tick -> front50.getPipelines())
         .doOnError(this::onFront50Error)
         .retry()
+        .map(PipelineCache::decorateTriggers)
         .doOnNext(this::cachePipelines)
         .subscribe(pipelineSubject);
     }
@@ -127,7 +128,7 @@ public class PipelineCache implements MonitoredPoller {
 
   private void cachePipelines(final List<Pipeline> pipelines) {
     log.info("Refreshing pipelines");
-    this.pipelines.set(decorateTriggers(pipelines));
+    this.pipelines.set(pipelines);
   }
 
   private void onFront50Request(final long tick) {
