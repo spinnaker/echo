@@ -34,7 +34,8 @@ class PipelineTriggerConverter {
       triggerType          : trigger.type,
       triggerCronExpression: trigger.cronExpression,
       triggerTimeZoneId    : timeZoneId,
-      triggerEnabled       : Boolean.toString(trigger.enabled)
+      triggerEnabled       : Boolean.toString(trigger.enabled),
+      triggerRebake        : Objects.toString(trigger.rebake) // because trigger.rebake can be null
     ]
     if (trigger.runAsUser) {
       params.runAsUser = trigger.runAsUser
@@ -46,6 +47,7 @@ class PipelineTriggerConverter {
     def triggerBuilder = Trigger
       .builder()
       .enabled(Boolean.parseBoolean(parameters.triggerEnabled))
+      .rebake(Boolean.valueOf(parameters.triggerRebake))  // parameters.triggerRebake can be "null"
       .id(parameters.triggerId)
       .type(Trigger.Type.CRON.toString())
       .cronExpression(parameters.triggerCronExpression)

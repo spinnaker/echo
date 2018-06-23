@@ -64,6 +64,7 @@ public class Trigger {
   private static final Logger log = LoggerFactory.getLogger(Trigger.class);
 
   boolean enabled;
+  Boolean rebake;
   String id;
   String type;
   String master;
