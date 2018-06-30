@@ -124,7 +124,7 @@ public class PipelineCache implements MonitoredPoller {
       .stream()
       .map(p -> {
         List<Trigger> triggers = p.getTriggers();
-        if (triggers == null) {
+        if (triggers == null || triggers.size() == 0) {
           return p;
         }
 
