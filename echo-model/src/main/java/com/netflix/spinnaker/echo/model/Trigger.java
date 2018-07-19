@@ -19,17 +19,15 @@ package com.netflix.spinnaker.echo.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import lombok.Builder;
-import lombok.ToString;
-import lombok.Value;
-import lombok.experimental.NonFinal;
-import lombok.experimental.Wither;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.Builder;
+import lombok.ToString;
+import lombok.Value;
+import lombok.experimental.Wither;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * the values we include in toString are meaningful, they are hashed and become part of generateFallbackId()
@@ -37,7 +35,7 @@ import java.util.UUID;
 @JsonDeserialize(builder = Trigger.TriggerBuilder.class)
 @Builder(toBuilder = true)
 @Wither
-@ToString(of = {"id", "parent", "type", "master", "job", "cronExpression", "source", "project", "slug", "account", "repository", "tag", "parameters", "payloadConstraints", "attributeConstraints", "branch", "runAsUser", "subscriptionName", "pubsubSystem", "expectedArtifactIds", "payload"}, includeFieldNames = false)
+@ToString(of = {"id", "parent", "type", "master", "job", "cronExpression", "source", "project", "slug", "account", "repository", "tag", "parameters", "payloadConstraints", "attributeConstraints", "branch", "runAsUser", "subscriptionName", "pubsubSystem", "expectedArtifactIds", "payload", "status"}, includeFieldNames = false)
 @Value
 public class Trigger {
   public enum Type {
@@ -87,6 +85,12 @@ public class Trigger {
   String branch;
   String runAsUser;
   String secret;
+  List<String> status;
+
+  /**
+   * Unique ID of a trigger that can be used to correlate a pipeline execution with its trigger.
+   */
+  String eventId;
 
   /**
    * Logical name given to the subscription by the user, not the locator
@@ -163,6 +167,12 @@ public class Trigger {
         .subscriptionName(subscriptionName)
         .pubsubSystem(pubsubSystem)
         .build();
+  }
+
+  public Trigger atEventId(final String eventId) {
+    return this.toBuilder()
+      .eventId(eventId)
+      .build();
   }
 
   @JsonPOJOBuilder(withPrefix = "")
