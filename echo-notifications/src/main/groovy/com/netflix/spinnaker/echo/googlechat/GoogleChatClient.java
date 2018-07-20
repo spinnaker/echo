@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google, Inc.
+ * Copyright 2018 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.model.trigger
+package com.netflix.spinnaker.echo.googlechat;
 
-import com.netflix.spinnaker.echo.model.Metadata
+import retrofit.client.Response;
+import retrofit.http.Body;
+import retrofit.http.POST;
+import retrofit.http.Path;
 
-abstract class TriggerEvent {
-  Metadata details
-  Map payload
-  String rawContent
-  String eventId
+public interface GoogleChatClient {
+  @POST("/v1/spaces/{address}")
+  Response sendMessage(@Path(value = "address", encode = false) String webhook, @Body GoogleChatMessage message);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google, Inc.
+ * Copyright 2018 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.model.trigger
+package com.netflix.spinnaker.echo.googlechat;
 
-import com.netflix.spinnaker.echo.model.Metadata
+import groovy.transform.Canonical;
+import retrofit.client.Response;
 
-abstract class TriggerEvent {
-  Metadata details
-  Map payload
-  String rawContent
-  String eventId
+@Canonical
+public class GoogleChatService {
+  GoogleChatClient googleChatClient;
+
+  public GoogleChatService(GoogleChatClient googleChatClient) { this.googleChatClient = googleChatClient; }
+
+  Response sendMessage(String webhook, GoogleChatMessage message) {
+    return googleChatClient.sendMessage(webhook, message);
+  }
 }
