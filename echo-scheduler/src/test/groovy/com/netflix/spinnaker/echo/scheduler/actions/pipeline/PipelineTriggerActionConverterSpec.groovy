@@ -62,11 +62,11 @@ class PipelineTriggerActionConverterSpec extends Specification {
         parameters.triggerCronExpression == trigger.cronExpression
         parameters.triggerTimeZoneId == 'America/New_York'
         parameters.triggerEnabled == Boolean.toString(trigger.enabled)
-        parameters.triggerRebake == Objects.toString(trigger.rebake)
+        parameters.triggerRebake == Boolean.toString(trigger.rebake)
 
         where:
-        triggerId << ['123-456', null, null]
-        triggerRebake << [true, false, null]
+        triggerId << ['123-456', null]
+        triggerRebake << [true, false]
     }
 
     @Unroll
@@ -99,7 +99,7 @@ class PipelineTriggerActionConverterSpec extends Specification {
         pipelineWithTrigger.trigger.rebake == Boolean.valueOf(parameters.triggerRebake)
 
         where:
-        triggerRebake << ['true', 'false', 'null']
+        triggerRebake << ['true', 'false']
     }
 
     @Unroll
