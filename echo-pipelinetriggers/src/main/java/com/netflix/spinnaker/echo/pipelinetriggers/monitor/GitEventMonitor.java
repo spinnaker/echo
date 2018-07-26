@@ -136,7 +136,7 @@ public class GitEventMonitor extends TriggerMonitor {
     boolean eventHasSignature = event.getDetails().getRequestHeaders().containsKey(GITHUB_SECURE_SIGNATURE_HEADER);
 
     if (triggerHasSecret && !eventHasSignature) {
-      log.warn("Received GitEvent from Github without secure signature, for trigger configured with a secret");
+      log.warn("Received GitEvent from Github without secure signature for trigger configured with a secret");
       return false;
     }
 
