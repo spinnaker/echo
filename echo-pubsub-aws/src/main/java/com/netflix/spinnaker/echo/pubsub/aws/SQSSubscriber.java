@@ -24,6 +24,7 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spinnaker.echo.artifacts.JinjavaFactory;
 import com.netflix.spinnaker.echo.artifacts.MessageArtifactTranslator;
 import com.netflix.spinnaker.echo.config.AmazonPubsubProperties;
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription;
@@ -81,7 +82,8 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
                        AmazonSNS amazonSNS,
                        AmazonSQS amazonSQS,
                        Supplier<Boolean> isEnabled,
-                       Registry registry) {
+                       Registry registry,
+                       JinjavaFactory jinjavaFactory) {
     this.objectMapper = objectMapper;
     this.subscription = subscription;
     this.pubsubMessageHandler = pubsubMessageHandler;
@@ -90,7 +92,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     this.isEnabled = isEnabled;
     this.registry = registry;
 
-    this.messageArtifactTranslator = new MessageArtifactTranslator(subscription.readTemplatePath());
+    this.messageArtifactTranslator = new MessageArtifactTranslator(subscription.readTemplatePath(), jinjavaFactory);
     this.queueARN = new ARN(subscription.getQueueARN());
     this.topicARN = new ARN(subscription.getTopicARN());
   }
