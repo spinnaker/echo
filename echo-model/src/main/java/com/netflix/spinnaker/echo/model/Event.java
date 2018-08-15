@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.model
+package com.netflix.spinnaker.echo.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
+
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Represents an event
  */
-class Event {
-  Metadata details
-  Map content
-  String rawContent
+@Data
+public class Event {
+  public Metadata details;
+  public Map content;
+  public String rawContent;
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  Map payload
-  String eventId = UUID.randomUUID().toString()
+  public Map payload;
+  public String eventId = UUID.randomUUID().toString();
 }
