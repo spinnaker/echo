@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.model.trigger
+package com.netflix.spinnaker.echo.model.trigger;
 
-import com.netflix.spinnaker.echo.model.Metadata
+import com.netflix.spinnaker.echo.model.Metadata;
+import lombok.Data;
 
-abstract class TriggerEvent {
-  Metadata details
-  Map payload
-  String rawContent
-  String eventId
+import java.util.Map;
+
+@Data
+public abstract class TriggerEvent {
+  private Metadata details;
+  private Map payload;
+  private String rawContent;
+  private String eventId;
 }
