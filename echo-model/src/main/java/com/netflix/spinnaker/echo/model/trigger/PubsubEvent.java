@@ -19,8 +19,10 @@ package com.netflix.spinnaker.echo.model.trigger;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PubsubEvent extends TriggerEvent {
 
