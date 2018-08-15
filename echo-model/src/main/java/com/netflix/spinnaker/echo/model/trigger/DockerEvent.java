@@ -14,25 +14,31 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.model.trigger
+package com.netflix.spinnaker.echo.model.trigger;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import groovy.transform.Canonical
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
-@Canonical
+@Data
+@EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-class DockerEvent extends TriggerEvent {
-  public static final String TYPE = "DOCKER"
+public class DockerEvent extends TriggerEvent {
+  public static final String TYPE = "DOCKER";
 
-  Content content
+  Content content;
 
-  @Canonical
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
   @JsonIgnoreProperties(ignoreUnknown = true)
-  static class Content {
-    String account
-    String registry
-    String repository
-    String tag
-    String digest
+  public static class Content {
+    private String account;
+    private String registry;
+    private String repository;
+    private String tag;
+    private String digest;
   }
 }
