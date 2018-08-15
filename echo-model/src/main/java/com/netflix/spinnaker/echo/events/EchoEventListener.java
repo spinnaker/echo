@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.events
+package com.netflix.spinnaker.echo.events;
 
-import com.netflix.spinnaker.echo.model.Event
+import com.netflix.spinnaker.echo.model.Event;
 
-/**
- *
- */
-interface EchoEventListener {
-
-    void processEvent(Event event)
-
+public interface EchoEventListener {
+  void processEvent(Event event);
 }
