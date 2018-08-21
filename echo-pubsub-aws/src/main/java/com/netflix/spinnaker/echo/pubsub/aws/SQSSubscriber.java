@@ -173,13 +173,19 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
       Map<String, String> stringifiedMessageAttributes = message.getMessageAttributes().entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue())));
 
+      //SNS message attributes are stored within the SQS message body. Add them to other attributes..
+      Map<String, MessageAttributeWrapper> messageAttributes = unmarshallMessageAttributes(message.getBody());
+      stringifiedMessageAttributes.putAll(messageAttributes.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getAttributeValue())));
+
+
       MessageDescription description = MessageDescription.builder()
         .subscriptionName(subscriptionName())
         .messagePayload(messagePayload)
         .messageAttributes(stringifiedMessageAttributes)
         .pubsubSystem(pubsubSystem)
         .ackDeadlineMillis(TimeUnit.SECONDS.toMillis(50)) // Set a high upper bound on message processing time.
-        .retentionDeadlineMillis(TimeUnit.DAYS.toMillis(7)) // Expire key after max retention time, which is 7 days.
+        .retentionDeadlineMillis(subscription.getDedupeRetentionMillis()) // Configurable but default to 1 hour
         .build();
 
       AmazonMessageAcknowledger acknowledger = new AmazonMessageAcknowledger(amazonSQS, queueId, message, registry, getName());
@@ -191,6 +197,12 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
           log.error("Template failed to process artifacts for message {}", message, e);
         }
       }
+
+      if (subscription.isIdInMessageAttributes() && stringifiedMessageAttributes.containsKey("id")){
+        // Message attributes contain the unique id used for deduping
+        messageId = stringifiedMessageAttributes.get("id");
+      }
+
       pubsubMessageHandler.handleMessage(description, acknowledger, identity.getIdentity(), messageId);
     } catch (Exception e) {
       log.error("Message {} from queue {} failed to be handled", message, queueId, e);
@@ -219,8 +231,27 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
       // Try to unwrap a notification message; if that doesn't work,
       // we're dealing with a message we can't parse. The template or
       // the pipeline potentially knows how to deal with it.
-      log.error("Unable unmarshal NotificationMessageWrapper. Unknown message type. (body: {})", messageBody, e);
+      log.error("Unable unmarshall NotificationMessageWrapper. Unknown message type. (body: {})", messageBody, e);
     }
     return messagePayload;
+  }
+
+  /**
+   * If there is an error parsing message attributes because the message is not a notification message,
+   * an empty map will be returned.
+   */
+  private Map<String, MessageAttributeWrapper> unmarshallMessageAttributes(String messageBody) {
+    try {
+      NotificationMessageWrapper wrapper = objectMapper.readValue(messageBody, NotificationMessageWrapper.class);
+      if (wrapper != null && wrapper.getMessageAttributes() != null) {
+        return wrapper.getMessageAttributes();
+      }
+    } catch (IOException e) {
+      // Try to unwrap a notification message; if that doesn't work,
+      // we're dealing with a message we can't parse. The template or
+      // the pipeline potentially knows how to deal with it.
+      log.error("Unable to parse message attributes. Unknown message type. (body: {})", messageBody, e);
+    }
+    return Collections.emptyMap();
   }
 }
