@@ -168,13 +168,13 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
   private void handleMessage(Message message) {
     try {
       String messageId = message.getMessageId();
-      String messagePayload = unmarshallMessageBody(message.getBody());
+      String messagePayload = unmarshalMessageBody(message.getBody());
 
       Map<String, String> stringifiedMessageAttributes = message.getMessageAttributes().entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue())));
 
       //SNS message attributes are stored within the SQS message body. Add them to other attributes..
-      Map<String, MessageAttributeWrapper> messageAttributes = unmarshallMessageAttributes(message.getBody());
+      Map<String, MessageAttributeWrapper> messageAttributes = unmarshalMessageAttributes(message.getBody());
       stringifiedMessageAttributes.putAll(messageAttributes.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getAttributeValue())));
 
@@ -220,7 +220,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     return artifacts;
   }
 
-  private String unmarshallMessageBody(String messageBody) {
+  private String unmarshalMessageBody(String messageBody) {
     String messagePayload = messageBody;
     try {
       NotificationMessageWrapper wrapper = objectMapper.readValue(messagePayload, NotificationMessageWrapper.class);
@@ -231,7 +231,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
       // Try to unwrap a notification message; if that doesn't work,
       // we're dealing with a message we can't parse. The template or
       // the pipeline potentially knows how to deal with it.
-      log.error("Unable unmarshall NotificationMessageWrapper. Unknown message type. (body: {})", messageBody, e);
+      log.error("Unable unmarshal NotificationMessageWrapper. Unknown message type. (body: {})", messageBody, e);
     }
     return messagePayload;
   }
@@ -240,7 +240,7 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
    * If there is an error parsing message attributes because the message is not a notification message,
    * an empty map will be returned.
    */
-  private Map<String, MessageAttributeWrapper> unmarshallMessageAttributes(String messageBody) {
+  private Map<String, MessageAttributeWrapper> unmarshalMessageAttributes(String messageBody) {
     try {
       NotificationMessageWrapper wrapper = objectMapper.readValue(messageBody, NotificationMessageWrapper.class);
       if (wrapper != null && wrapper.getMessageAttributes() != null) {

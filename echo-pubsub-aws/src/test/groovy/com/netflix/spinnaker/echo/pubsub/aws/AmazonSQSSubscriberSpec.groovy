@@ -55,7 +55,7 @@ class AmazonSQSSubscriberSpec extends Specification {
     new DefaultJinjavaFactory()
   )
 
-  def 'should unmarshall an sns notification message'() {
+  def 'should unmarshal an sns notification message'() {
     given:
     String payload = '''
       {\"Records\":[
@@ -82,7 +82,7 @@ class AmazonSQSSubscriberSpec extends Specification {
     String snsMesssage = objectMapper.writeValueAsString(notificationMessage)
 
     when:
-    String result = subject.unmarshallMessageBody(snsMesssage)
+    String result = subject.unmarshalMessageBody(snsMesssage)
 
     then:
     0 * subject.log.error()
