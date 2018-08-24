@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.CRC32;
 
 /**
  * Shared cache of received and handled pubsub messages to synchronize clients.
@@ -93,6 +94,7 @@ public class PubsubMessageHandler {
     if (tryAck(processingKey, description.getAckDeadlineMillis(), acknowledger, identifier)) {
       processEvent(description);
       setMessageComplete(completeKey, description.getMessagePayload(), description.getRetentionDeadlineMillis());
+      registry.counter(getProcessedMetricId(description)).increment();
     }
   }
 
@@ -124,13 +126,13 @@ public class PubsubMessageHandler {
 
   private void setMessageComplete(String messageKey, String payload, Long retentionDeadlineMillis) {
     redisClientDelegate.withCommandsClient(c -> {
-      c.psetex(messageKey, retentionDeadlineMillis, payload);
+      c.psetex(messageKey, retentionDeadlineMillis, getCRC32(payload));
     });
   }
 
   private Boolean messageComplete(String messageKey, String value) {
     return redisClientDelegate.withCommandsClient(c -> {
-      return value.equals(c.get(messageKey));
+      return getCRC32(value).equals(c.get(messageKey));
     });
   }
 
@@ -167,8 +169,23 @@ public class PubsubMessageHandler {
     pubsubEventMonitor.processEvent(event);
   }
 
-  Id getDuplicateMetricId(MessageDescription messageDescription) {
+  /**
+   * Generates a string checksum for comparing message body.
+   */
+  private String getCRC32(String value) {
+    CRC32 checksum = new CRC32();
+    checksum.update(value.getBytes());
+    return Long.toString(checksum.getValue());
+  }
+
+  private Id getDuplicateMetricId(MessageDescription messageDescription) {
     return registry.createId("echo.pubsub.duplicateMessages")
+      .withTag("subscription", messageDescription.getSubscriptionName())
+      .withTag("pubsubSystem", messageDescription.getPubsubSystem().toString());
+  }
+
+  private Id getProcessedMetricId(MessageDescription messageDescription) {
+    return registry.createId("echo.pubsub.messagesProcessed")
       .withTag("subscription", messageDescription.getSubscriptionName())
       .withTag("pubsubSystem", messageDescription.getPubsubSystem().toString());
   }
