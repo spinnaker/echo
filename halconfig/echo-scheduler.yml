@@ -16,4 +16,3 @@ scheduler:
 
 redis:
   connection: ${services.redis.baseUrl:redis://localhost:6379}
-  enabled: ${services.redis.enabled:false}
