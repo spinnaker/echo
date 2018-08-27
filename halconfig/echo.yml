@@ -30,4 +30,5 @@ scheduler:
     timezone: ${global.spinnaker.timezone:America/Los_Angeles}
     
 redis:
+  enabled: ${services.redis.enabled:false} 
   connection: ${services.redis.baseUrl:redis://localhost:6379}
