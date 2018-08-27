@@ -4,21 +4,6 @@ server:
   port: ${services.echo-scheduler.port:8089}
   address: ${services.echo-scheduler.host:localhost}
 
-spinnaker:
-  baseUrl: ${services.deck.baseUrl}
-  cassandra:
-     enabled: false
-  inMemory:
-     enabled: true
-
-front50:
-  baseUrl: ${services.front50.baseUrl:http://localhost:8080}
-
-orca:
-  baseUrl: ${services.orca.baseUrl:http://localhost:8083}
-
-endpoints.health.sensitive: false
-
 scheduler:
   enabled: true
   threadPoolSize: 20
