@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Wither;
@@ -66,6 +67,9 @@ public class Trigger {
   @Builder.Default
   boolean rebake = false;
 
+  @Builder.Default
+  boolean dryRun = false;
+
   String id;
   String type;
   String master;
@@ -103,6 +107,8 @@ public class Trigger {
   String pubsubSystem;
   List<String> expectedArtifactIds;
   Map<String, ?> lastSuccessfulExecution;
+
+  List<Map> notifications;
 
   /**
    * Field to use for custom triggers involving artifacts
