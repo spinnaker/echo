@@ -23,6 +23,9 @@ import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -81,9 +84,25 @@ public class ManualEventMonitor extends TriggerMonitor {
   @Override
   protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
     ManualEvent manualEvent = (ManualEvent) event;
-    Trigger manualTrigger = manualEvent.getContent().getTrigger();
-    return trigger -> pipeline
-      .withTrigger(manualTrigger);
+    return trigger -> {
+      String runAsUser = ((ManualEvent) event).getContent().getRunAsUser();
+      List<Map<String, Object>> notifications = buildNotifications(pipeline.getNotifications(),
+        manualEvent.getContent().getTrigger().getNotifications());
+      return pipeline
+        .withTrigger(manualEvent.getContent().getTrigger().atRunAsUser(runAsUser))
+        .withNotifications(notifications);
+    };
+  }
+
+  private List<Map<String, Object>> buildNotifications(List<Map<String, Object>> pipelineNotifications, List<Map<String, Object>> triggerNotifications) {
+    List<Map<String, Object>> notifications = new ArrayList<>();
+    if (pipelineNotifications != null) {
+      notifications.addAll(pipelineNotifications);
+    }
+    if (triggerNotifications != null) {
+      notifications.addAll(triggerNotifications);
+    }
+    return notifications;
   }
 
   @Override

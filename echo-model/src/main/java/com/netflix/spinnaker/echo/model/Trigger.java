@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.ToString;
 import lombok.Value;
 import lombok.experimental.Wither;
@@ -93,6 +92,7 @@ public class Trigger {
   String runAsUser;
   String secret;
   List<String> status;
+  String user;
 
   /**
    * Unique ID of a trigger that can be used to correlate a pipeline execution with its trigger.
@@ -108,7 +108,7 @@ public class Trigger {
   List<String> expectedArtifactIds;
   Map<String, ?> lastSuccessfulExecution;
 
-  List<Map> notifications;
+  List<Map<String, Object>> notifications;
 
   /**
    * Field to use for custom triggers involving artifacts
@@ -192,6 +192,18 @@ public class Trigger {
   public Trigger atEventId(final String eventId) {
     return this.toBuilder()
       .eventId(eventId)
+      .build();
+  }
+
+  public Trigger atRunAsUser(final String runAsUser) {
+    return this.toBuilder()
+      .runAsUser(runAsUser)
+      .build();
+  }
+
+  public Trigger atNotifications(final List<Map<String,Object>> notifications) {
+    return this.toBuilder()
+      .notifications(notifications)
       .build();
   }
 

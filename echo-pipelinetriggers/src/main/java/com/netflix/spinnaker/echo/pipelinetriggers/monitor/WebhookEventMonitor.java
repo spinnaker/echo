@@ -55,7 +55,7 @@ public class WebhookEventMonitor extends TriggerMonitor {
 
   @Override
   protected boolean handleEventType(String eventType) {
-    return eventType != null;
+    return eventType != null && !eventType.equals("manual");
   }
 
 
