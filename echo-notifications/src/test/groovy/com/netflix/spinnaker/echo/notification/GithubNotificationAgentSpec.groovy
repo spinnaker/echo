@@ -44,9 +44,9 @@ class GithubNotificationAgentSpec extends Specification {
     agent.sendNotifications(null, application, event, [type: type], status)
 
     then:
-    actualMessage.get().description ==~ expectedDescription
-    actualMessage.get().target_url ==~ "http://spinnaker.io/#/applications/whatever/1"
-    actualMessage.get().context ==~ "Pipeline"
+    actualMessage.get().getDescription() ==~ expectedDescription
+    actualMessage.get().getTarget_url() == "http://spinnaker.io/#/applications/whatever/executions/details/1?pipeline=foo-pipeline"
+    actualMessage.get().getContext() ==~ "Pipeline"
 
     where:
     status     || expectedDescription
@@ -91,9 +91,9 @@ class GithubNotificationAgentSpec extends Specification {
     agent.sendNotifications(null, application, event, [type: type], status)
 
     then:
-    actualMessage.get().description == expectedDescription
-    actualMessage.get().target_url == "http://spinnaker.io/#/applications/whatever/1?pipeline=foo-pipeline&stage=1"
-    actualMessage.get().context == "Stage"
+    actualMessage.get().getDescription() == expectedDescription
+    actualMessage.get().getTarget_url() == "http://spinnaker.io/#/applications/whatever/executions/details/1?pipeline=foo-pipeline&stage=1"
+    actualMessage.get().getContext() == "Stage"
 
     where:
     status     || expectedDescription

@@ -42,7 +42,7 @@ class Notification {
     JIRA,
     BEARYCHAT,
     GOOGLECHAT,
-    GITHUB
+    GITHUB_STATUS
   }
 
   static enum Severity {
