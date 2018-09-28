@@ -33,7 +33,7 @@ public class EventContent {
   private String executionId;
   private int stageIndex;
 
-  public EventContent(Event event, String type) throws Exception {
+  public EventContent(Event event, String type) throws FieldNotFoundException {
     this.event = event;
     setRepo();
     setSha();
@@ -45,7 +45,7 @@ public class EventContent {
     }
   }
 
-  private void setRepo() throws Exception {
+  private void setRepo() throws FieldNotFoundException {
     repo = Optional.ofNullable(event.getContent())
       .map(content -> (Map) content.get("execution"))
       .map(execution -> (Map) execution.get("trigger"))
@@ -54,7 +54,7 @@ public class EventContent {
       .orElseThrow(FieldNotFoundException::new);
   }
 
-  private void setSha() throws Exception {
+  private void setSha() throws FieldNotFoundException {
     sha = Optional.ofNullable(event.getContent())
       .map(content -> (Map) content.get("execution"))
       .map(execution -> (Map) execution.get("trigger"))
@@ -65,14 +65,14 @@ public class EventContent {
       .orElseThrow(FieldNotFoundException::new);
   }
 
-  private void setPipeline() throws Exception {
+  private void setPipeline() throws FieldNotFoundException {
     pipeline = Optional.ofNullable(event.getContent())
       .map(content -> (Map) content.get("execution"))
       .map(execution -> (String) execution.get("name"))
       .orElseThrow(FieldNotFoundException::new);
   }
 
-  private void setStageName() throws Exception {
+  private void setStageName() throws FieldNotFoundException {
     String stageName = Optional.ofNullable(event.getContent())
       .map(content -> (String) content.get("name"))
       .orElse(null);
@@ -87,7 +87,7 @@ public class EventContent {
     this.stageName = stageName;
   }
 
-  private void setStageIndex() throws Exception {
+  private void setStageIndex() throws FieldNotFoundException {
     List<Map> stages = Optional.ofNullable(event.getContent())
       .map(content -> (Map) content.get("execution"))
       .map(execution -> (List<Map>) execution.get("stages"))
@@ -100,7 +100,7 @@ public class EventContent {
     stageIndex = stages.indexOf(stage);
   }
 
-  private void setExecutionId() throws Exception {
+  private void setExecutionId() throws FieldNotFoundException {
     executionId = Optional.ofNullable(event.getContent())
       .map(content -> (Map) content.get("execution"))
       .map(execution -> (String) execution.get("id"))

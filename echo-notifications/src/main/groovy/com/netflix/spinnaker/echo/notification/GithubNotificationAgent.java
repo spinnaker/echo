@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.echo.notification;
 
 import com.google.common.collect.ImmutableMap;
+import com.netflix.spinnaker.echo.exceptions.FieldNotFoundException;
 import com.netflix.spinnaker.echo.github.GithubService;
 import com.netflix.spinnaker.echo.github.GithubStatus;
 import com.netflix.spinnaker.echo.model.Event;
@@ -29,7 +30,7 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 
 @Slf4j
-@ConditionalOnProperty("github.enabled")
+@ConditionalOnProperty("githubStatus.enabled")
 @Service
 public class GithubNotificationAgent extends AbstractEventNotificationAgent {
   private ImmutableMap<String, String> STATUSES = ImmutableMap.of(
@@ -47,7 +48,7 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
     EventContent content = null;
     try {
       content = new EventContent(event, (String) config.get("type"));
-    } catch (Exception e) {
+    } catch (FieldNotFoundException e) {
       return;
     }
 
@@ -86,7 +87,7 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
     GithubStatus githubStatus = new GithubStatus(state, targetUrl, description, context);
 
     try {
-      githubService.updateCheck("token ", content.getRepo(), content.getSha(), githubStatus);
+      githubService.updateCheck("token " + token, content.getRepo(), content.getSha(), githubStatus);
     } catch (Exception e) {
       log.error(String.format("Failed to send github status for application: '%s' pipeline: '%s', %s",
         application, content.getPipeline(), e));
@@ -95,7 +96,7 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
 
   @Override
   public String getNotificationType() {
-    return "github";
+    return "githubStatus";
   }
 
   public GithubService getGithubService() {
@@ -116,6 +117,6 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
 
   @Autowired
   private GithubService githubService;
-  @Value("${github.token}")
+  @Value("${githubStatus.token}")
   private String token;
 }

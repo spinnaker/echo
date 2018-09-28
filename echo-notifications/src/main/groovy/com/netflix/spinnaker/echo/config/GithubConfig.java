@@ -29,11 +29,11 @@ import retrofit.RestAdapter;
 import retrofit.client.Client;
 
 @Configuration
-@ConditionalOnProperty("github.enabled")
+@ConditionalOnProperty("githubStatus.enabled")
 @Slf4j
 public class GithubConfig {
   @Bean
-  public Endpoint githubEndpoint(@Value("${github.endpoint}") String endpoint) {
+  public Endpoint githubEndpoint(@Value("${githubStatus.endpoint}") String endpoint) {
     return Endpoints.newFixedEndpoint(endpoint);
   }
 
