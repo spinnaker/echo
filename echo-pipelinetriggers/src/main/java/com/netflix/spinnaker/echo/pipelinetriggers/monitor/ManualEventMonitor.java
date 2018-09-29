@@ -89,7 +89,7 @@ public class ManualEventMonitor extends TriggerMonitor {
       List<Map<String, Object>> notifications = buildNotifications(pipeline.getNotifications(),
         manualEvent.getContent().getTrigger().getNotifications());
       return pipeline
-        .withTrigger(manualEvent.getContent().getTrigger().atRunAsUser(runAsUser))
+        .withTrigger(manualEvent.getContent().getTrigger().atRunAsUser(runAsUser).atPropagateAuth(true))
         .withNotifications(notifications);
     };
   }

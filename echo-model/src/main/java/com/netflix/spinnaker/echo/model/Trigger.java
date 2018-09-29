@@ -125,6 +125,9 @@ public class Trigger {
   @JsonIgnore
   Pipeline parent;
 
+  @JsonIgnore
+  boolean propagateAuth;
+
   public String generateFallbackId() {
     return UUID.nameUUIDFromBytes(this.toString().getBytes()).toString();
   }
@@ -204,6 +207,12 @@ public class Trigger {
   public Trigger atNotifications(final List<Map<String,Object>> notifications) {
     return this.toBuilder()
       .notifications(notifications)
+      .build();
+  }
+
+  public Trigger atPropagateAuth(final boolean propagateAuth) {
+    return this.toBuilder()
+      .propagateAuth(propagateAuth)
       .build();
   }
 
