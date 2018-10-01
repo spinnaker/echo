@@ -212,5 +212,11 @@ public class Trigger {
 
   @JsonPOJOBuilder(withPrefix = "")
   public static final class TriggerBuilder {
+    // When deserializing triggers, always ignore the value of propagateAuth, which should only
+    // be set by Echo.
+    @JsonIgnore
+    private TriggerBuilder propagateAuth(boolean propagateAuth) {
+      return this;
+    }
   }
 }
