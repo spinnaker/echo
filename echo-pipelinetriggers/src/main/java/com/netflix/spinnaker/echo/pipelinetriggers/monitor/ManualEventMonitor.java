@@ -85,11 +85,10 @@ public class ManualEventMonitor extends TriggerMonitor {
   protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
     ManualEvent manualEvent = (ManualEvent) event;
     return trigger -> {
-      String runAsUser = ((ManualEvent) event).getContent().getRunAsUser();
       List<Map<String, Object>> notifications = buildNotifications(pipeline.getNotifications(),
         manualEvent.getContent().getTrigger().getNotifications());
       return pipeline
-        .withTrigger(manualEvent.getContent().getTrigger().atRunAsUser(runAsUser).atPropagateAuth(true))
+        .withTrigger(manualEvent.getContent().getTrigger().atPropagateAuth(true))
         .withNotifications(notifications);
     };
   }

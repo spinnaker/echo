@@ -198,12 +198,6 @@ public class Trigger {
       .build();
   }
 
-  public Trigger atRunAsUser(final String runAsUser) {
-    return this.toBuilder()
-      .runAsUser(runAsUser)
-      .build();
-  }
-
   public Trigger atNotifications(final List<Map<String,Object>> notifications) {
     return this.toBuilder()
       .notifications(notifications)

@@ -36,7 +36,6 @@ public class ManualEvent extends TriggerEvent {
     private String pipelineNameOrId;
     private String application;
     private Trigger trigger;
-    private String runAsUser;
     private String user;
   }
 }
