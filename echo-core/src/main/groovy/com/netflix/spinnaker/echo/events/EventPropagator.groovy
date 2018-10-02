@@ -44,13 +44,13 @@ class EventPropagator {
 
     void processEvent(Event event) {
         Observable.from(listeners)
-            .map({listener ->
+            .map({ listener ->
                 AuthenticatedRequest.propagate({
                   listener.processEvent(event)
                 } as Callable<Void>)})
             .observeOn(scheduler)
             .subscribe(
-            {Callable<Void> callable ->
+            { Callable<Void> callable ->
                 try {
                     callable.call()
                 } catch (Exception e) {
