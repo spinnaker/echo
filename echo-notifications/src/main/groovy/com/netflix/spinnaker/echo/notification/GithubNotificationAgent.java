@@ -63,7 +63,7 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
         content.getStageName(),
         content.getPipeline(),
         status);
-      context = "Stage";
+      context = String.format("stage/%s", content.getStageName());
       targetUrl = String.format("%s/#/applications/%s/executions/details/%s?pipeline=%s&stage=%d",
         getSpinnakerUrl(),
         application,
@@ -72,7 +72,7 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
         content.getStageIndex());
     } else if (config.get("type").equals("pipeline")) {
       description = String.format("Pipeline '%s' is %s", content.getPipeline(), status);
-      context = "Pipeline";
+      context = String.format("pipeline/%s", content.getPipeline());
       targetUrl = String.format("%s/#/applications/%s/executions/details/%s?pipeline=%s",
         getSpinnakerUrl(),
         application,
