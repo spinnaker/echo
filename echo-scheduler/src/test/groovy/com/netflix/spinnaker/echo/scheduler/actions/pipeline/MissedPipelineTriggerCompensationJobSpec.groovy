@@ -97,7 +97,7 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
         new Trigger.TriggerBuilder().id('1').type(Trigger.Type.CRON.toString()).cronExpression('* 5 * * * ? *').enabled(true).build()
       ]).build(),
       pipelineBuilder('2').disabled(false).triggers([
-        new Trigger.TriggerBuilder().id('2').type(Trigger.Type.CRON.toString()).cronExpression('* 5 * * * ? *').enabled(true).build()
+        new Trigger.TriggerBuilder().id('2').type(Trigger.Type.CRON.toString()).cronExpression('H 5 * * * ? *').enabled(true).build()
       ]).build()
     ]
 

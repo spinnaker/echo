@@ -180,7 +180,7 @@ class MissedPipelineTriggerCompensationJob implements ApplicationListener<Contex
   }
 
   private List<Trigger> getWithValidTimeInWindow(List<Trigger> triggers) {
-    return triggers.findAll({ trigger -> getLastValidTimeInWindow(trigger.cronExpression, dateContext) != null })
+    return triggers.findAll({ trigger -> getLastValidTimeInWindow(trigger, dateContext) != null })
   }
 
   private Date getLastExecutionOrNull(List<Date> executions) {
@@ -240,9 +240,9 @@ class MissedPipelineTriggerCompensationJob implements ApplicationListener<Contex
     return new CronExpression(trigger.cronExpression)
   }
 
-  private static Date getLastValidTimeInWindow(String expr, DateContext dateContext) {
+  private static Date getLastValidTimeInWindow(Trigger trigger, DateContext dateContext) {
     return getLastValidTimeInWindow(
-      new CronExpression(expr),
+      getCronExpression(trigger),
       dateContext.triggerWindowFloor(),
       dateContext.triggerWindowCeiling())
   }
