@@ -61,53 +61,78 @@ public class Trigger {
 
   private static final Logger log = LoggerFactory.getLogger(Trigger.class);
 
-  boolean enabled;
-
-  @Builder.Default
-  boolean rebake = false;
-
   String id;
   String type;
-  String master;
-  String job;
-  Integer buildNumber;
-  String propertyFile;
-  String cronExpression;
-  String source;
+  boolean enabled;
+
+  // Configuration for git triggers
   String project;
   String slug;
-  String hash;
-  Map parameters;
-  String account;
-  String repository;
-  String tag;
-  String digest;
-  Map payloadConstraints;
-  Map payload;
-  Map attributeConstraints;
+  String source;
   String branch;
-  String runAsUser;
-  String secret;
-  List<String> status;
 
-  /**
-   * Unique ID of a trigger that can be used to correlate a pipeline execution with its trigger.
-   */
-  String eventId;
+  // Configuration for Jenkins triggers
+  String master;
+  String job;
+  String propertyFile;
 
+  // Configuration for cron triggers
+  String cronExpression;
+
+  // Configuration for pubsub triggers
   /**
    * Logical name given to the subscription by the user, not the locator
    * the pub/sub system uses.
    */
   String subscriptionName;
   String pubsubSystem;
+
+  // Configuration for docker triggers
+  String account;
+  String repository;
+  String tag;
+
+  // Constraints for webhook and pubsub
+  Map payloadConstraints;
+  Map attributeConstraints;
+
+  // Configuration for pipeline triggers
+  List<String> status;
+  String user;
+
+  // Artifact constraints
   List<String> expectedArtifactIds;
-  Map<String, ?> lastSuccessfulExecution;
 
   /**
    * Field to use for custom triggers involving artifacts
    */
   String artifactName;
+
+  /**
+   * Properties that are bound at run-time
+   */
+  Integer buildNumber;
+  String hash;
+  Map parameters;
+  Map payload;
+  String runAsUser;
+  String secret;
+  String digest;
+
+  @Builder.Default
+  boolean rebake = false;
+
+  @Builder.Default
+  boolean dryRun = false;
+
+  List<Map<String, Object>> notifications;
+
+  /**
+   * Unique ID of a trigger that can be used to correlate a pipeline execution with its trigger.
+   */
+  String eventId;
+
+  Map<String, ?> lastSuccessfulExecution;
 
   // url to triggering event
   String link;
@@ -118,6 +143,9 @@ public class Trigger {
   // this is set after deserialization, not in the json representation
   @JsonIgnore
   Pipeline parent;
+
+  @JsonIgnore
+  boolean propagateAuth;
 
   public String generateFallbackId() {
     return UUID.nameUUIDFromBytes(this.toString().getBytes()).toString();
@@ -189,7 +217,25 @@ public class Trigger {
       .build();
   }
 
+  public Trigger atNotifications(final List<Map<String,Object>> notifications) {
+    return this.toBuilder()
+      .notifications(notifications)
+      .build();
+  }
+
+  public Trigger atPropagateAuth(final boolean propagateAuth) {
+    return this.toBuilder()
+      .propagateAuth(propagateAuth)
+      .build();
+  }
+
   @JsonPOJOBuilder(withPrefix = "")
   public static final class TriggerBuilder {
+    // When deserializing triggers, always ignore the value of propagateAuth, which should only
+    // be set by Echo.
+    @JsonIgnore
+    private TriggerBuilder propagateAuth(boolean propagateAuth) {
+      return this;
+    }
   }
 }
