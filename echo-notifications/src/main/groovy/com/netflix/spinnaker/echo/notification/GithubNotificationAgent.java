@@ -16,18 +16,25 @@
 
 package com.netflix.spinnaker.echo.notification;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.echo.exceptions.FieldNotFoundException;
-import com.netflix.spinnaker.echo.github.GithubService;
-import com.netflix.spinnaker.echo.github.GithubStatus;
+import com.netflix.spinnaker.echo.github.*;
 import com.netflix.spinnaker.echo.model.Event;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import retrofit.RetrofitError;
+import retrofit.client.Response;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @ConditionalOnProperty("githubStatus.enabled")
@@ -86,12 +93,51 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
 
     GithubStatus githubStatus = new GithubStatus(state, targetUrl, description, context);
 
+    String realCommit = getRealCommit(content.getRepo(), content.getSha());
+
     try {
-      githubService.updateCheck("token " + token, content.getRepo(), content.getSha(), githubStatus);
+      githubService.updateCheck("token " + token, content.getRepo(), realCommit, githubStatus);
     } catch (Exception e) {
       log.error(String.format("Failed to send github status for application: '%s' pipeline: '%s', %s",
         application, content.getPipeline(), e));
     }
+  }
+
+  private boolean commitFromMaster(String repo, String sha) {
+    // The /search/commit query only gets commits from the active branch so if a commit is returned that
+    // means that it is in the master branch
+    String query = String.format("repo:%s+hash:%s", repo, sha);
+    Response response = null;
+    try {
+      response = githubService.searchCommits("token " + token, query);
+    } catch (RetrofitError e) {
+      System.out.println(e.getResponse().getStatus());
+      return false;
+    }
+    ObjectMapper objectMapper = new ObjectMapper();
+    GithubSearchCommits message = null;
+    try {
+      message = objectMapper.readValue(response.getBody().in(), GithubSearchCommits.class);
+    } catch (IOException e) {
+      return false;
+    }
+    return message.getTotal_count() > 0;
+  }
+
+  private String getRealCommit(String repo, String sha) {
+    Response response = githubService.getCommit("token " + token, repo, sha);
+    ObjectMapper objectMapper = new ObjectMapper();
+    GithubCommitMessage message = null;
+    try {
+      message = objectMapper.readValue(response.getBody().in(), GithubCommitMessage.class);
+    } catch (IOException e) {
+      return sha;
+    }
+    return message.getParents().stream()
+      .map(GithubCommitParents::getSha)
+      .filter(c -> !commitFromMaster(repo, c))
+      .findAny()
+      .orElse(sha);
   }
 
   @Override

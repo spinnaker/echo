@@ -47,7 +47,7 @@ public class GithubConfig {
     GithubService githubClient = new RestAdapter.Builder()
       .setEndpoint(githubEndpoint)
       .setClient(retrofitClient)
-      .setLogLevel(retrofitLogLevel)
+      .setLogLevel(RestAdapter.LogLevel.FULL)
       .setLog(new Slf4jRetrofitLogger(GithubService.class))
       .build()
       .create(GithubService.class);
