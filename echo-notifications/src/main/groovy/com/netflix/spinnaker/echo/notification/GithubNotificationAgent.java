@@ -19,22 +19,21 @@ package com.netflix.spinnaker.echo.notification;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.echo.exceptions.FieldNotFoundException;
-import com.netflix.spinnaker.echo.github.*;
+import com.netflix.spinnaker.echo.github.GithubCommitMessage;
+import com.netflix.spinnaker.echo.github.GithubService;
+import com.netflix.spinnaker.echo.github.GithubStatus;
 import com.netflix.spinnaker.echo.model.Event;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import retrofit.RetrofitError;
 import retrofit.client.Response;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @ConditionalOnProperty("githubStatus.enabled")
@@ -91,40 +90,25 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
 
     log.info(String.format("Sending Github status check for application: %s", application));
 
+    /* Some CI systems (Travis) do a simulation of merging the commit in the PR into the default branch. If we
+    trigger the pipeline using the `pull_request_master` trigger, the sha we get in Spinnaker is the one
+    corresponding to that commit, so if we set the status check in that commit, we won't be able to see it
+    in the pull request in GitHub.
+       To detect the real commit, we look at the message of the commit and see if it matches the string
+    `Merge ${branch_sha} into ${master_sha}` and if it does we take the real commit
+    */
+    String branchCommit = getBranchCommit(content.getRepo(), content.getSha());
+
     GithubStatus githubStatus = new GithubStatus(state, targetUrl, description, context);
-
-    String realCommit = getRealCommit(content.getRepo(), content.getSha());
-
     try {
-      githubService.updateCheck("token " + token, content.getRepo(), realCommit, githubStatus);
+      githubService.updateCheck("token " + token, content.getRepo(), branchCommit, githubStatus);
     } catch (Exception e) {
       log.error(String.format("Failed to send github status for application: '%s' pipeline: '%s', %s",
         application, content.getPipeline(), e));
     }
   }
 
-  private boolean commitFromMaster(String repo, String sha) {
-    // The /search/commit query only gets commits from the active branch so if a commit is returned that
-    // means that it is in the master branch
-    String query = String.format("repo:%s+hash:%s", repo, sha);
-    Response response = null;
-    try {
-      response = githubService.searchCommits("token " + token, query);
-    } catch (RetrofitError e) {
-      System.out.println(e.getResponse().getStatus());
-      return false;
-    }
-    ObjectMapper objectMapper = new ObjectMapper();
-    GithubSearchCommits message = null;
-    try {
-      message = objectMapper.readValue(response.getBody().in(), GithubSearchCommits.class);
-    } catch (IOException e) {
-      return false;
-    }
-    return message.getTotal_count() > 0;
-  }
-
-  private String getRealCommit(String repo, String sha) {
+  private String getBranchCommit(String repo, String sha) {
     Response response = githubService.getCommit("token " + token, repo, sha);
     ObjectMapper objectMapper = new ObjectMapper();
     GithubCommitMessage message = null;
@@ -133,11 +117,13 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
     } catch (IOException e) {
       return sha;
     }
-    return message.getParents().stream()
-      .map(GithubCommitParents::getSha)
-      .filter(c -> !commitFromMaster(repo, c))
-      .findAny()
-      .orElse(sha);
+
+    Pattern pattern = Pattern.compile("Merge (?<branchCommit>[0-9a-f]{5,40}) into (?<masterCommit>[0-9a-f]{5,40})");
+    Matcher matcher = pattern.matcher(message.getMessage());
+    if (matcher.matches()) {
+      return matcher.group("branchCommit");
+    }
+    return sha;
   }
 
   @Override

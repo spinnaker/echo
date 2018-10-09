@@ -16,9 +16,13 @@
 
 package com.netflix.spinnaker.echo.notification
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.echo.github.GithubCommitMessage
 import com.netflix.spinnaker.echo.github.GithubService
 import com.netflix.spinnaker.echo.github.GithubStatus
 import com.netflix.spinnaker.echo.model.Event
+import retrofit.client.Response
+import retrofit.mime.TypedByteArray
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -30,14 +34,20 @@ class GithubNotificationAgentSpec extends Specification {
   @Subject
   def agent = new GithubNotificationAgent(githubService: github)
 
+  void setup() {
+    agent.spinnakerUrl = "http://spinnaker.io"
+  }
+
 
   @Unroll
   def "sets correct status check for #status status in pipeline events"() {
     given:
-    agent.spinnakerUrl = "http://spinnaker.io"
     def actualMessage = new BlockingVariable<GithubStatus>()
     github.updateCheck(*_) >> { token, repo, sha, status ->
       actualMessage.set(status)
+    }
+    github.getCommit(*_) >> { token, repo, sha ->
+      new Response("url", 200, "nothing", [], new TypedByteArray("application/json", "message".bytes))
     }
 
     when:
@@ -81,10 +91,12 @@ class GithubNotificationAgentSpec extends Specification {
   @Unroll
   def "sets correct status check for #status status in stage events"() {
     given:
-    agent.spinnakerUrl = "http://spinnaker.io"
     def actualMessage = new BlockingVariable<GithubStatus>()
     github.updateCheck(*_) >> { token, repo, sha, status ->
       actualMessage.set(status)
+    }
+    github.getCommit(*_) >> { token, repo, sha ->
+      new Response("url", 200, "nothing", [], new TypedByteArray("application/json", "message".bytes))
     }
 
     when:
@@ -132,5 +144,50 @@ class GithubNotificationAgentSpec extends Specification {
       ]
     )
     type = "stage"
+  }
+
+  def "if commit is a merge commit of the head branch and the default branch then return the head commit"() {
+    given:
+    GithubCommitMessage commit = new GithubCommitMessage(commitMessage)
+    ObjectMapper mapper = new ObjectMapper()
+    String response = mapper.writeValueAsString(commit)
+    github.getCommit(*_) >> { token, repo, sha ->
+      new Response("url", 200, "nothing", [], new TypedByteArray("application/json", response.bytes))
+    }
+
+    when:
+    agent.sendNotifications(null, application, event, [type: type], status)
+
+    then:
+    1 * github.updateCheck(_, _, expectedSha, _)
+
+    where:
+    commitMessage                                                                                  || expectedSha
+    "Merge 4505f046514add513f7de9eaba3883d538673297 into aede6867d774af7ea5cbf962f2876f25df141e73" || "4505f046514add513f7de9eaba3883d538673297"
+    "Some commit message"                                                                          || "asdf"
+
+    application = "whatever"
+    status = "starting"
+    event = new Event(
+      content: [
+        execution: [
+          id     : "1",
+          name   : "foo-pipeline",
+          trigger: [
+            buildInfo: [
+              name: "some-org/some-repo",
+              scm : [
+                [
+                  branch: "master",
+                  name  : "master",
+                  sha1  : "asdf",
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    )
+    type = "pipeline"
   }
 }

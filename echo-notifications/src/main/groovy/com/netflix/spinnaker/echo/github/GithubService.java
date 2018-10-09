@@ -32,15 +32,4 @@ public interface GithubService {
     @Header("Authorization") String token,
     @Path(value = "repo", encode = false) String repo,
     @Path("sha") String sha);
-
-  // curl -X GET
-  // -H "Accept: application/vnd.github.cloak-preview"
-  // "https://github.schibsted.io/api/v3/search/commits
-  // &q=repo:spt-infra-delivery-test/k8s-v2-hello-world+hash=aede6867d774af7ea5cbf962f2876f25df141e73"
-
-  @Headers("Accept: application/vnd.github.cloak-preview")
-  @GET("/api/v3/search/commits")
-  Response searchCommits(
-    @Header("Authorization") String token,
-    @Query(value = "q", encodeValue = false) String query);
 }
