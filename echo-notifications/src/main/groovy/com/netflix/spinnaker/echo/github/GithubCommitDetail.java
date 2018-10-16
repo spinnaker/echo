@@ -18,14 +18,13 @@ package com.netflix.spinnaker.echo.github;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
+@NoArgsConstructor
 public class GithubCommitDetail {
   private String message;
-
-  public GithubCommitDetail() {
-  }
 
   public GithubCommitDetail(String message) {
     this.message = message;
