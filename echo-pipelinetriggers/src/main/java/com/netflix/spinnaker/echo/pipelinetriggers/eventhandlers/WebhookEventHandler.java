@@ -12,60 +12,58 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.pipelinetriggers.monitor;
+package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
 import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher.isConstraintInPayload;
 import static java.util.Collections.emptyList;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.echo.model.trigger.WebhookEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
 import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher;
-import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component @Slf4j
-public class WebhookEventMonitor extends TriggerMonitor {
+public class WebhookEventHandler extends BaseTriggerEventHandler {
 
   public static final String TRIGGER_TYPE = "webhook";
 
   private static final TypeReference<List<Artifact>> ARTIFACT_LIST =
       new TypeReference<List<Artifact>>() {};
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   @Autowired
-  public WebhookEventMonitor(@NonNull PipelineCache pipelineCache,
-                             @NonNull PipelineInitiator pipelineInitiator,
-                             @NonNull Registry registry) {
-    super(pipelineCache, pipelineInitiator, registry);
+  public WebhookEventHandler(Registry registry) {
+    super(registry);
   }
 
   @Override
-  protected boolean handleEventType(String eventType) {
+  public boolean handleEventType(String eventType) {
     return eventType != null && !eventType.equals("manual");
   }
 
 
   @Override
-  protected WebhookEvent convertEvent(Event event) {
+  public WebhookEvent convertEvent(Event event) {
     return objectMapper.convertValue(event, WebhookEvent.class);
   }
 
   @Override
-  protected boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
+  public boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
     return true;
   }
 
@@ -115,7 +113,7 @@ public class WebhookEventMonitor extends TriggerMonitor {
   }
 
   @Override
-  protected Map<String, String> getAdditionalTags(Pipeline pipeline) {
+  public Map<String, String> getAdditionalTags(Pipeline pipeline) {
     Map<String, String> tags = new HashMap<>();
     tags.put("type", pipeline.getTrigger().getType());
     return tags;

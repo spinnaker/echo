@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.pipelinetriggers.monitor;
+package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
 import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher.anyArtifactsMatchExpected;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
-import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,7 +33,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,29 +40,30 @@ import org.springframework.stereotype.Component;
  * Triggers pipelines on _Orca_ when a trigger-enabled build completes successfully.
  */
 @Component
-public class BuildEventMonitor extends TriggerMonitor {
+public class BuildEventHandler extends BaseTriggerEventHandler {
 
   public static final String[] BUILD_TRIGGER_TYPES = {"jenkins", "travis", "wercker"};
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   @Autowired
-  public BuildEventMonitor(@NonNull PipelineCache pipelineCache,
-                           @NonNull PipelineInitiator pipelineInitiator,
-                           @NonNull Registry registry) {
-    super(pipelineCache, pipelineInitiator, registry);
+  public BuildEventHandler(Registry registry) {
+    super(registry);
   }
 
+
   @Override
-  protected boolean handleEventType(String eventType) {
+  public boolean handleEventType(String eventType) {
     return eventType.equalsIgnoreCase(BuildEvent.TYPE);
   }
 
   @Override
-  protected BuildEvent convertEvent(Event event) {
+  public BuildEvent convertEvent(Event event) {
     return objectMapper.convertValue(event, BuildEvent.class);
   }
 
   @Override
-  protected boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
+  public boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
     BuildEvent buildEvent = (BuildEvent) event;
     BuildEvent.Build lastBuild = buildEvent.getContent().getProject().getLastBuild();
     return lastBuild != null && !lastBuild.isBuilding() && lastBuild.getResult() == BuildEvent.Result.SUCCESS;

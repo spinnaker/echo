@@ -18,38 +18,35 @@ package com.netflix.spinnaker.echo.pipelinetriggers.monitor
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
-import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.model.Pipeline
-import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
-import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator
+import com.netflix.spinnaker.echo.model.trigger.TriggerEvent
+import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.DockerEventHandler
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
-class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
+class DockerEventHandlerSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
-  def pipelineCache = Mock(PipelineCache)
-  def pipelineInitiator = Mock(PipelineInitiator)
   def registry = new NoopRegistry()
 
   @Subject
-  def monitor = new DockerEventMonitor(pipelineCache, pipelineInitiator, registry)
+  def eventHandler = new DockerEventHandler(registry)
 
   @Unroll
   def "triggers pipelines for successful builds for #triggerType"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    1 * pipelineInitiator.startPipeline({
-      it.application == pipeline.application && it.name == pipeline.name
-    })
+    matchingPipelines.size() == 1
+    matchingPipelines[0].application == pipeline.application
+    matchingPipelines[0].name == pipeline.name
 
     where:
     event               | trigger              | triggerType
@@ -58,20 +55,19 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
 
   def "attaches docker trigger to the pipeline"() {
     given:
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    1 * pipelineInitiator.startPipeline({
-      it.trigger.type == enabledDockerTrigger.type
-      it.trigger.account == enabledDockerTrigger.account
-      it.trigger.repository == enabledDockerTrigger.repository
-      it.trigger.tag == enabledDockerTrigger.tag
-      it.receivedArtifacts.size() == 1
-      it.receivedArtifacts.get(0) == artifact
-    })
+    matchingPipelines.size() == 1
+    matchingPipelines[0].trigger.type == enabledDockerTrigger.type
+    matchingPipelines[0].trigger.account == enabledDockerTrigger.account
+    matchingPipelines[0].trigger.repository == enabledDockerTrigger.repository
+    matchingPipelines[0].trigger.tag == enabledDockerTrigger.tag
+    matchingPipelines[0].receivedArtifacts.size() == 1
+    matchingPipelines[0].receivedArtifacts.get(0) == artifact
 
     where:
     event = createDockerEvent()
@@ -85,14 +81,11 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   }
 
   def "an event can trigger multiple pipelines"() {
-    given:
-    pipelineCache.getPipelinesSync() >> pipelines
-
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    pipelines.size() * pipelineInitiator.startPipeline(_ as Pipeline)
+    matchingPipelines.size() == pipelines.size()
 
     where:
     event = createDockerEvent()
@@ -109,13 +102,13 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger #description pipelines"() {
     given:
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    0 * pipelineInitiator._
+    matchingPipelines.size() == 0
 
     where:
     trigger               | description
@@ -129,13 +122,13 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger #description pipelines for docker"() {
     given:
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    0 * pipelineInitiator._
+    matchingPipelines.size() == 0
 
     where:
     trigger                                               | description
@@ -151,19 +144,19 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger a pipeline that has an enabled docker trigger with missing #field"() {
     given:
-    pipelineCache.getPipelinesSync() >> [badPipeline, goodPipeline]
+    def pipelines = [badPipeline, goodPipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    1 * pipelineInitiator.startPipeline({ it.id == goodPipeline.id })
+    matchingPipelines.size() == 1
+    matchingPipelines[0].id == goodPipeline.id
 
     where:
     trigger                                    | field
     enabledDockerTrigger.withAccount(null)     | "account"
     enabledDockerTrigger.withRepository(null)  | "repository"
-    enabledDockerTrigger.withTag(null)         | "tag"
 
     event = createDockerEvent()
     goodPipeline = createPipelineWith(enabledDockerTrigger)
@@ -174,13 +167,14 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def "triggers a pipeline that has an enabled docker trigger with regex"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    1 * pipelineInitiator.startPipeline({ it.id == pipeline.id })
+    matchingPipelines.size() == 1
+    matchingPipelines[0].id == pipeline.id
 
     where:
     trigger                               | field
@@ -193,13 +187,14 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def "triggers a pipeline that has an enabled docker trigger with empty string for regex"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    1 * pipelineInitiator.startPipeline({ it.id == pipeline.id })
+    matchingPipelines.size() == 1
+    matchingPipelines[0].id == pipeline.id
 
     where:
     trigger                               | field
@@ -212,13 +207,14 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def "triggers a pipeline that has an enabled docker trigger with only whitespace for regex"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    1 * pipelineInitiator.startPipeline({ it.id == pipeline.id })
+    matchingPipelines.size() == 1
+    matchingPipelines[0].id == pipeline.id
 
     where:
     trigger                               | field
@@ -231,13 +227,13 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def "does not trigger a pipeline that has an enabled docker trigger with regex"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    0 * pipelineInitiator._
+    matchingPipelines.size() == 0
 
     where:
     trigger                               | field

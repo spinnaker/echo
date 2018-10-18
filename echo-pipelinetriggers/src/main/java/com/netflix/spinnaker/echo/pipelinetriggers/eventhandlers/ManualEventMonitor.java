@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.pipelinetriggers.monitor;
+package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
-import com.netflix.spectator.api.Registry;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
-import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -40,28 +38,31 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class ManualEventMonitor extends TriggerMonitor {
+public class ManualEventMonitor implements TriggerEventHandler {
 
   public static final String MANUAL_TRIGGER_TYPE = "manual";
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   @Override
-  protected boolean handleEventType(String eventType) {
+  public boolean handleEventType(String eventType) {
     return eventType.equalsIgnoreCase(ManualEvent.TYPE);
   }
 
   @Override
-  protected ManualEvent convertEvent(Event event) {
+  public ManualEvent convertEvent(Event event) {
     return objectMapper.convertValue(event, ManualEvent.class);
   }
 
-  public ManualEventMonitor(@NonNull PipelineCache pipelineCache,
-    @NonNull PipelineInitiator pipelineInitiator,
-    @NonNull Registry registry) {
-    super(pipelineCache, pipelineInitiator, registry);
+  public List<Pipeline> getMatchingPipelines(final TriggerEvent event, List<Pipeline> pipelines) {
+    return pipelines.stream()
+      .map(p -> withMatchingTrigger(event, p))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .collect(Collectors.toList());
   }
 
-  @Override
-  protected Optional<Pipeline> withMatchingTrigger(final TriggerEvent event, Pipeline pipeline) {
+  private Optional<Pipeline> withMatchingTrigger(final TriggerEvent event, Pipeline pipeline) {
     if (pipeline.isDisabled()) {
       return Optional.empty();
     } else {
@@ -74,13 +75,7 @@ public class ManualEventMonitor extends TriggerMonitor {
     }
   }
 
-  @Override
-  protected boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
-    return true;
-  }
-
-  @Override
-  protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
+  private Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
     ManualEvent manualEvent = (ManualEvent) event;
     return trigger -> {
       List<Map<String, Object>> notifications = buildNotifications(pipeline.getNotifications(),
@@ -102,13 +97,7 @@ public class ManualEventMonitor extends TriggerMonitor {
     return notifications;
   }
 
-  @Override
-  protected boolean isValidTrigger(final Trigger trigger) {
-    return true;
-  }
-
-  @Override
-  protected Predicate<Trigger> matchTriggerFor(final TriggerEvent event, final Pipeline pipeline) {
+  private Predicate<Trigger> matchTriggerFor(final TriggerEvent event, final Pipeline pipeline) {
     ManualEvent manualEvent = (ManualEvent) event;
     String application = manualEvent.getContent().getApplication();
     String nameOrId = manualEvent.getContent().getPipelineNameOrId();

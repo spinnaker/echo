@@ -16,9 +16,8 @@ package com.netflix.spinnaker.echo.pipelinetriggers.monitor
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
-import com.netflix.spinnaker.echo.model.Event
-import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
-import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator
+import com.netflix.spinnaker.echo.model.trigger.TriggerEvent
+import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.WebhookEventHandler
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
@@ -27,11 +26,9 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
-class WebhookEventMonitorSpec extends Specification implements RetrofitStubs {
+class WebhookEventHandlerSpec extends Specification implements RetrofitStubs {
 
   def objectMapper = new ObjectMapper()
-  def pipelineCache = Mock(PipelineCache)
-  def pipelineInitiator = Mock(PipelineInitiator)
   def registry = new NoopRegistry()
 
   @Shared
@@ -46,20 +43,20 @@ class WebhookEventMonitorSpec extends Specification implements RetrofitStubs {
   ]
 
   @Subject
-  def monitor = new WebhookEventMonitor(pipelineCache, pipelineInitiator, registry)
+  def eventHandler = new WebhookEventHandler(registry)
 
   def 'triggers pipelines for successful builds for webhook'() {
     given:
     def pipeline = createPipelineWith(goodExpectedArtifacts, trigger)
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    1 * pipelineInitiator.startPipeline({
-      it.application == pipeline.application && it.name == pipeline.name
-    })
+    matchingPipelines.size() == 1
+    matchingPipelines[0].application == pipeline.application
+    matchingPipelines[0].name == pipeline.name
 
     where:
     event = createWebhookEvent('myCIServer',
@@ -72,15 +69,14 @@ class WebhookEventMonitorSpec extends Specification implements RetrofitStubs {
 
   def 'attaches webhook trigger to the pipeline'() {
     given:
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    1 * pipelineInitiator.startPipeline({
-      it.trigger.type == enabledWebhookTrigger.type
-    })
+    matchingPipelines.size() == 1
+    matchingPipelines[0].trigger.type == enabledWebhookTrigger.type
 
     where:
     event = createWebhookEvent('myCIServer')
@@ -92,13 +88,13 @@ class WebhookEventMonitorSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger #description pipelines for webhook"() {
     given:
-    pipelineCache.getPipelinesSync() >> [pipeline]
+    def pipelines = [pipeline]
 
     when:
-    monitor.processEvent(objectMapper.convertValue(event, Event))
+    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
 
     then:
-    0 * pipelineInitiator._
+    matchingPipelines.size() == 0
 
     where:
     trigger                                              | description

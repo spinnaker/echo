@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.pipelinetriggers.monitor;
+package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
 import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher.anyArtifactsMatchExpected;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.GitEvent;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
-import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import lombok.NonNull;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.commons.lang.StringUtils;
@@ -43,27 +43,25 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
-public class GitEventMonitor extends TriggerMonitor {
-
+public class GitEventHandler extends BaseTriggerEventHandler {
   public static final String GIT_TRIGGER_TYPE = "git";
 
   private static final String GITHUB_SECURE_SIGNATURE_HEADER = "X-Hub-Signature";
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   @Autowired
-  public GitEventMonitor(@NonNull PipelineCache pipelineCache,
-                         @NonNull PipelineInitiator pipelineInitiator,
-                         @NonNull Registry registry) {
-    super(pipelineCache, pipelineInitiator, registry);
+  public GitEventHandler(Registry registry) {
+    super(registry);
   }
 
   @Override
-  protected boolean handleEventType(String eventType) {
+  public boolean handleEventType(String eventType) {
     return eventType.equalsIgnoreCase(GitEvent.TYPE);
   }
 
-
   @Override
-  protected GitEvent convertEvent(Event event) {
+  public GitEvent convertEvent(Event event) {
     return objectMapper.convertValue(event, GitEvent.class);
   }
 
@@ -79,7 +77,7 @@ public class GitEventMonitor extends TriggerMonitor {
   }
 
   @Override
-  protected boolean isSuccessfulTriggerEvent(TriggerEvent event) {
+  public boolean isSuccessfulTriggerEvent(TriggerEvent event) {
     return true;
   }
 
@@ -110,6 +108,12 @@ public class GitEventMonitor extends TriggerMonitor {
       .withTrigger(trigger.atHash(gitEvent.getHash())
         .atBranch(gitEvent.getBranch())
         .atEventId(gitEvent.getEventId()));
+  }
+
+  private boolean matchesPattern(String s, String pattern) {
+    Pattern p = Pattern.compile(pattern);
+    Matcher m = p.matcher(s);
+    return m.matches();
   }
 
   private boolean passesGithubAuthenticationCheck(TriggerEvent event, Trigger trigger) {

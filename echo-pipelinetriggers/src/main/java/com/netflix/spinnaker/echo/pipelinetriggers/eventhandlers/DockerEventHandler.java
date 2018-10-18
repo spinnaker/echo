@@ -14,53 +14,51 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.pipelinetriggers.monitor;
+package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
 import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher.anyArtifactsMatchExpected;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.DockerEvent;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
-import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.PatternSyntaxException;
-import lombok.NonNull;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DockerEventMonitor extends TriggerMonitor {
+public class DockerEventHandler extends BaseTriggerEventHandler {
 
   public static final String TRIGGER_TYPE = "docker";
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   @Autowired
-  public DockerEventMonitor(@NonNull PipelineCache pipelineCache,
-                            @NonNull PipelineInitiator pipelineInitiator,
-                            @NonNull Registry registry) {
-    super(pipelineCache, pipelineInitiator, registry);
+  public DockerEventHandler(Registry registry) {
+    super(registry);
   }
 
   @Override
-  protected boolean handleEventType(String eventType) {
+  public boolean handleEventType(String eventType) {
     return eventType.equalsIgnoreCase(DockerEvent.TYPE);
   }
 
   @Override
-  protected DockerEvent convertEvent(Event event) {
+  public DockerEvent convertEvent(Event event) {
     return objectMapper.convertValue(event, DockerEvent.class);
   }
 
   @Override
-  protected boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
+  public boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
     DockerEvent dockerEvent = (DockerEvent) event;
     // The event should always report a tag
     String tag = dockerEvent.getContent().getTag();

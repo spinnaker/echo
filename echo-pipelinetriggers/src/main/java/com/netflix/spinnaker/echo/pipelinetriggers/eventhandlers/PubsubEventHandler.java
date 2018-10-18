@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.pipelinetriggers.monitor;
+package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
 import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher.anyArtifactsMatchExpected;
 import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher.isConstraintInPayload;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
@@ -26,43 +27,42 @@ import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription;
 import com.netflix.spinnaker.echo.model.trigger.PubsubEvent;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
-import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Triggers pipelines in _Orca_ when a trigger-enabled pubsub message arrives.
  */
 @Slf4j
-public class PubsubEventMonitor extends TriggerMonitor {
+public class PubsubEventHandler extends BaseTriggerEventHandler {
 
   public static final String PUBSUB_TRIGGER_TYPE = "pubsub";
 
-  public PubsubEventMonitor(@NonNull PipelineCache pipelineCache,
-                            @NonNull PipelineInitiator pipelineInitiator,
-                            @NonNull Registry registry) {
-    super(pipelineCache, pipelineInitiator, registry);
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
+  @Autowired
+  public PubsubEventHandler(Registry registry) {
+    super(registry);
   }
 
   @Override
-  protected boolean handleEventType(String eventType) {
+  public boolean handleEventType(String eventType) {
     return eventType.equalsIgnoreCase(PubsubEvent.TYPE);
   }
 
 
   @Override
-  protected PubsubEvent convertEvent(Event event) {
+  public PubsubEvent convertEvent(Event event) {
     return objectMapper.convertValue(event, PubsubEvent.class);
   }
 
   @Override
-  protected boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
+  public boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
     PubsubEvent pubsubEvent = (PubsubEvent) event;
     return pubsubEvent != null;
   }
@@ -102,7 +102,7 @@ public class PubsubEventMonitor extends TriggerMonitor {
   }
 
   @Override
-  protected Map<String, String> getAdditionalTags(Pipeline pipeline) {
+  public Map<String, String> getAdditionalTags(Pipeline pipeline) {
     Map<String, String> tags = new HashMap<>();
     tags.put("pubsubSystem", pipeline.getTrigger().getPubsubSystem());
     tags.put("subscriptionName", pipeline.getTrigger().getSubscriptionName());
