@@ -40,8 +40,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
-
-  public static final String[] BUILD_TRIGGER_TYPES = {"jenkins", "travis", "wercker"};
+  private static final String[] BUILD_TRIGGER_TYPES = {"jenkins", "travis", "wercker"};
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -49,7 +48,6 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   public BuildEventHandler(Registry registry) {
     super(registry);
   }
-
 
   @Override
   public boolean handleEventType(String eventType) {
@@ -62,7 +60,7 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   }
 
   @Override
-  public boolean isSuccessfulTriggerEvent(final BuildEvent buildEvent) {
+  public boolean isSuccessfulTriggerEvent(BuildEvent buildEvent) {
     BuildEvent.Build lastBuild = buildEvent.getContent().getProject().getLastBuild();
     return lastBuild != null && !lastBuild.isBuilding() && lastBuild.getResult() == BuildEvent.Result.SUCCESS;
   }
@@ -76,7 +74,7 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   }
 
   @Override
-  protected boolean isValidTrigger(final Trigger trigger) {
+  protected boolean isValidTrigger(Trigger trigger) {
     return trigger.isEnabled() &&
       (
         (isBuildTrigger(trigger) &&
@@ -86,7 +84,7 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(final BuildEvent buildEvent, final Pipeline pipeline) {
+  protected Predicate<Trigger> matchTriggerFor(BuildEvent buildEvent, Pipeline pipeline) {
     String jobName = buildEvent.getContent().getProject().getName();
     String master = buildEvent.getContent().getMaster();
     return trigger -> isBuildTrigger(trigger)

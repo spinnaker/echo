@@ -49,7 +49,7 @@ public interface TriggerEventHandler<T extends TriggerEvent> {
    * @param pipelines The pipelines to consider
    * @return The pipelines that should be triggered
    */
-  List<Pipeline> getMatchingPipelines(final T event, List<Pipeline> pipelines);
+  List<Pipeline> getMatchingPipelines(T event, List<Pipeline> pipelines);
 
   /**
    * Given a pipeline, gets any additional tags that should be associated with metrics recorded

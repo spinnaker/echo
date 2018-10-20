@@ -38,7 +38,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class ManualEventMonitor implements TriggerEventHandler<ManualEvent> {
-
   public static final String MANUAL_TRIGGER_TYPE = "manual";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -53,7 +52,7 @@ public class ManualEventMonitor implements TriggerEventHandler<ManualEvent> {
     return objectMapper.convertValue(event, ManualEvent.class);
   }
 
-  public List<Pipeline> getMatchingPipelines(final ManualEvent manualEvent, List<Pipeline> pipelines) {
+  public List<Pipeline> getMatchingPipelines(ManualEvent manualEvent, List<Pipeline> pipelines) {
     return pipelines.stream()
       .map(p -> withMatchingTrigger(manualEvent, p))
       .filter(Optional::isPresent)
@@ -61,7 +60,7 @@ public class ManualEventMonitor implements TriggerEventHandler<ManualEvent> {
       .collect(Collectors.toList());
   }
 
-  private Optional<Pipeline> withMatchingTrigger(final ManualEvent manualEvent, Pipeline pipeline) {
+  private Optional<Pipeline> withMatchingTrigger(ManualEvent manualEvent, Pipeline pipeline) {
     if (pipeline.isDisabled()) {
       return Optional.empty();
     } else {
@@ -94,7 +93,7 @@ public class ManualEventMonitor implements TriggerEventHandler<ManualEvent> {
     return notifications;
   }
 
-  private Predicate<Trigger> matchTriggerFor(final ManualEvent manualEvent, final Pipeline pipeline) {
+  private Predicate<Trigger> matchTriggerFor(ManualEvent manualEvent, Pipeline pipeline) {
     String application = manualEvent.getContent().getApplication();
     String nameOrId = manualEvent.getContent().getPipelineNameOrId();
 

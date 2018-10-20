@@ -36,7 +36,7 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements
     this.registry = registry;
   }
 
-  public List<Pipeline> getMatchingPipelines(final T event, List<Pipeline> pipelines) {
+  public List<Pipeline> getMatchingPipelines(T event, List<Pipeline> pipelines) {
     if (isSuccessfulTriggerEvent(event)) {
       return pipelines.stream()
         .map(p -> withMatchingTrigger(event, p))
@@ -48,7 +48,7 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements
     }
   }
 
-  private Optional<Pipeline> withMatchingTrigger(final T event, Pipeline pipeline) {
+  private Optional<Pipeline> withMatchingTrigger(T event, Pipeline pipeline) {
     if (pipeline.getTriggers() == null || pipeline.isDisabled()) {
       return Optional.empty();
     } else {
@@ -73,9 +73,9 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements
 
   protected abstract boolean isSuccessfulTriggerEvent(T event);
 
-  protected abstract Predicate<Trigger> matchTriggerFor(final T event, final Pipeline pipeline);
+  protected abstract Predicate<Trigger> matchTriggerFor(T event, Pipeline pipeline);
 
   protected abstract Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, T event);
 
-  protected abstract boolean isValidTrigger(final Trigger trigger);
+  protected abstract boolean isValidTrigger(Trigger trigger);
 }

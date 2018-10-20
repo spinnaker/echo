@@ -39,7 +39,6 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 @Slf4j
 public class PubsubEventHandler extends BaseTriggerEventHandler<PubsubEvent> {
-
   public static final String PUBSUB_TRIGGER_TYPE = "pubsub";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -61,7 +60,7 @@ public class PubsubEventHandler extends BaseTriggerEventHandler<PubsubEvent> {
   }
 
   @Override
-  public boolean isSuccessfulTriggerEvent(final PubsubEvent pubsubEvent) {
+  public boolean isSuccessfulTriggerEvent(PubsubEvent pubsubEvent) {
     return pubsubEvent != null;
   }
 
@@ -80,13 +79,13 @@ public class PubsubEventHandler extends BaseTriggerEventHandler<PubsubEvent> {
   }
 
   @Override
-  protected boolean isValidTrigger(final Trigger trigger) {
+  protected boolean isValidTrigger(Trigger trigger) {
     return trigger.isEnabled()
         && isPubsubTrigger(trigger);
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(final PubsubEvent pubsubEvent, final Pipeline pipeline) {
+  protected Predicate<Trigger> matchTriggerFor(PubsubEvent pubsubEvent, Pipeline pipeline) {
     MessageDescription description = pubsubEvent.getContent().getMessageDescription();
 
     return trigger -> trigger.getType().equalsIgnoreCase(PUBSUB_TRIGGER_TYPE)

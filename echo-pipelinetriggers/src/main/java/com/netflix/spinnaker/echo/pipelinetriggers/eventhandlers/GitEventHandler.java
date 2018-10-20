@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
-  public static final String GIT_TRIGGER_TYPE = "git";
+  private static final String GIT_TRIGGER_TYPE = "git";
 
   private static final String GITHUB_SECURE_SIGNATURE_HEADER = "X-Hub-Signature";
 
@@ -81,7 +81,7 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(final GitEvent gitEvent, final Pipeline pipeline) {
+  protected Predicate<Trigger> matchTriggerFor(GitEvent gitEvent, final Pipeline pipeline) {
     String source = gitEvent.getDetails().getSource();
     String project = gitEvent.getContent().getRepoProject();
     String slug = gitEvent.getContent().getSlug();

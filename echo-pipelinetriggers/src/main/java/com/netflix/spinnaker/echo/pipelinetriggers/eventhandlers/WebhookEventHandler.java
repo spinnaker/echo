@@ -37,7 +37,6 @@ import org.springframework.stereotype.Component;
 
 @Component @Slf4j
 public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
-
   public static final String TRIGGER_TYPE = "webhook";
 
   private static final TypeReference<List<Artifact>> ARTIFACT_LIST =
@@ -62,7 +61,7 @@ public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
   }
 
   @Override
-  public boolean isSuccessfulTriggerEvent(final WebhookEvent webhookEvent) {
+  public boolean isSuccessfulTriggerEvent(WebhookEvent webhookEvent) {
     return true;
   }
 
@@ -81,12 +80,12 @@ public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
   }
 
   @Override
-  protected boolean isValidTrigger(final Trigger trigger) {
+  protected boolean isValidTrigger(Trigger trigger) {
     return trigger.isEnabled() && TRIGGER_TYPE.equals(trigger.getType());
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(final WebhookEvent webhookEvent, final Pipeline pipeline) {
+  protected Predicate<Trigger> matchTriggerFor(WebhookEvent webhookEvent, Pipeline pipeline) {
     final String type = webhookEvent.getDetails().getType();
     final String source = webhookEvent.getDetails().getSource();
     final Map content = webhookEvent.getContent();

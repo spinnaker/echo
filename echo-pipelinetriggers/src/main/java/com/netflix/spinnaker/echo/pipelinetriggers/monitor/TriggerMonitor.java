@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.echo.pipelinetriggers.monitor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.events.EchoEventListener;
@@ -24,8 +23,8 @@ import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
-import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.TriggerEventHandler;
+import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -35,11 +34,29 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener {
-  protected final PipelineInitiator pipelineInitiator;
-  protected final Registry registry;
-  protected final ObjectMapper objectMapper = new ObjectMapper();
-  protected final PipelineCache pipelineCache;
-  protected final TriggerEventHandler<T> eventHandler;
+  private final PipelineInitiator pipelineInitiator;
+  private final Registry registry;
+  private final PipelineCache pipelineCache;
+  private final TriggerEventHandler<T> eventHandler;
+
+  TriggerMonitor(@NonNull PipelineCache pipelineCache,
+    @NonNull PipelineInitiator pipelineInitiator,
+    @NonNull Registry registry,
+    @NonNull TriggerEventHandler<T> eventHandler) {
+    this.pipelineCache = pipelineCache;
+    this.pipelineInitiator = pipelineInitiator;
+    this.registry = registry;
+    this.eventHandler = eventHandler;
+  }
+
+  public void processEvent(Event event) {
+    validateEvent(event);
+    if (eventHandler.handleEventType(event.getDetails().getType())) {
+      recordMetrics();
+      T triggerEvent = eventHandler.convertEvent(event);
+      triggerMatchingPipelines(triggerEvent);
+    }
+  }
 
   private void validateEvent(Event event) {
     if (event.getDetails() == null) {
@@ -49,51 +66,28 @@ public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener
     }
   }
 
-  public TriggerMonitor(@NonNull PipelineCache pipelineCache,
-                        @NonNull PipelineInitiator pipelineInitiator,
-                        @NonNull Registry registry,
-                        @NonNull TriggerEventHandler<T> eventHandler) {
-    this.pipelineInitiator = pipelineInitiator;
-    this.registry = registry;
-    this.pipelineCache = pipelineCache;
-    this.eventHandler = eventHandler;
-  }
-
-  public void processEvent(Event event) {
-    validateEvent(event);
-    if (!eventHandler.handleEventType(event.getDetails().getType())) {
-      return;
-    }
-    T triggerEvent = eventHandler.convertEvent(event);
-    onEchoResponse(triggerEvent);
-    triggerMatchingPipelines(triggerEvent, pipelineCache.getPipelinesSync());
-  }
-
-  private void onEchoResponse(final TriggerEvent event) {
-    registry.gauge("echo.events.per.poll", 1);
-  }
-
-  private void triggerMatchingPipelines(final T event, List<Pipeline> pipelines) {
-    onEventProcessed(event);
-    List<Pipeline> matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines);
+  private void triggerMatchingPipelines(T event) {
+    List<Pipeline> allPipelines = pipelineCache.getPipelinesSync();
+    List<Pipeline> matchingPipelines = eventHandler.getMatchingPipelines(event, allPipelines);
     matchingPipelines.forEach(p -> {
-      onMatchingPipeline(p);
+      recordMatchingPipeline(p);
       pipelineInitiator.startPipeline(p);
     });
   }
 
-  private void onMatchingPipeline(Pipeline pipeline) {
+  private void recordMetrics() {
+    registry.gauge("echo.events.per.poll", 1);
+    registry.counter("echo.events.processed").increment();
+  }
+
+  private void recordMatchingPipeline(Pipeline pipeline) {
     log.info("Found matching pipeline {}:{}", pipeline.getApplication(), pipeline.getName());
     emitMetricsOnMatchingPipeline(pipeline);
   }
 
-  private void onEventProcessed(final TriggerEvent event) {
-    registry.counter("echo.events.processed").increment();
-  }
-
   private void emitMetricsOnMatchingPipeline(Pipeline pipeline) {
     Id id = registry.createId("pipelines.triggered")
-      .withTag("monitor", getClass().getSimpleName())
+      .withTag("monitor", eventHandler.getClass().getSimpleName())
       .withTag("application", pipeline.getApplication())
       .withTags(eventHandler.getAdditionalTags(pipeline));
     registry.counter(id).increment();

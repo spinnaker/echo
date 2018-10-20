@@ -36,8 +36,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DockerEventHandler extends BaseTriggerEventHandler<DockerEvent> {
-
-  public static final String TRIGGER_TYPE = "docker";
+  private static final String TRIGGER_TYPE = "docker";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -57,7 +56,7 @@ public class DockerEventHandler extends BaseTriggerEventHandler<DockerEvent> {
   }
 
   @Override
-  public boolean isSuccessfulTriggerEvent(final DockerEvent dockerEvent) {
+  public boolean isSuccessfulTriggerEvent(DockerEvent dockerEvent) {
     // The event should always report a tag
     String tag = dockerEvent.getContent().getTag();
     return tag != null && !tag.isEmpty();
@@ -78,13 +77,12 @@ public class DockerEventHandler extends BaseTriggerEventHandler<DockerEvent> {
 
   @Override
   protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, DockerEvent dockerEvent) {
-
     return trigger -> pipeline.withTrigger(trigger.atTag(dockerEvent.getContent().getTag()).withEventId(dockerEvent.getEventId()))
       .withReceivedArtifacts(getArtifacts(dockerEvent));
   }
 
   @Override
-  protected boolean isValidTrigger(final Trigger trigger) {
+  protected boolean isValidTrigger(Trigger trigger) {
     return trigger.isEnabled() &&
       (
         (TRIGGER_TYPE.equals(trigger.getType()) &&
@@ -103,11 +101,11 @@ public class DockerEventHandler extends BaseTriggerEventHandler<DockerEvent> {
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(final DockerEvent dockerEvent, final Pipeline pipeline) {
+  protected Predicate<Trigger> matchTriggerFor(DockerEvent dockerEvent, Pipeline pipeline) {
     return trigger -> isMatchingTrigger(dockerEvent, trigger, pipeline);
   }
 
-  private boolean isMatchingTrigger(DockerEvent dockerEvent, Trigger trigger, final Pipeline pipeline) {
+  private boolean isMatchingTrigger(DockerEvent dockerEvent, Trigger trigger, Pipeline pipeline) {
     String account = dockerEvent.getContent().getAccount();
     String repository = dockerEvent.getContent().getRepository();
     String eventTag = dockerEvent.getContent().getTag();
