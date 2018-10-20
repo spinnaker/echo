@@ -34,12 +34,12 @@ import lombok.extern.slf4j.Slf4j;
  * Triggers pipelines on _Orca_ when a trigger-enabled build completes successfully.
  */
 @Slf4j
-public class TriggerMonitor implements EchoEventListener {
+public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener {
   protected final PipelineInitiator pipelineInitiator;
   protected final Registry registry;
   protected final ObjectMapper objectMapper = new ObjectMapper();
   protected final PipelineCache pipelineCache;
-  private final TriggerEventHandler eventHandler;
+  protected final TriggerEventHandler<T> eventHandler;
 
   private void validateEvent(Event event) {
     if (event.getDetails() == null) {
@@ -52,7 +52,7 @@ public class TriggerMonitor implements EchoEventListener {
   public TriggerMonitor(@NonNull PipelineCache pipelineCache,
                         @NonNull PipelineInitiator pipelineInitiator,
                         @NonNull Registry registry,
-                        @NonNull TriggerEventHandler eventHandler) {
+                        @NonNull TriggerEventHandler<T> eventHandler) {
     this.pipelineInitiator = pipelineInitiator;
     this.registry = registry;
     this.pipelineCache = pipelineCache;
@@ -64,7 +64,7 @@ public class TriggerMonitor implements EchoEventListener {
     if (!eventHandler.handleEventType(event.getDetails().getType())) {
       return;
     }
-    TriggerEvent triggerEvent = eventHandler.convertEvent(event);
+    T triggerEvent = eventHandler.convertEvent(event);
     onEchoResponse(triggerEvent);
     triggerMatchingPipelines(triggerEvent, pipelineCache.getPipelinesSync());
   }
@@ -73,7 +73,7 @@ public class TriggerMonitor implements EchoEventListener {
     registry.gauge("echo.events.per.poll", 1);
   }
 
-  private void triggerMatchingPipelines(final TriggerEvent event, List<Pipeline> pipelines) {
+  private void triggerMatchingPipelines(final T event, List<Pipeline> pipelines) {
     onEventProcessed(event);
     List<Pipeline> matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines);
     matchingPipelines.forEach(p -> {

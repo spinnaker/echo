@@ -23,7 +23,6 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
-import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.echo.model.trigger.WebhookEvent;
 import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
@@ -37,7 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component @Slf4j
-public class WebhookEventHandler extends BaseTriggerEventHandler {
+public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
 
   public static final String TRIGGER_TYPE = "webhook";
 
@@ -63,13 +62,12 @@ public class WebhookEventHandler extends BaseTriggerEventHandler {
   }
 
   @Override
-  public boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
+  public boolean isSuccessfulTriggerEvent(final WebhookEvent webhookEvent) {
     return true;
   }
 
   @Override
-  protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
-    WebhookEvent webhookEvent = objectMapper.convertValue(event, WebhookEvent.class);
+  protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, WebhookEvent webhookEvent) {
     Map content = webhookEvent.getContent();
     Map payload = webhookEvent.getPayload();
     Map parameters = content.containsKey("parameters") ? (Map) content.get("parameters") : new HashMap();
@@ -79,7 +77,7 @@ public class WebhookEventHandler extends BaseTriggerEventHandler {
         .withReceivedArtifacts(artifacts)
         .withTrigger(trigger.atParameters(parameters)
           .atPayload(payload)
-          .atEventId(event.getEventId()));
+          .atEventId(webhookEvent.getEventId()));
   }
 
   @Override
@@ -88,8 +86,7 @@ public class WebhookEventHandler extends BaseTriggerEventHandler {
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(final TriggerEvent event, final Pipeline pipeline) {
-    WebhookEvent webhookEvent = objectMapper.convertValue(event, WebhookEvent.class);
+  protected Predicate<Trigger> matchTriggerFor(final WebhookEvent webhookEvent, final Pipeline pipeline) {
     final String type = webhookEvent.getDetails().getType();
     final String source = webhookEvent.getDetails().getSource();
     final Map content = webhookEvent.getContent();
@@ -104,7 +101,7 @@ public class WebhookEventHandler extends BaseTriggerEventHandler {
 
             // If the Constraints are present, check that there are equivalents in the webhook payload.
             (  trigger.getPayloadConstraints() != null &&
-               isConstraintInPayload(trigger.getPayloadConstraints(), event.getPayload())
+               isConstraintInPayload(trigger.getPayloadConstraints(), webhookEvent.getPayload())
             )
 
         ) &&

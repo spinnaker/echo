@@ -24,7 +24,6 @@ import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.DockerEvent;
-import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DockerEventHandler extends BaseTriggerEventHandler {
+public class DockerEventHandler extends BaseTriggerEventHandler<DockerEvent> {
 
   public static final String TRIGGER_TYPE = "docker";
 
@@ -58,8 +57,7 @@ public class DockerEventHandler extends BaseTriggerEventHandler {
   }
 
   @Override
-  public boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
-    DockerEvent dockerEvent = (DockerEvent) event;
+  public boolean isSuccessfulTriggerEvent(final DockerEvent dockerEvent) {
     // The event should always report a tag
     String tag = dockerEvent.getContent().getTag();
     return tag != null && !tag.isEmpty();
@@ -79,10 +77,9 @@ public class DockerEventHandler extends BaseTriggerEventHandler {
   }
 
   @Override
-  protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
-    DockerEvent dockerEvent = (DockerEvent) event;
+  protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, DockerEvent dockerEvent) {
 
-    return trigger -> pipeline.withTrigger(trigger.atTag(dockerEvent.getContent().getTag()).withEventId(event.getEventId()))
+    return trigger -> pipeline.withTrigger(trigger.atTag(dockerEvent.getContent().getTag()).withEventId(dockerEvent.getEventId()))
       .withReceivedArtifacts(getArtifacts(dockerEvent));
   }
 
@@ -106,8 +103,8 @@ public class DockerEventHandler extends BaseTriggerEventHandler {
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(final TriggerEvent event, final Pipeline pipeline) {
-    return trigger -> isMatchingTrigger((DockerEvent)event, trigger, pipeline);
+  protected Predicate<Trigger> matchTriggerFor(final DockerEvent dockerEvent, final Pipeline pipeline) {
+    return trigger -> isMatchingTrigger(dockerEvent, trigger, pipeline);
   }
 
   private boolean isMatchingTrigger(DockerEvent dockerEvent, Trigger trigger, final Pipeline pipeline) {

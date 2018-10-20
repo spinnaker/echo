@@ -26,7 +26,6 @@ import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription;
 import com.netflix.spinnaker.echo.model.trigger.PubsubEvent;
-import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -39,7 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * Triggers pipelines in _Orca_ when a trigger-enabled pubsub message arrives.
  */
 @Slf4j
-public class PubsubEventHandler extends BaseTriggerEventHandler {
+public class PubsubEventHandler extends BaseTriggerEventHandler<PubsubEvent> {
 
   public static final String PUBSUB_TRIGGER_TYPE = "pubsub";
 
@@ -62,14 +61,12 @@ public class PubsubEventHandler extends BaseTriggerEventHandler {
   }
 
   @Override
-  public boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
-    PubsubEvent pubsubEvent = (PubsubEvent) event;
+  public boolean isSuccessfulTriggerEvent(final PubsubEvent pubsubEvent) {
     return pubsubEvent != null;
   }
 
   @Override
-  protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
-    PubsubEvent pubsubEvent = (PubsubEvent) event;
+  protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, PubsubEvent pubsubEvent) {
     Map payload = pubsubEvent.getPayload();
     Map parameters = payload.containsKey("parameters") ? (Map) payload.get("parameters") : new HashMap();
     MessageDescription description = pubsubEvent.getContent().getMessageDescription();
@@ -79,7 +76,7 @@ public class PubsubEventHandler extends BaseTriggerEventHandler {
           .atMessageDescription(description.getSubscriptionName(), description.getPubsubSystem().toString())
           .atParameters(parameters)
           .atPayload(payload)
-          .atEventId(event.getEventId()));
+          .atEventId(pubsubEvent.getEventId()));
   }
 
   @Override
@@ -89,14 +86,13 @@ public class PubsubEventHandler extends BaseTriggerEventHandler {
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(final TriggerEvent event, final Pipeline pipeline) {
-    PubsubEvent pubsubEvent = (PubsubEvent) event;
+  protected Predicate<Trigger> matchTriggerFor(final PubsubEvent pubsubEvent, final Pipeline pipeline) {
     MessageDescription description = pubsubEvent.getContent().getMessageDescription();
 
     return trigger -> trigger.getType().equalsIgnoreCase(PUBSUB_TRIGGER_TYPE)
         && trigger.getPubsubSystem().equalsIgnoreCase(description.getPubsubSystem().toString())
         && trigger.getSubscriptionName().equalsIgnoreCase(description.getSubscriptionName())
-        && (trigger.getPayloadConstraints() == null || isConstraintInPayload(trigger.getPayloadConstraints(), event.getPayload()))
+        && (trigger.getPayloadConstraints() == null || isConstraintInPayload(trigger.getPayloadConstraints(), pubsubEvent.getPayload()))
         && (trigger.getAttributeConstraints() == null || isConstraintInPayload(trigger.getAttributeConstraints(), description.getMessageAttributes()))
         && anyArtifactsMatchExpected(description.getArtifacts(), trigger, pipeline);
   }

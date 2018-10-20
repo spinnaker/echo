@@ -27,7 +27,7 @@ import java.util.Map;
  * Interface for classes that match a TriggerEvent to pipelines that should be triggered in response
  * to the event.
  */
-public interface TriggerEventHandler {
+public interface TriggerEventHandler<T extends TriggerEvent> {
 
   /**
    * @param eventType An event type
@@ -40,7 +40,7 @@ public interface TriggerEventHandler {
    * @param event The event to convert
    * @return The converted event
    */
-  TriggerEvent convertEvent(Event event);
+  T convertEvent(Event event);
 
   /**
    * Given a list of pipelines and an event, returns the pipelines that should be triggered
@@ -49,7 +49,7 @@ public interface TriggerEventHandler {
    * @param pipelines The pipelines to consider
    * @return The pipelines that should be triggered
    */
-  List<Pipeline> getMatchingPipelines(final TriggerEvent event, List<Pipeline> pipelines);
+  List<Pipeline> getMatchingPipelines(final T event, List<Pipeline> pipelines);
 
   /**
    * Given a pipeline, gets any additional tags that should be associated with metrics recorded

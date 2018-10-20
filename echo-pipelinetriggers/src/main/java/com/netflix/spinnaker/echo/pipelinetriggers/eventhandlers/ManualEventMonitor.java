@@ -21,7 +21,6 @@ import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent;
-import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class ManualEventMonitor implements TriggerEventHandler {
+public class ManualEventMonitor implements TriggerEventHandler<ManualEvent> {
 
   public static final String MANUAL_TRIGGER_TYPE = "manual";
 
@@ -54,29 +53,27 @@ public class ManualEventMonitor implements TriggerEventHandler {
     return objectMapper.convertValue(event, ManualEvent.class);
   }
 
-  public List<Pipeline> getMatchingPipelines(final TriggerEvent event, List<Pipeline> pipelines) {
+  public List<Pipeline> getMatchingPipelines(final ManualEvent manualEvent, List<Pipeline> pipelines) {
     return pipelines.stream()
-      .map(p -> withMatchingTrigger(event, p))
+      .map(p -> withMatchingTrigger(manualEvent, p))
       .filter(Optional::isPresent)
       .map(Optional::get)
       .collect(Collectors.toList());
   }
 
-  private Optional<Pipeline> withMatchingTrigger(final TriggerEvent event, Pipeline pipeline) {
+  private Optional<Pipeline> withMatchingTrigger(final ManualEvent manualEvent, Pipeline pipeline) {
     if (pipeline.isDisabled()) {
       return Optional.empty();
     } else {
-      ManualEvent manualEvent = (ManualEvent) event;
       Trigger trigger = manualEvent.getContent().getTrigger();
       return Stream.of(trigger)
-        .filter(matchTriggerFor(event, pipeline))
+        .filter(matchTriggerFor(manualEvent, pipeline))
         .findFirst()
-        .map(buildTrigger(pipeline, event));
+        .map(buildTrigger(pipeline, manualEvent));
     }
   }
 
-  private Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
-    ManualEvent manualEvent = (ManualEvent) event;
+  private Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, ManualEvent manualEvent) {
     return trigger -> {
       List<Map<String, Object>> notifications = buildNotifications(pipeline.getNotifications(),
         manualEvent.getContent().getTrigger().getNotifications());
@@ -97,8 +94,7 @@ public class ManualEventMonitor implements TriggerEventHandler {
     return notifications;
   }
 
-  private Predicate<Trigger> matchTriggerFor(final TriggerEvent event, final Pipeline pipeline) {
-    ManualEvent manualEvent = (ManualEvent) event;
+  private Predicate<Trigger> matchTriggerFor(final ManualEvent manualEvent, final Pipeline pipeline) {
     String application = manualEvent.getContent().getApplication();
     String nameOrId = manualEvent.getContent().getPipelineNameOrId();
 

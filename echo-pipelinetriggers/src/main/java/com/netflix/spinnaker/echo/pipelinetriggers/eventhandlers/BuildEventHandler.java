@@ -25,7 +25,6 @@ import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent;
-import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,7 +39,7 @@ import org.springframework.stereotype.Component;
  * Triggers pipelines on _Orca_ when a trigger-enabled build completes successfully.
  */
 @Component
-public class BuildEventHandler extends BaseTriggerEventHandler {
+public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
 
   public static final String[] BUILD_TRIGGER_TYPES = {"jenkins", "travis", "wercker"};
 
@@ -63,17 +62,15 @@ public class BuildEventHandler extends BaseTriggerEventHandler {
   }
 
   @Override
-  public boolean isSuccessfulTriggerEvent(final TriggerEvent event) {
-    BuildEvent buildEvent = (BuildEvent) event;
+  public boolean isSuccessfulTriggerEvent(final BuildEvent buildEvent) {
     BuildEvent.Build lastBuild = buildEvent.getContent().getProject().getLastBuild();
     return lastBuild != null && !lastBuild.isBuilding() && lastBuild.getResult() == BuildEvent.Result.SUCCESS;
   }
 
   @Override
-  protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, TriggerEvent event) {
-    BuildEvent buildEvent = (BuildEvent) event;
+  protected Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, BuildEvent buildEvent) {
     return trigger -> pipeline.withTrigger(trigger.atBuildNumber(buildEvent.getBuildNumber())
-                                                  .withEventId(event.getEventId())
+                                                  .withEventId(buildEvent.getEventId())
                                                   .withLink(buildEvent.getContent().getProject().getLastBuild().getUrl()))
                               .withReceivedArtifacts(getArtifacts(buildEvent));
   }
@@ -89,8 +86,7 @@ public class BuildEventHandler extends BaseTriggerEventHandler {
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(final TriggerEvent event, final Pipeline pipeline) {
-    BuildEvent buildEvent = (BuildEvent) event;
+  protected Predicate<Trigger> matchTriggerFor(final BuildEvent buildEvent, final Pipeline pipeline) {
     String jobName = buildEvent.getContent().getProject().getName();
     String master = buildEvent.getContent().getMaster();
     return trigger -> isBuildTrigger(trigger)

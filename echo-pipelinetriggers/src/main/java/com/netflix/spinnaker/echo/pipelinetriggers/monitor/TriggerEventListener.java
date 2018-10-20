@@ -39,11 +39,11 @@ public class TriggerEventListener implements EchoEventListener {
   public TriggerEventListener(@NonNull PipelineCache pipelineCache,
     @NonNull PipelineInitiator pipelineInitiator,
     @NonNull Registry registry,
-    @NonNull List<TriggerEventHandler> eventHandlers
+    @NonNull List<TriggerEventHandler<?>> eventHandlers
   ) {
     this.triggerMonitors = eventHandlers
       .stream()
-      .map(e -> new TriggerMonitor(pipelineCache, pipelineInitiator, registry, e))
+      .map(e -> new TriggerMonitor<>(pipelineCache, pipelineInitiator, registry, e))
       .collect(Collectors.toList());
   }
 
