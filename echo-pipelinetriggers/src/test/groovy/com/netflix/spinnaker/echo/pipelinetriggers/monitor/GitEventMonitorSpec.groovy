@@ -21,9 +21,8 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
+import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator
 import com.netflix.spinnaker.echo.test.RetrofitStubs
-import rx.Observable
-import rx.functions.Action1
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -31,11 +30,11 @@ import spock.lang.Unroll
 class GitEventMonitorSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
   def pipelineCache = Mock(PipelineCache)
-  def subscriber = Mock(Action1)
+  def pipelineInitiator = Mock(PipelineInitiator)
   def registry = new NoopRegistry()
 
   @Subject
-  def monitor = new GitEventMonitor(pipelineCache, subscriber, registry)
+  def monitor = new GitEventMonitor(pipelineCache, pipelineInitiator, registry)
 
   @Unroll
   def "triggers pipelines for successful builds for #triggerType"() {
@@ -47,7 +46,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({
+    1 * pipelineInitiator.startPipeline({
       it.application == pipeline.application && it.name == pipeline.name
     })
 
@@ -65,7 +64,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({
+    1 * pipelineInitiator.startPipeline({
       it.trigger.type == enabledStashTrigger.type
       it.trigger.project == enabledStashTrigger.project
       it.trigger.slug == enabledStashTrigger.slug
@@ -85,7 +84,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({
+    1 * pipelineInitiator.startPipeline({
       it.trigger.type == enabledBitBucketTrigger.type
       it.trigger.project == enabledBitBucketTrigger.project
       it.trigger.slug == enabledBitBucketTrigger.slug
@@ -105,7 +104,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    pipelines.size() * subscriber.call(_ as Pipeline)
+    pipelines.size() * pipelineInitiator.startPipeline(_ as Pipeline)
 
     where:
     event = createGitEvent("stash")
@@ -128,7 +127,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    0 * subscriber._
+    0 * pipelineInitiator._
 
     where:
     trigger              | description
@@ -148,7 +147,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    0 * subscriber._
+    0 * pipelineInitiator._
 
     where:
     trigger                                       | description
@@ -171,7 +170,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    0 * subscriber._
+    0 * pipelineInitiator._
 
     where:
     trigger                                           | description
@@ -194,7 +193,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({ it.id == goodPipeline.id })
+    1 * pipelineInitiator.startPipeline({ it.id == goodPipeline.id })
 
     where:
     trigger                               | field
@@ -216,7 +215,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({ it.id == goodPipeline.id })
+    1 * pipelineInitiator.startPipeline({ it.id == goodPipeline.id })
 
     where:
     trigger                                   | field
@@ -242,7 +241,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(gitEvent, Event))
 
     then:
-    1 * subscriber.call({
+    1 * pipelineInitiator.startPipeline({
       it.application == pipeline.application && it.name == pipeline.name
     })
 
@@ -268,7 +267,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(gitEvent, Event))
 
     then:
-    0 * subscriber._
+    0 * pipelineInitiator._
 
     where:
     eventBranch  | triggerBranch
@@ -294,7 +293,7 @@ class GitEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(gitEvent, Event))
 
     then:
-    callCount * subscriber._
+    callCount * pipelineInitiator._
 
     where:
     secret | signature                                  | callCount

@@ -24,12 +24,11 @@ import com.netflix.spinnaker.echo.model.pubsub.MessageDescription
 import com.netflix.spinnaker.echo.model.pubsub.PubsubSystem
 import com.netflix.spinnaker.echo.model.trigger.PubsubEvent
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
+import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
 import groovy.json.JsonOutput
-import rx.Observable
-import rx.functions.Action1
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -38,7 +37,7 @@ import spock.lang.Unroll
 class PubsubEventMonitorSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
   def pipelineCache = Mock(PipelineCache)
-  def subscriber = Mock(Action1)
+  def pipelineInitiator = Mock(PipelineInitiator)
   def registry = new NoopRegistry()
 
   @Shared
@@ -77,7 +76,7 @@ class PubsubEventMonitorSpec extends Specification implements RetrofitStubs {
   ]
 
   @Subject
-  def monitor = new PubsubEventMonitor(pipelineCache, subscriber, registry)
+  def monitor = new PubsubEventMonitor(pipelineCache, pipelineInitiator, registry)
 
   @Unroll
   def "triggers pipelines for successful builds for Google pubsub"() {
@@ -89,7 +88,7 @@ class PubsubEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({
+    1 * pipelineInitiator.startPipeline({
       it.application == pipeline.application && it.name == pipeline.name
     })
 
@@ -111,7 +110,7 @@ class PubsubEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({
+    1 * pipelineInitiator.startPipeline({
       it.trigger.type == enabledGooglePubsubTrigger.type
       it.trigger.pubsubSystem == enabledGooglePubsubTrigger.pubsubSystem
       it.trigger.subscriptionName == enabledGooglePubsubTrigger.subscriptionName
@@ -131,7 +130,7 @@ class PubsubEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    0 * subscriber._
+    0 * pipelineInitiator._
 
     where:
     trigger                                                      | description
@@ -152,7 +151,7 @@ class PubsubEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    0 * subscriber._
+    0 * pipelineInitiator._
 
     where:
     trigger                                                                      | description
@@ -171,7 +170,7 @@ class PubsubEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({ it.id == goodPipeline.id })
+    1 * pipelineInitiator.startPipeline({ it.id == goodPipeline.id })
 
     where:
     trigger                                               | field
@@ -208,7 +207,7 @@ class PubsubEventMonitorSpec extends Specification implements RetrofitStubs {
 
 
     then:
-    callCount * subscriber.call({
+    callCount * pipelineInitiator.startPipeline({
       it.application == pipeline.application && it.name == pipeline.name
     })
 
@@ -245,7 +244,7 @@ class PubsubEventMonitorSpec extends Specification implements RetrofitStubs {
 
 
     then:
-    callCount * subscriber.call({
+    callCount * pipelineInitiator.startPipeline({
       it.application == pipeline.application && it.name == pipeline.name
     })
 

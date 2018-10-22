@@ -21,10 +21,9 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
+import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
-import rx.Observable
-import rx.functions.Action1
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -32,11 +31,11 @@ import spock.lang.Unroll
 class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
   def pipelineCache = Mock(PipelineCache)
-  def subscriber = Mock(Action1)
+  def pipelineInitiator = Mock(PipelineInitiator)
   def registry = new NoopRegistry()
 
   @Subject
-  def monitor = new DockerEventMonitor(pipelineCache, subscriber, registry)
+  def monitor = new DockerEventMonitor(pipelineCache, pipelineInitiator, registry)
 
   @Unroll
   def "triggers pipelines for successful builds for #triggerType"() {
@@ -48,7 +47,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({
+    1 * pipelineInitiator.startPipeline({
       it.application == pipeline.application && it.name == pipeline.name
     })
 
@@ -65,7 +64,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({
+    1 * pipelineInitiator.startPipeline({
       it.trigger.type == enabledDockerTrigger.type
       it.trigger.account == enabledDockerTrigger.account
       it.trigger.repository == enabledDockerTrigger.repository
@@ -93,7 +92,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    pipelines.size() * subscriber.call(_ as Pipeline)
+    pipelines.size() * pipelineInitiator.startPipeline(_ as Pipeline)
 
     where:
     event = createDockerEvent()
@@ -116,7 +115,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    0 * subscriber._
+    0 * pipelineInitiator._
 
     where:
     trigger               | description
@@ -136,7 +135,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    0 * subscriber._
+    0 * pipelineInitiator._
 
     where:
     trigger                                               | description
@@ -158,7 +157,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({ it.id == goodPipeline.id })
+    1 * pipelineInitiator.startPipeline({ it.id == goodPipeline.id })
 
     where:
     trigger                                    | field
@@ -181,7 +180,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({ it.id == pipeline.id })
+    1 * pipelineInitiator.startPipeline({ it.id == pipeline.id })
 
     where:
     trigger                               | field
@@ -200,7 +199,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({ it.id == pipeline.id })
+    1 * pipelineInitiator.startPipeline({ it.id == pipeline.id })
 
     where:
     trigger                               | field
@@ -219,7 +218,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    1 * subscriber.call({ it.id == pipeline.id })
+    1 * pipelineInitiator.startPipeline({ it.id == pipeline.id })
 
     where:
     trigger                               | field
@@ -238,7 +237,7 @@ class DockerEventMonitorSpec extends Specification implements RetrofitStubs {
     monitor.processEvent(objectMapper.convertValue(event, Event))
 
     then:
-    0 * subscriber._
+    0 * pipelineInitiator._
 
     where:
     trigger                               | field
