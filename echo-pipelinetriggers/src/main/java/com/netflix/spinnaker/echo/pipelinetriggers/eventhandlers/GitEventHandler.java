@@ -20,7 +20,6 @@ import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatc
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.GitEvent;
@@ -45,15 +44,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
   private static final String GIT_TRIGGER_TYPE = "git";
-
   private static final String GITHUB_SECURE_SIGNATURE_HEADER = "X-Hub-Signature";
-
-  private final ObjectMapper objectMapper;
 
   @Autowired
   public GitEventHandler(Registry registry, ObjectMapper objectMapper) {
-    super(registry);
-    this.objectMapper = objectMapper;
+    super(registry, objectMapper);
   }
 
   @Override
@@ -62,8 +57,8 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
   }
 
   @Override
-  public GitEvent convertEvent(Event event) {
-    return objectMapper.convertValue(event, GitEvent.class);
+  public Class<GitEvent> getEventType() {
+    return GitEvent.class;
   }
 
   @Override

@@ -21,7 +21,6 @@ import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatc
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription;
@@ -41,12 +40,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class PubsubEventHandler extends BaseTriggerEventHandler<PubsubEvent> {
   public static final String PUBSUB_TRIGGER_TYPE = "pubsub";
 
-  private final ObjectMapper objectMapper;
-
   @Autowired
   public PubsubEventHandler(Registry registry, ObjectMapper objectMapper) {
-    super(registry);
-    this.objectMapper = objectMapper;
+    super(registry, objectMapper);
   }
 
   @Override
@@ -54,10 +50,9 @@ public class PubsubEventHandler extends BaseTriggerEventHandler<PubsubEvent> {
     return eventType.equalsIgnoreCase(PubsubEvent.TYPE);
   }
 
-
   @Override
-  public PubsubEvent convertEvent(Event event) {
-    return objectMapper.convertValue(event, PubsubEvent.class);
+  public Class<PubsubEvent> getEventType() {
+    return PubsubEvent.class;
   }
 
   @Override

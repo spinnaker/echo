@@ -20,7 +20,6 @@ import static java.util.Collections.emptyList;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.WebhookEvent;
@@ -46,12 +45,9 @@ public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
   private static final TypeReference<List<Artifact>> ARTIFACT_LIST =
       new TypeReference<List<Artifact>>() {};
 
-  private final ObjectMapper objectMapper;
-
   @Autowired
   public WebhookEventHandler(Registry registry, ObjectMapper objectMapper) {
-    super(registry);
-    this.objectMapper = objectMapper;
+    super(registry, objectMapper);
   }
 
   @Override
@@ -60,8 +56,8 @@ public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
   }
 
   @Override
-  public WebhookEvent convertEvent(Event event) {
-    return objectMapper.convertValue(event, WebhookEvent.class);
+  public Class<WebhookEvent> getEventType() {
+    return WebhookEvent.class;
   }
 
   @Override

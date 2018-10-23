@@ -16,7 +16,9 @@
 
 package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
@@ -33,9 +35,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements TriggerEventHandler<T> {
   private final Registry registry;
+  protected final ObjectMapper objectMapper;
 
-  BaseTriggerEventHandler(Registry registry) {
+  BaseTriggerEventHandler(Registry registry, ObjectMapper objectMapper) {
     this.registry = registry;
+    this.objectMapper = objectMapper;
   }
 
   public Optional<Pipeline> withMatchingTrigger(T event, Pipeline pipeline) {
@@ -61,9 +65,16 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements
     registry.counter("trigger.errors", "exception", error.getClass().getName()).increment();
   }
 
+  @Override
+  public T convertEvent(Event event) {
+    return  objectMapper.convertValue(event, getEventType());
+  }
+
   protected abstract Predicate<Trigger> matchTriggerFor(T event, Pipeline pipeline);
 
   protected abstract Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, T event);
 
   protected abstract boolean isValidTrigger(Trigger trigger);
+
+  protected abstract Class<T> getEventType();
 }

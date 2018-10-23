@@ -21,7 +21,6 @@ import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatc
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent;
@@ -43,12 +42,9 @@ import org.springframework.stereotype.Component;
 public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   private static final String[] BUILD_TRIGGER_TYPES = {"jenkins", "travis", "wercker"};
 
-  private final ObjectMapper objectMapper;
-
   @Autowired
   public BuildEventHandler(Registry registry, ObjectMapper objectMapper) {
-    super(registry);
-    this.objectMapper = objectMapper;
+    super(registry, objectMapper);
   }
 
   @Override
@@ -57,8 +53,8 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   }
 
   @Override
-  public BuildEvent convertEvent(Event event) {
-    return objectMapper.convertValue(event, BuildEvent.class);
+  public Class<BuildEvent> getEventType() {
+    return BuildEvent.class;
   }
 
   @Override
