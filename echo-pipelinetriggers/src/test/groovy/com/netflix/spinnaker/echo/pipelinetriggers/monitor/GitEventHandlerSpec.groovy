@@ -19,7 +19,6 @@ package com.netflix.spinnaker.echo.pipelinetriggers.monitor
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.model.Pipeline
-import com.netflix.spinnaker.echo.model.trigger.TriggerEvent
 import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.GitEventHandler
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import spock.lang.Specification
@@ -40,7 +39,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -58,7 +57,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -77,7 +76,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -93,7 +92,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
 
   def "an event can trigger multiple pipelines"() {
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == pipelines.size()
@@ -116,7 +115,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 0
@@ -136,7 +135,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 0
@@ -159,7 +158,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 0
@@ -182,7 +181,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [badPipeline, goodPipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -205,7 +204,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [badPipeline, goodPipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -232,7 +231,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(gitEvent, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(gitEvent, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -258,7 +257,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(gitEvent, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(gitEvent, pipelines)
 
     then:
     matchingPipelines.size() == 0
@@ -284,7 +283,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(gitEvent, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(gitEvent, pipelines)
 
     then:
     matchingPipelines.size() == callCount

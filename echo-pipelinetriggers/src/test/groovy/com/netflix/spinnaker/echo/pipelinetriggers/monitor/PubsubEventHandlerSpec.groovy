@@ -22,7 +22,6 @@ import com.netflix.spinnaker.echo.model.Metadata
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription
 import com.netflix.spinnaker.echo.model.pubsub.PubsubSystem
 import com.netflix.spinnaker.echo.model.trigger.PubsubEvent
-import com.netflix.spinnaker.echo.model.trigger.TriggerEvent
 import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.PubsubEventHandler
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
@@ -82,7 +81,7 @@ class PubsubEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -103,7 +102,7 @@ class PubsubEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -122,7 +121,7 @@ class PubsubEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 0
@@ -143,7 +142,7 @@ class PubsubEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 0
@@ -162,7 +161,7 @@ class PubsubEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [badPipeline, goodPipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -199,7 +198,7 @@ class PubsubEventHandlerSpec extends Specification implements RetrofitStubs {
     event.payload = [key: 'value']
     event.content = content
     event.details = new Metadata([type: PubsubEventHandler.PUBSUB_TRIGGER_TYPE])
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == callCount
@@ -236,7 +235,7 @@ class PubsubEventHandlerSpec extends Specification implements RetrofitStubs {
     event.payload = [key: 'value']
     event.content = content
     event.details = new Metadata([type: PubsubEventHandler.PUBSUB_TRIGGER_TYPE, attributes: [key: 'value']])
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
 
     then:

@@ -16,7 +16,6 @@ package com.netflix.spinnaker.echo.pipelinetriggers.monitor
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
-import com.netflix.spinnaker.echo.model.trigger.TriggerEvent
 import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.WebhookEventHandler
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
@@ -50,7 +49,7 @@ class WebhookEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -71,7 +70,7 @@ class WebhookEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
@@ -90,7 +89,7 @@ class WebhookEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 0

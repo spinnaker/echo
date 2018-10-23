@@ -3,7 +3,6 @@ package com.netflix.spinnaker.echo.pipelinetriggers.monitor
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.model.Pipeline
-import com.netflix.spinnaker.echo.model.trigger.TriggerEvent
 import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.BuildEventHandler
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import spock.lang.Specification
@@ -26,12 +25,12 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
-    matchingPipelines[0].application == pipeline.application;
-    matchingPipelines[0].name == pipeline.name;
+    matchingPipelines[0].application == pipeline.application
+    matchingPipelines[0].name == pipeline.name
 
     where:
     event                         | trigger               | triggerType
@@ -46,7 +45,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def result = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def result = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     result.size() == 1
@@ -64,7 +63,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
 
   def "an event can trigger multiple pipelines"() {
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == pipelines.size()
@@ -84,7 +83,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger pipelines for #description builds"() {
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), [pipeline])
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, [pipeline])
 
     then:
     matchingPipelines.size() == 0
@@ -107,7 +106,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [pipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 0
@@ -133,7 +132,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     def pipelines = [badPipeline, goodPipeline]
 
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(objectMapper.convertValue(event, TriggerEvent), pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
     matchingPipelines.size() == 1
