@@ -19,9 +19,12 @@ package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Interface for classes that match a TriggerEvent to pipelines that should be triggered in response
@@ -43,13 +46,32 @@ public interface TriggerEventHandler<T extends TriggerEvent> {
   T convertEvent(Event event);
 
   /**
+   * Determines whether the given pipeline should be triggered by the given event, and if so returns
+   * the fully-formed pipeline (with the trigger set) that should be executed.
+   * @param event The triggering event
+   * @param pipeline The pipeline to potentially trigger
+   * @return An Optional containing the pipeline to be triggered, or empty if it should not be triggered
+   */
+  Optional<Pipeline> withMatchingTrigger(T event, Pipeline pipeline);
+
+  /**
    * Given a list of pipelines and an event, returns the pipelines that should be triggered
    * by the event
    * @param event The triggering event
    * @param pipelines The pipelines to consider
    * @return The pipelines that should be triggered
    */
-  List<Pipeline> getMatchingPipelines(T event, List<Pipeline> pipelines);
+  default List<Pipeline> getMatchingPipelines(T event, List<Pipeline> pipelines) {
+    if (isSuccessfulTriggerEvent(event)) {
+      return pipelines.stream()
+        .map(p -> withMatchingTrigger(event, p))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toList());
+    } else {
+      return Collections.emptyList();
+    }
+  }
 
   /**
    * Given a pipeline, gets any additional tags that should be associated with metrics recorded
@@ -59,5 +81,9 @@ public interface TriggerEventHandler<T extends TriggerEvent> {
    */
   default Map<String,String> getAdditionalTags(Pipeline pipeline) {
     return new HashMap<>();
+  }
+
+  default boolean isSuccessfulTriggerEvent(T event) {
+    return true;
   }
 }

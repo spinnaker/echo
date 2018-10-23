@@ -20,35 +20,25 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Base implementation of {@link TriggerEventHandler} for events that require looking for matching
+ * triggers on a pipeline. Most events fall into this category; at this point the only exception is
+ * manual events.
+ */
 @Slf4j
 public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements TriggerEventHandler<T> {
-  private Registry registry;
+  private final Registry registry;
 
-  public BaseTriggerEventHandler(Registry registry) {
+  BaseTriggerEventHandler(Registry registry) {
     this.registry = registry;
   }
 
-  public List<Pipeline> getMatchingPipelines(T event, List<Pipeline> pipelines) {
-    if (isSuccessfulTriggerEvent(event)) {
-      return pipelines.stream()
-        .map(p -> withMatchingTrigger(event, p))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .collect(Collectors.toList());
-    } else {
-      return new ArrayList<>();
-    }
-  }
-
-  private Optional<Pipeline> withMatchingTrigger(T event, Pipeline pipeline) {
+  public Optional<Pipeline> withMatchingTrigger(T event, Pipeline pipeline) {
     if (pipeline.getTriggers() == null || pipeline.isDisabled()) {
       return Optional.empty();
     } else {
@@ -68,10 +58,8 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements
 
   private void onSubscriberError(Throwable error) {
     log.error("Subscriber raised an error processing pipeline", error);
-    registry.counter("trigger.errors").increment();
+    registry.counter("trigger.errors", "exception", error.getClass().getName()).increment();
   }
-
-  protected abstract boolean isSuccessfulTriggerEvent(T event);
 
   protected abstract Predicate<Trigger> matchTriggerFor(T event, Pipeline pipeline);
 

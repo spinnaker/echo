@@ -30,7 +30,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Triggers pipelines on _Orca_ when a trigger-enabled build completes successfully.
+ * Triggers pipelines in orca when a TriggerEvent of type T is received by echo.
  */
 @Slf4j
 public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener {

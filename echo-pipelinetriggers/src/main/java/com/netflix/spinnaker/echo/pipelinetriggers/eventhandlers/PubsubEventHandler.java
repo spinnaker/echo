@@ -35,9 +35,9 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * Triggers pipelines in _Orca_ when a trigger-enabled pubsub message arrives.
+ * Implementation of TriggerEventHandler for events of type {@link PubsubEvent}, which occur when
+ * a pubsub message is received.
  */
-@Slf4j
 public class PubsubEventHandler extends BaseTriggerEventHandler<PubsubEvent> {
   public static final String PUBSUB_TRIGGER_TYPE = "pubsub";
 

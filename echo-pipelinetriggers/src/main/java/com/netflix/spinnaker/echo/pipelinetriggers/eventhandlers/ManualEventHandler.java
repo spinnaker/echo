@@ -21,30 +21,30 @@ import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent;
+import com.netflix.spinnaker.echo.model.trigger.ManualEvent.Content;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Triggers pipelines in _Orca_ when a user manually starts a pipeline.
+ * Implementation of TriggerEventHandler for events of type {@link ManualEvent}, which occur when a
+ * user manually requests a particular pipeline to execute (possibly supplying parameters to include
+ * in the trigger). This event handler is unique in that the trigger uniquely specifies which pipeline
+ * to execute; rather than looking at pipeline triggers for one that matches the event, it simply
+ * looks for the pipeline whose application and id/name match the manual execution request.
  */
-@Slf4j
 @Component
-public class ManualEventMonitor implements TriggerEventHandler<ManualEvent> {
-  public static final String MANUAL_TRIGGER_TYPE = "manual";
+public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
+  private static final String MANUAL_TRIGGER_TYPE = "manual";
 
   private final ObjectMapper objectMapper;
 
   @Autowired
-  public ManualEventMonitor(ObjectMapper objectMapper) {
+  public ManualEventHandler(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
@@ -58,34 +58,29 @@ public class ManualEventMonitor implements TriggerEventHandler<ManualEvent> {
     return objectMapper.convertValue(event, ManualEvent.class);
   }
 
-  public List<Pipeline> getMatchingPipelines(ManualEvent manualEvent, List<Pipeline> pipelines) {
-    return pipelines.stream()
-      .map(p -> withMatchingTrigger(manualEvent, p))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .collect(Collectors.toList());
-  }
-
-  private Optional<Pipeline> withMatchingTrigger(ManualEvent manualEvent, Pipeline pipeline) {
-    if (pipeline.isDisabled()) {
-      return Optional.empty();
+  @Override
+  public Optional<Pipeline> withMatchingTrigger(ManualEvent manualEvent, Pipeline pipeline) {
+    Content content = manualEvent.getContent();
+    String application = content.getApplication();
+    String pipelineNameOrId = content.getPipelineNameOrId();
+    if (pipelineMatches(application, pipelineNameOrId, pipeline)) {
+      return Optional.of(buildTrigger(pipeline, content.getTrigger()));
     } else {
-      Trigger trigger = manualEvent.getContent().getTrigger();
-      return Stream.of(trigger)
-        .filter(matchTriggerFor(manualEvent, pipeline))
-        .findFirst()
-        .map(buildTrigger(pipeline, manualEvent));
+      return Optional.empty();
     }
   }
 
-  private Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, ManualEvent manualEvent) {
-    return trigger -> {
-      List<Map<String, Object>> notifications = buildNotifications(pipeline.getNotifications(),
-        manualEvent.getContent().getTrigger().getNotifications());
-      return pipeline
-        .withTrigger(manualEvent.getContent().getTrigger().atPropagateAuth(true))
-        .withNotifications(notifications);
-    };
+  private boolean pipelineMatches(String application, String nameOrId, Pipeline pipeline) {
+    return !pipeline.isDisabled()
+      && pipeline.getApplication().equals(application)
+      && (pipeline.getName().equals(nameOrId) || pipeline.getId().equals(nameOrId));
+  }
+
+  private Pipeline buildTrigger(Pipeline pipeline, Trigger manualTrigger) {
+    List<Map<String, Object>> notifications = buildNotifications(pipeline.getNotifications(), manualTrigger.getNotifications());
+    return pipeline
+      .withTrigger(manualTrigger.atPropagateAuth(true))
+      .withNotifications(notifications);
   }
 
   private List<Map<String, Object>> buildNotifications(List<Map<String, Object>> pipelineNotifications, List<Map<String, Object>> triggerNotifications) {
@@ -97,14 +92,5 @@ public class ManualEventMonitor implements TriggerEventHandler<ManualEvent> {
       notifications.addAll(triggerNotifications);
     }
     return notifications;
-  }
-
-  private Predicate<Trigger> matchTriggerFor(ManualEvent manualEvent, Pipeline pipeline) {
-    String application = manualEvent.getContent().getApplication();
-    String nameOrId = manualEvent.getContent().getPipelineNameOrId();
-
-    return trigger -> pipeline.getApplication().equals(application) && (
-      pipeline.getName().equals(nameOrId) || pipeline.getId().equals(nameOrId)
-    );
   }
 }

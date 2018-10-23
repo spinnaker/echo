@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2018 Google, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * Triggers pipelines on _Orca_ when a trigger-enabled build completes successfully.
+ * Listens for TriggerEvents and sends them out to any registered TriggerMonitors, which in turn
+ * handle finding an triggering pipelines orca.
  */
 @Slf4j
 @Component
@@ -39,8 +40,7 @@ public class TriggerEventListener implements EchoEventListener {
   public TriggerEventListener(@NonNull PipelineCache pipelineCache,
     @NonNull PipelineInitiator pipelineInitiator,
     @NonNull Registry registry,
-    @NonNull List<TriggerEventHandler<?>> eventHandlers
-  ) {
+    @NonNull List<TriggerEventHandler<?>> eventHandlers) {
     this.triggerMonitors = eventHandlers
       .stream()
       .map(e -> new TriggerMonitor<>(pipelineCache, pipelineInitiator, registry, e))

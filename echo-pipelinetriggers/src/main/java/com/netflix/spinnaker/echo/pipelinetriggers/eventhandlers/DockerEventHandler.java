@@ -34,6 +34,10 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * Implementation of TriggerEventHandler for events of type {@link DockerEvent}, which occur when
+ * a new container is pushed to a docker registry.
+ */
 @Component
 public class DockerEventHandler extends BaseTriggerEventHandler<DockerEvent> {
   private static final String TRIGGER_TYPE = "docker";

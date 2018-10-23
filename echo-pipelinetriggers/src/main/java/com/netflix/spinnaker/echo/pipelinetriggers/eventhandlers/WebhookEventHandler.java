@@ -35,9 +35,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component @Slf4j
+/**
+ * Implementation of TriggerEventHandler for events of type {@link WebhookEvent}, which occur when
+ * a webhook is received.
+ */
+@Component
 public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
-  public static final String TRIGGER_TYPE = "webhook";
+  private static final String TRIGGER_TYPE = "webhook";
 
   private static final TypeReference<List<Artifact>> ARTIFACT_LIST =
       new TypeReference<List<Artifact>>() {};
@@ -54,7 +58,6 @@ public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
   public boolean handleEventType(String eventType) {
     return eventType != null && !eventType.equals("manual");
   }
-
 
   @Override
   public WebhookEvent convertEvent(Event event) {

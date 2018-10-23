@@ -38,7 +38,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Triggers pipelines on _Orca_ when a trigger-enabled build completes successfully.
+ * Implementation of TriggerEventHandler for events of type {@link GitEvent}, which occur when
+ * a commit is pushed to a tracked git repository.
  */
 @Component
 @Slf4j
@@ -66,7 +67,7 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
   }
 
   @Override
-  protected boolean isValidTrigger(final Trigger trigger) {
+  protected boolean isValidTrigger(Trigger trigger) {
     return trigger.isEnabled() &&
       (
         (GIT_TRIGGER_TYPE.equals(trigger.getType()) &&
@@ -82,7 +83,7 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(GitEvent gitEvent, final Pipeline pipeline) {
+  protected Predicate<Trigger> matchTriggerFor(GitEvent gitEvent, Pipeline pipeline) {
     String source = gitEvent.getDetails().getSource();
     String project = gitEvent.getContent().getRepoProject();
     String slug = gitEvent.getContent().getSlug();

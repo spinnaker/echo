@@ -36,7 +36,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Triggers pipelines on _Orca_ when a trigger-enabled build completes successfully.
+ * Implementation of TriggerEventHandler for events of type {@link BuildEvent}, which occur when
+ * a CI build completes.
  */
 @Component
 public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
