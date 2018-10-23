@@ -34,8 +34,8 @@ import spock.lang.Subject
 import spock.lang.Unroll
 
 class PubsubEventHandlerSpec extends Specification implements RetrofitStubs {
-  def objectMapper = new ObjectMapper()
   def registry = new NoopRegistry()
+  def objectMapper = new ObjectMapper()
 
   @Shared
   def goodArtifacts = [new Artifact(name: 'myArtifact', type: 'artifactType')]
@@ -73,7 +73,7 @@ class PubsubEventHandlerSpec extends Specification implements RetrofitStubs {
   ]
 
   @Subject
-  def eventHandler = new PubsubEventHandler(registry)
+  def eventHandler = new PubsubEventHandler(registry, objectMapper)
 
   @Unroll
   def "triggers pipelines for successful builds for Google pubsub"() {

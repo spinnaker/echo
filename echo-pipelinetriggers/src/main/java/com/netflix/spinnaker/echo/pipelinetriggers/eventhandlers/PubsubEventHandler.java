@@ -41,11 +41,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class PubsubEventHandler extends BaseTriggerEventHandler<PubsubEvent> {
   public static final String PUBSUB_TRIGGER_TYPE = "pubsub";
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   @Autowired
-  public PubsubEventHandler(Registry registry) {
+  public PubsubEventHandler(Registry registry, ObjectMapper objectMapper) {
     super(registry);
+    this.objectMapper = objectMapper;
   }
 
   @Override

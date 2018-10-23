@@ -42,11 +42,12 @@ import org.springframework.stereotype.Component;
 public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   private static final String[] BUILD_TRIGGER_TYPES = {"jenkins", "travis", "wercker"};
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   @Autowired
-  public BuildEventHandler(Registry registry) {
+  public BuildEventHandler(Registry registry, ObjectMapper objectMapper) {
     super(registry);
+    this.objectMapper = objectMapper;
   }
 
   @Override

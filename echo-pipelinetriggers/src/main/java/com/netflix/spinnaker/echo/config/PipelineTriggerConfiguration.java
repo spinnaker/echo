@@ -73,8 +73,8 @@ public class PipelineTriggerConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(PubsubEventHandler.class)
-  PubsubEventHandler pubsubEventHandler(Registry registry) {
-    return new PubsubEventHandler(registry);
+  PubsubEventHandler pubsubEventHandler(Registry registry, ObjectMapper objectMapper) {
+    return new PubsubEventHandler(registry, objectMapper);
   }
 
   private <T> T bindRetrofitService(final Class<T> type, final String endpoint) {

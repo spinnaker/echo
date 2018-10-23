@@ -27,9 +27,8 @@ import spock.lang.Subject
 import spock.lang.Unroll
 
 class WebhookEventHandlerSpec extends Specification implements RetrofitStubs {
-
-  def objectMapper = new ObjectMapper()
   def registry = new NoopRegistry()
+  def objectMapper = new ObjectMapper()
 
   @Shared
   def goodExpectedArtifacts = [
@@ -43,7 +42,7 @@ class WebhookEventHandlerSpec extends Specification implements RetrofitStubs {
   ]
 
   @Subject
-  def eventHandler = new WebhookEventHandler(registry)
+  def eventHandler = new WebhookEventHandler(registry, objectMapper)
 
   def 'triggers pipelines for successful builds for webhook'() {
     given:

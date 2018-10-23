@@ -38,11 +38,12 @@ import org.springframework.stereotype.Component;
 public class DockerEventHandler extends BaseTriggerEventHandler<DockerEvent> {
   private static final String TRIGGER_TYPE = "docker";
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   @Autowired
-  public DockerEventHandler(Registry registry) {
+  public DockerEventHandler(Registry registry, ObjectMapper objectMapper) {
     super(registry);
+    this.objectMapper = objectMapper;
   }
 
   @Override

@@ -28,11 +28,11 @@ import spock.lang.Subject
 import spock.lang.Unroll
 
 class DockerEventHandlerSpec extends Specification implements RetrofitStubs {
-  def objectMapper = new ObjectMapper()
   def registry = new NoopRegistry()
+  def objectMapper = new ObjectMapper()
 
   @Subject
-  def eventHandler = new DockerEventHandler(registry)
+  def eventHandler = new DockerEventHandler(registry, objectMapper)
 
   @Unroll
   def "triggers pipelines for successful builds for #triggerType"() {

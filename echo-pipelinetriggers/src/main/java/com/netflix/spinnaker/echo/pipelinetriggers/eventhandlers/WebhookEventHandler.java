@@ -42,11 +42,12 @@ public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
   private static final TypeReference<List<Artifact>> ARTIFACT_LIST =
       new TypeReference<List<Artifact>>() {};
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   @Autowired
-  public WebhookEventHandler(Registry registry) {
+  public WebhookEventHandler(Registry registry, ObjectMapper objectMapper) {
     super(registry);
+    this.objectMapper = objectMapper;
   }
 
   @Override

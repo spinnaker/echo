@@ -27,11 +27,11 @@ import spock.lang.Subject
 import spock.lang.Unroll
 
 class GitEventHandlerSpec extends Specification implements RetrofitStubs {
-  def objectMapper = new ObjectMapper()
   def registry = new NoopRegistry()
+  def objectMapper = new ObjectMapper()
 
   @Subject
-  def eventHandler = new GitEventHandler(registry)
+  def eventHandler = new GitEventHandler(registry, objectMapper)
 
   @Unroll
   def "triggers pipelines for successful builds for #triggerType"() {

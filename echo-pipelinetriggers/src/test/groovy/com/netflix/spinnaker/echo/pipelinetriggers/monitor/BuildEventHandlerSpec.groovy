@@ -13,11 +13,11 @@ import spock.lang.Unroll
 import static com.netflix.spinnaker.echo.model.trigger.BuildEvent.Result.*
 
 class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
-  def objectMapper = new ObjectMapper()
   def registry = new NoopRegistry()
+  def objectMapper = new ObjectMapper()
 
   @Subject
-  def eventHandler = new BuildEventHandler(registry)
+  def eventHandler = new BuildEventHandler(registry, objectMapper)
 
   @Unroll
   def "triggers pipelines for successful builds for #triggerType"() {

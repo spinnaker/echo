@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,7 +41,12 @@ import org.springframework.stereotype.Component;
 public class ManualEventMonitor implements TriggerEventHandler<ManualEvent> {
   public static final String MANUAL_TRIGGER_TYPE = "manual";
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
+
+  @Autowired
+  public ManualEventMonitor(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public boolean handleEventType(String eventType) {

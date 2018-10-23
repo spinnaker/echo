@@ -47,11 +47,12 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
 
   private static final String GITHUB_SECURE_SIGNATURE_HEADER = "X-Hub-Signature";
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   @Autowired
-  public GitEventHandler(Registry registry) {
+  public GitEventHandler(Registry registry, ObjectMapper objectMapper) {
     super(registry);
+    this.objectMapper = objectMapper;
   }
 
   @Override
