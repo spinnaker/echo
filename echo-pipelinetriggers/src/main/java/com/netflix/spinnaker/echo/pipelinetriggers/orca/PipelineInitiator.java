@@ -64,7 +64,8 @@ public class PipelineInitiator implements Action1<Pipeline> {
     if (enabled) {
       log.info("Triggering {} due to {}", pipeline, pipeline.getTrigger());
 
-      if (pipeline.getType().equals("templatedPipeline")) { // TODO(jacobkiefer): Constantize.
+      final String templatedPipelineType = "templatedPipeline";
+      if (templatedPipelineType.equals(pipeline.getType())) { // TODO(jacobkiefer): Constantize.
         log.debug("Planning templated pipeline {} before triggering", pipeline.getId());
         pipeline = pipeline.withPlan(true);
         Map resolvedPipelineMap = orca.plan(objectMapper.convertValue(pipeline, Map.class));
