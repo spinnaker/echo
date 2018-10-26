@@ -88,8 +88,17 @@ public class QuietPeriodIndicator {
     return result;
   }
 
+  private boolean shouldSuppressType(String triggerType) {
+    for (String trigger: suppressedTriggerTypes) {
+      if (trigger.equalsIgnoreCase(triggerType)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public boolean inQuietPeriod(long now, String triggerType) {
-    return inQuietPeriod(now) && suppressedTriggerTypes.contains(triggerType);
+    return inQuietPeriod(now) && shouldSuppressType(triggerType);
   }
 
   private long parseIso(String iso) {
