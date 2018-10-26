@@ -15,28 +15,24 @@
  */
 
 buildscript {
-    ext {
-        springBootVersion = "1.5.10.RELEASE"
-    }
     repositories {
         jcenter()
         maven { url 'http://spinnaker.bintray.com/gradle/' }
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath 'com.netflix.spinnaker.gradle:spinnaker-gradle-project:4.2.0'
-        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+        classpath "com.netflix.spinnaker.gradle:spinnaker-dev-plugin:5.1.4"
     }
 }
 
 allprojects {
-    apply plugin: "spinnaker.project"
+    apply plugin: "spinnaker.base-project"
     apply plugin: "groovy"
     apply plugin: 'jacoco'
     group = "com.netflix.spinnaker.echo"
 
     ext {
-        spinnakerDependenciesVersion = '1.2.9'
+        spinnakerDependenciesVersion = '1.4.0'
         if (project.hasProperty('spinnakerDependenciesVersion')) {
             spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
         }
@@ -98,6 +94,12 @@ subprojects {
         testRuntime spinnaker.dependency('slf4jSimple')
         testRuntime "org.slf4j:jcl-over-slf4j:${spinnaker.version('slf4j')}"
     }
+
+    project.plugins.withType(JavaBasePlugin) {
+      JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
+      convention.sourceCompatibility = JavaVersion.VERSION_1_8
+      convention.targetCompatibility = JavaVersion.VERSION_1_8
+    }
 }
 
-defaultTasks ':echo-web:bootRun'
+defaultTasks ':echo-web:run'
