@@ -23,12 +23,14 @@ dependencies {
     compile spinnaker.dependency('korkArtifacts')
     compile spinnaker.dependency('korkExceptions')
     compile spinnaker.dependency('korkSecurity')
+    compile spinnaker.dependency('korkWeb')
 
     compile spinnaker.dependency('bootWeb')
     compile spinnaker.dependency('commonsLang')
     compile spinnaker.dependency('eurekaClient')
     compile spinnaker.dependency('jinjava')
     compile spinnaker.dependency('lombok')
+    compile spinnaker.dependency('retrofit1okHttp3Client')
     compile spinnaker.dependency('rxJava')
     compile spinnaker.dependency('springContext')
 
