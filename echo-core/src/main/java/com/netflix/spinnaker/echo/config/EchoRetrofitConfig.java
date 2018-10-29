@@ -18,13 +18,14 @@ package com.netflix.spinnaker.echo.config;
 
 import com.jakewharton.retrofit.Ok3Client;
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.ConnectionPool;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import retrofit.RestAdapter.LogLevel;
+
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @Slf4j

@@ -17,8 +17,10 @@
 package com.netflix.spinnaker.echo.pipelinetriggers.postprocessors;
 
 import com.netflix.spinnaker.echo.model.Pipeline;
-import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * This class is a thin wrapper around the implementations of {@link PipelinePostProcessor}. It
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Component;
 public class PipelinePostProcessorHandler {
   private List<PipelinePostProcessor> postProcessors;
 
+  @Autowired
   public PipelinePostProcessorHandler(List<PipelinePostProcessor> postProcessors) {
     this.postProcessors = postProcessors;
   }

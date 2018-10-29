@@ -21,7 +21,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
- * Post-processor extracts artifacts from a pipline using a supplied Jinja template and adds
+ * Post-processor extracts artifacts from a pipeline using a supplied Jinja template and adds
  * these artifacts to the pipeline as received artifacts.
  * This post-processor is not implemented yet and is currently a no-op.
  */

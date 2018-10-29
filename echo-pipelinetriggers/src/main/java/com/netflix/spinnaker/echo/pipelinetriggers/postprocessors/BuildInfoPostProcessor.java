@@ -19,12 +19,13 @@ package com.netflix.spinnaker.echo.pipelinetriggers.postprocessors;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.services.IgorService;
-import java.util.Map;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * Post-processor that looks up build details from Igor if a pipeline's trigger is associated

@@ -16,9 +16,10 @@
 
 package com.netflix.spinnaker.echo.services;
 
-import java.util.Map;
 import retrofit.http.GET;
 import retrofit.http.Path;
+
+import java.util.Map;
 
 public interface IgorService {
   @GET("/builds/status/{buildNumber}/{master}/{job}")
