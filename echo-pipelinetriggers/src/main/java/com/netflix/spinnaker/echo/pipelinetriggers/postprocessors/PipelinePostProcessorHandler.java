@@ -20,6 +20,7 @@ import com.netflix.spinnaker.echo.model.Pipeline;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -33,6 +34,7 @@ public class PipelinePostProcessorHandler {
 
   @Autowired
   public PipelinePostProcessorHandler(List<PipelinePostProcessor> postProcessors) {
+    postProcessors.sort(Comparator.comparing(PipelinePostProcessor::priority));
     this.postProcessors = postProcessors;
   }
 

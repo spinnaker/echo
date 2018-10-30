@@ -24,4 +24,7 @@ import com.netflix.spinnaker.echo.model.Pipeline;
  */
 public interface PipelinePostProcessor {
   Pipeline processPipeline(Pipeline inputPipeline);
+  default PostProcessorPriority priority() {
+    return PostProcessorPriority.DEFAULT;
+  }
 }

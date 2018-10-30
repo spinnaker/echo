@@ -24,11 +24,15 @@ import spock.lang.Subject
 class PipelinePostProcessorHandlerSpec extends Specification implements RetrofitStubs {
   // Generates a simple post-processor that overwrites the id of a pipeline
   def changeId = {
-    String newId ->
+    String newId, PostProcessorPriority priority ->
       new PipelinePostProcessor() {
         @Override
         Pipeline processPipeline(Pipeline inputPipeline) {
           return inputPipeline.withId(newId)
+        }
+        @Override
+        PostProcessorPriority priority() {
+          return priority;
         }
       }
   }
@@ -49,7 +53,7 @@ class PipelinePostProcessorHandlerSpec extends Specification implements Retrofit
   def "changes the pipeline as defined by the post-processor"() {
     given:
     @Subject
-    def pipelinePostProcessorHandler = new PipelinePostProcessorHandler([changeId("ABC")])
+    def pipelinePostProcessorHandler = new PipelinePostProcessorHandler([changeId("ABC", PostProcessorPriority.DEFAULT)])
     def inputPipeline = createPipelineWith(enabledJenkinsTrigger)
 
     when:
@@ -62,13 +66,16 @@ class PipelinePostProcessorHandlerSpec extends Specification implements Retrofit
   def "runs post-processors in order"() {
     given:
     @Subject
-    def pipelinePostProcessorHandler = new PipelinePostProcessorHandler([changeId("ABC"), changeId("DEF")])
+    def pipelinePostProcessorHandler = new PipelinePostProcessorHandler([
+      changeId("ABC", PostProcessorPriority.LOWEST),
+      changeId("DEF", PostProcessorPriority.HIGHEST)
+    ])
     def inputPipeline = createPipelineWith(enabledJenkinsTrigger)
 
     when:
     def outputPipeline = pipelinePostProcessorHandler.process(inputPipeline)
 
     then:
-    outputPipeline.id == "DEF"
+    outputPipeline.id == "ABC"
   }
 }

@@ -22,7 +22,6 @@ import com.netflix.spinnaker.echo.services.IgorService;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -34,7 +33,6 @@ import java.util.Map;
  */
 @Component
 @ConditionalOnProperty("igor.enabled")
-@Order(value = 1)
 public class BuildInfoPostProcessor implements PipelinePostProcessor{
   private IgorService igorService;
 
@@ -67,5 +65,9 @@ public class BuildInfoPostProcessor implements PipelinePostProcessor{
       }
     }
     return inputTrigger.withBuildInfo(buildInfo).withProperties(properties);
+  }
+
+  public PostProcessorPriority priority() {
+    return PostProcessorPriority.BUILD_INFO;
   }
 }

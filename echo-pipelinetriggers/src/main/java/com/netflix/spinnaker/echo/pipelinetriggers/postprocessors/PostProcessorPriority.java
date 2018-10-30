@@ -16,22 +16,10 @@
 
 package com.netflix.spinnaker.echo.pipelinetriggers.postprocessors;
 
-import com.netflix.spinnaker.echo.model.Pipeline;
-import org.springframework.stereotype.Component;
-
-/**
- * Post-processor extracts artifacts from a pipeline using a supplied Jinja template and adds
- * these artifacts to the pipeline as received artifacts.
- * This post-processor is not implemented yet and is currently a no-op.
- */
-@Component
-public class ArtifactPostProcessor implements PipelinePostProcessor {
-  public Pipeline processPipeline(Pipeline inputPipeline) {
-    // TODO(ezimanyi): implement this
-    return inputPipeline;
-  }
-
-  public PostProcessorPriority priority() {
-    return PostProcessorPriority.ARTIFACT_EXTRACTION;
-  }
+public enum PostProcessorPriority implements Comparable<PostProcessorPriority> {
+  HIGHEST,
+  BUILD_INFO,
+  DEFAULT,
+  ARTIFACT_EXTRACTION,
+  LOWEST;
 }
