@@ -5,7 +5,6 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.fiat.shared.FiatStatus
 import spock.lang.Specification
-import spock.lang.Subject
 import spock.lang.Unroll
 
 import static rx.Observable.empty
@@ -49,7 +48,7 @@ class PipelineInitiatorSpec extends Specification {
     def pipelineMap = pipeline as Map
 
     when:
-    pipelineInitiator.startPipeline(pipeline)
+    pipelineInitiator.call(pipeline)
 
     then:
     1 * fiatStatus.isEnabled() >> { return true }

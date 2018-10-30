@@ -7,7 +7,8 @@ import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService.TriggerRespo
 import com.netflix.spinnaker.fiat.shared.FiatStatus;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
-import javax.annotation.PostConstruct;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,10 +16,10 @@ import org.springframework.stereotype.Component;
 import retrofit.RetrofitError;
 import retrofit.RetrofitError.Kind;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Func1;
 
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import javax.annotation.PostConstruct;
 
 /**
  * Triggers a {@link Pipeline} by invoking _Orca_.
