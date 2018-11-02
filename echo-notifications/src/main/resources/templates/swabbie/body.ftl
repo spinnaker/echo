@@ -98,7 +98,7 @@
             <h2 style="display: block; font-family: Helvetica, Arial, sans-serif; color: #d8d8d8; font-size: 16px; font-weight: normal;">${notification.additionalContext.resources?size} image(s) scheduled for cleanup</h2>
           </td>
           <td align="center" valign="top" style="padding: 16px 32px 16px 16px; width: 140px;" class="logo">
-            <img alt="Spinnaker" src="spinnaker-logo-400.png" width="140" height="140" border="0">
+            <img alt="Spinnaker" src="https://www.spinnaker.io/assets/emails/spinnaker-logo-400.png" width="140" height="140" border="0">
           </td>
         </tr>
       </table>
@@ -116,7 +116,7 @@
         <#foreach resource in notification.additionalContext.resources>
         <tr class="loop" style="border-bottom: 1px solid #cccccc;">
           <td class="loop__number" valign="middle" style="padding: 16px 16px 16px 32px; width: 40px; font-family: Helvetica, Arial, sans-serif; color: #cccccc; font-size: 18px; font-weight: bold;">
-            999
+            ${resource?index + 1}
           </td>
           <td>
           <table class="loop__data" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 1000px;" class="wrapper">
