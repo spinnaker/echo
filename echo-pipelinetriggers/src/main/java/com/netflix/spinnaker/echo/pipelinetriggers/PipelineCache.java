@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.echo.pipelinetriggers;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
@@ -24,70 +25,98 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import rx.Observable;
-import rx.Scheduler;
-import rx.Subscription;
-import rx.subjects.ReplaySubject;
-import rx.subjects.SerializedSubject;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static java.time.Instant.now;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Component
 @Slf4j
 public class PipelineCache implements MonitoredPoller {
-  private final Scheduler scheduler;
   private final int pollingIntervalSeconds;
   private final Front50Service front50;
   private final Registry registry;
+  private final ScheduledExecutorService executorService;
 
+  private transient Boolean running;
   private transient Instant lastPollTimestamp;
-  private transient Subscription subscription;
 
-  private transient SerializedSubject<List<Pipeline>, List<Pipeline>> pipelineSubject = ReplaySubject.<List<Pipeline>>createWithSize(1).toSerialized();
+  @Nullable
+  private transient List<Pipeline> pipelines;
 
   @Autowired
-  public PipelineCache(@NonNull Scheduler scheduler,
+  public PipelineCache(int pollingIntervalSeconds,
+                       @NonNull Front50Service front50,
+                       @NonNull Registry registry) {
+    this(Executors.newSingleThreadScheduledExecutor(), pollingIntervalSeconds, front50, registry);
+  }
+
+  // VisibleForTesting
+  public PipelineCache(ScheduledExecutorService executorService,
                        int pollingIntervalSeconds,
                        @NonNull Front50Service front50,
                        @NonNull Registry registry) {
-    this.scheduler = scheduler;
+    this.executorService = executorService;
     this.pollingIntervalSeconds = pollingIntervalSeconds;
     this.front50 = front50;
     this.registry = registry;
-  }
-
-  @PostConstruct
-  public void start() {
-    if (subscription == null || subscription.isUnsubscribed()) {
-      subscription = Observable.interval(pollingIntervalSeconds, SECONDS, scheduler)
-        .doOnNext(this::onFront50Request)
-        .flatMap(tick -> front50.getPipelines())
-        .doOnError(this::onFront50Error)
-        .retry()
-        .map(PipelineCache::decorateTriggers)
-        .doOnNext(this::logRefresh)
-        .subscribe(pipelineSubject);
-    }
+    this.running = false;
+    this.pipelines = null;
   }
 
   @PreDestroy
   public void stop() {
-    if (subscription != null) {
-      subscription.unsubscribe();
+    running = false;
+  }
+
+  @PostConstruct
+  public void start() {
+    running = true;
+
+    executorService.scheduleWithFixedDelay(
+      new Runnable() {
+        @Override
+        public void run() {
+          pollPipelineConfigs();
+        }
+      },
+      0, pollingIntervalSeconds, TimeUnit.SECONDS);
+  }
+
+  // VisibleForTesting
+  void pollPipelineConfigs() {
+    if (!isRunning()) {
+      return;
+    }
+
+    try {
+      log.debug("Getting pipelines from Front50...");
+      long start = System.currentTimeMillis();
+      pipelines = decorateTriggers(front50.getPipelines());
+
+      lastPollTimestamp = now();
+      registry.counter("front50.requests").increment();
+      log.debug("Fetched {} pipeline configs in {}ms", pipelines.size(), System.currentTimeMillis() - start);
+    } catch (Exception e) {
+      log.error("Error fetching pipelines from Front50", e);
+      registry.counter("front50.errors").increment();
     }
   }
 
   @Override
   public boolean isRunning() {
-    return subscription != null && !subscription.isUnsubscribed();
+    return running;
   }
 
   @Override
@@ -101,33 +130,37 @@ public class PipelineCache implements MonitoredPoller {
   }
 
   /**
-   * Returns an observable that emits the configured pipelines as of the most recent polling cycle.
-   * If no polling cycles have been completed, the observable will wait until the first cycle
-   * completes and then emit the pipelines from that polling cycle.
-   *
-   * @return An observable emitting the pipelines as of the most recent polling cycle
+   * The list of pipelines as of the last successful polling cycle, or null if not available yet
    */
-  public Observable<List<Pipeline>> getPipelines() {
-    return pipelineSubject.take(1);
+  @Nullable
+  public List<Pipeline> getPipelines() {
+    return pipelines;
   }
 
-  public List<Pipeline> getPipelinesSync() {
-    return getPipelines().toBlocking().first();
+  @Nonnull
+  public List<Pipeline> getPipelinesSync() throws TimeoutException {
+    return getPipelinesSync(TimeUnit.SECONDS.toMillis(pollingIntervalSeconds));
   }
 
-  private void logRefresh(final List<Pipeline> pipelines) {
-    log.info("Refreshing pipelines");
-  }
+  @Nonnull
+  public List<Pipeline> getPipelinesSync(long timeoutMillis) throws TimeoutException {
+    // block until pipelines != null
+    long start = System.currentTimeMillis();
+    while (pipelines == null) {
+      try {
+        long elapsed = System.currentTimeMillis() - start;
+        if (elapsed > timeoutMillis) {
+          throw new TimeoutException("Pipeline configs are still not available after " + elapsed + "ms");
+        }
 
-  private void onFront50Request(final long tick) {
-    log.debug("Getting pipelines from Front50...");
-    lastPollTimestamp = now();
-    registry.counter("front50.requests").increment();
-  }
+        log.trace("Waiting for initial load of pipeline configs (elapsed={}ms)...", elapsed);
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        // ignore
+      }
+    }
 
-  private void onFront50Error(Throwable e) {
-    log.error("Error fetching pipelines from Front50: {}", e.getMessage());
-    registry.counter("front50.errors").increment();
+    return pipelines;
   }
 
   // visible for testing

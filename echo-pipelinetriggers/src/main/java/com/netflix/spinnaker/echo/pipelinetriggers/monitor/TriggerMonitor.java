@@ -26,6 +26,8 @@ import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
 import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.TriggerEventHandler;
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
+
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,12 +69,16 @@ public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener
   }
 
   private void triggerMatchingPipelines(T event) {
-    List<Pipeline> allPipelines = pipelineCache.getPipelinesSync();
-    List<Pipeline> matchingPipelines = eventHandler.getMatchingPipelines(event, allPipelines);
-    matchingPipelines.forEach(p -> {
-      recordMatchingPipeline(p);
-      pipelineInitiator.startPipeline(p);
-    });
+    try {
+      List<Pipeline> allPipelines = pipelineCache.getPipelinesSync();
+      List<Pipeline> matchingPipelines = eventHandler.getMatchingPipelines(event, allPipelines);
+      matchingPipelines.forEach(p -> {
+        recordMatchingPipeline(p);
+        pipelineInitiator.startPipeline(p);
+      });
+    } catch (TimeoutException e) {
+      log.error("Failed to get pipeline configs", e);
+    }
   }
 
   private void recordMetrics() {
