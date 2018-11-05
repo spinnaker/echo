@@ -21,6 +21,7 @@ import com.netflix.spinnaker.echo.artifacts.JinjavaFactory;
 import com.netflix.spinnaker.echo.discovery.DiscoveryPollingConfiguration;
 import com.netflix.spinnaker.echo.events.EchoEventListener;
 import com.netflix.spinnaker.echo.events.EventPropagator;
+import com.netflix.spinnaker.kork.core.RetrySupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationContext;
@@ -56,5 +57,10 @@ public class EchoCoreConfig {
   @ConditionalOnMissingBean
   public JinjavaFactory jinjavaFactory() {
     return new DefaultJinjavaFactory();
+  }
+
+  @Bean
+  public RetrySupport retrySupport() {
+    return new RetrySupport();
   }
 }

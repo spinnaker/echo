@@ -19,12 +19,16 @@ package com.netflix.spinnaker.echo.pipelinetriggers.postprocessors;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.services.IgorService;
+import com.netflix.spinnaker.kork.core.RetrySupport;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Post-processor that looks up build details from Igor if a pipeline's trigger is associated
@@ -33,21 +37,25 @@ import java.util.Map;
  */
 @Component
 @ConditionalOnProperty("igor.enabled")
-public class BuildInfoPostProcessor implements PipelinePostProcessor{
+@Slf4j
+public class BuildInfoPostProcessor implements PipelinePostProcessor {
   private IgorService igorService;
+  private RetrySupport retrySupport;
 
-  BuildInfoPostProcessor(@NonNull IgorService igorService) {
+  @Autowired
+  BuildInfoPostProcessor(@NonNull IgorService igorService, @NonNull RetrySupport retrySupport) {
     this.igorService = igorService;
+    this.retrySupport = retrySupport;
   }
 
   public Pipeline processPipeline(Pipeline inputPipeline) {
     Trigger inputTrigger = inputPipeline.getTrigger();
     if (inputTrigger == null) {
       return inputPipeline;
-    } else {
-      Trigger augmentedTrigger = addBuildInfo(inputTrigger);
-      return inputPipeline.withTrigger(augmentedTrigger);
     }
+
+    Trigger augmentedTrigger = addBuildInfo(inputTrigger);
+    return inputPipeline.withTrigger(augmentedTrigger);
   }
 
   private Trigger addBuildInfo(@NonNull Trigger inputTrigger) {
@@ -59,12 +67,16 @@ public class BuildInfoPostProcessor implements PipelinePostProcessor{
     Map<String, Object> buildInfo = null;
     Map<String, Object> properties = null;
     if (master != null && buildNumber != null && StringUtils.isNotEmpty(job)) {
-      buildInfo = igorService.getBuild(buildNumber, master, job);
+      buildInfo = retry(() -> igorService.getBuild(buildNumber, master, job));
       if (StringUtils.isNotEmpty(propertyFile)) {
-        properties = igorService.getPropertyFile(buildNumber, propertyFile, master, job);
+        properties = retry(() -> igorService.getPropertyFile(buildNumber, propertyFile, master, job));
       }
     }
     return inputTrigger.withBuildInfo(buildInfo).withProperties(properties);
+  }
+
+  private <T> T retry(Supplier<T> supplier) {
+    return retrySupport.retry(supplier, 5, 1000, true);
   }
 
   public PostProcessorPriority priority() {

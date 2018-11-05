@@ -18,6 +18,7 @@ package com.netflix.spinnaker.echo.pipelinetriggers.postprocessors
 
 import com.netflix.spinnaker.echo.services.IgorService
 import com.netflix.spinnaker.echo.test.RetrofitStubs
+import com.netflix.spinnaker.kork.core.RetrySupport
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -34,9 +35,10 @@ class BuildInfoPostProcessorSpec extends Specification implements RetrofitStubs 
   ]
 
   def igorService = Mock(IgorService)
+  def retrySupport = new RetrySupport()
 
   @Subject
-  def buildInfoPostProcessor = new BuildInfoPostProcessor(igorService)
+  def buildInfoPostProcessor = new BuildInfoPostProcessor(igorService, retrySupport)
 
   def "does not error if the input pipeline trigger is null"() {
     given:
@@ -94,6 +96,26 @@ class BuildInfoPostProcessorSpec extends Specification implements RetrofitStubs 
 
     then:
     1 * igorService.getBuild(BUILD_NUMBER, MASTER_NAME, JOB_NAME) >> BUILD_INFO
+    1 * igorService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER_NAME, JOB_NAME) >> PROPERTIES
+    outputPipeline.trigger.buildInfo.equals(BUILD_INFO)
+    outputPipeline.trigger.properties.equals(PROPERTIES)
+  }
+
+  def "retries on failure to communicate with igor"() {
+    given:
+    def trigger = enabledJenkinsTrigger
+      .withMaster(MASTER_NAME)
+      .withJob(JOB_NAME)
+      .withBuildNumber(BUILD_NUMBER)
+      .withPropertyFile(PROPERTY_FILE)
+
+    def inputPipeline = createPipelineWith(enabledJenkinsTrigger).withTrigger(trigger)
+
+    when:
+    def outputPipeline = buildInfoPostProcessor.processPipeline(inputPipeline)
+
+    then:
+    2 * igorService.getBuild(BUILD_NUMBER, MASTER_NAME, JOB_NAME) >> { throw new RuntimeException() } >> BUILD_INFO
     1 * igorService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER_NAME, JOB_NAME) >> PROPERTIES
     outputPipeline.trigger.buildInfo.equals(BUILD_INFO)
     outputPipeline.trigger.properties.equals(PROPERTIES)
