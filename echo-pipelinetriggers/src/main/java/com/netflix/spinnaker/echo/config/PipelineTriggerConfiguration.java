@@ -47,11 +47,6 @@ public class PipelineTriggerConfiguration {
   }
 
   @Bean
-  public int pollingIntervalSeconds() {
-    return 10;
-  }
-
-  @Bean
   public Client retrofitClient() {
     return new OkClient();
   }

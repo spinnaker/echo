@@ -46,7 +46,7 @@ import static java.time.Instant.now;
 @Component
 @Slf4j
 public class PipelineCache implements MonitoredPoller {
-  private final int pollingIntervalSeconds;
+  private final int pollingIntervalMs;
   private final int pollingSleepMs;
   private final Front50Service front50;
   private final Registry registry;
@@ -59,21 +59,21 @@ public class PipelineCache implements MonitoredPoller {
   private transient List<Pipeline> pipelines;
 
   @Autowired
-  public PipelineCache(int pollingIntervalSeconds,
+  public PipelineCache(@Value("${front50.pollingIntervalMs:10000}") int pollingIntervalMs,
                        @Value("${front50.pollingSleepMs:100}") int pollingSleepMs,
                        @NonNull Front50Service front50,
                        @NonNull Registry registry) {
-    this(Executors.newSingleThreadScheduledExecutor(), pollingIntervalSeconds, pollingSleepMs, front50, registry);
+    this(Executors.newSingleThreadScheduledExecutor(), pollingIntervalMs, pollingSleepMs, front50, registry);
   }
 
   // VisibleForTesting
   public PipelineCache(ScheduledExecutorService executorService,
-                       int pollingIntervalSeconds,
-                       @Value("${front50.pollingSleepMs:100}") int pollingSleepMs,
+                       int pollingIntervalMs,
+                       int pollingSleepMs,
                        @NonNull Front50Service front50,
                        @NonNull Registry registry) {
     this.executorService = executorService;
-    this.pollingIntervalSeconds = pollingIntervalSeconds;
+    this.pollingIntervalMs = pollingIntervalMs;
     this.pollingSleepMs = pollingSleepMs;
     this.front50 = front50;
     this.registry = registry;
@@ -98,7 +98,7 @@ public class PipelineCache implements MonitoredPoller {
           pollPipelineConfigs();
         }
       },
-      0, pollingIntervalSeconds, TimeUnit.SECONDS);
+      0, pollingIntervalMs, TimeUnit.MILLISECONDS);
 
     PolledMeter
       .using(registry)
@@ -144,7 +144,7 @@ public class PipelineCache implements MonitoredPoller {
 
   @Override
   public int getPollingIntervalSeconds() {
-    return pollingIntervalSeconds;
+    return (int) TimeUnit.MILLISECONDS.toSeconds(pollingIntervalMs);
   }
 
   /**
@@ -157,7 +157,7 @@ public class PipelineCache implements MonitoredPoller {
 
   @Nonnull
   public List<Pipeline> getPipelinesSync() throws TimeoutException {
-    return getPipelinesSync(TimeUnit.SECONDS.toMillis(pollingIntervalSeconds));
+    return getPipelinesSync(pollingIntervalMs);
   }
 
   @Nonnull

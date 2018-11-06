@@ -25,6 +25,7 @@ import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
 import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.TriggerEventHandler;
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
+import com.netflix.spinnaker.echo.pipelinetriggers.postprocessors.PipelinePostProcessorHandler;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -39,15 +40,18 @@ public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener
   private final PipelineInitiator pipelineInitiator;
   private final Registry registry;
   private final PipelineCache pipelineCache;
+  private final PipelinePostProcessorHandler pipelinePostProcessorHandler;
   private final TriggerEventHandler<T> eventHandler;
 
   TriggerMonitor(@NonNull PipelineCache pipelineCache,
     @NonNull PipelineInitiator pipelineInitiator,
     @NonNull Registry registry,
+    @NonNull PipelinePostProcessorHandler pipelinePostProcessorHandler,
     @NonNull TriggerEventHandler<T> eventHandler) {
     this.pipelineCache = pipelineCache;
     this.pipelineInitiator = pipelineInitiator;
     this.registry = registry;
+    this.pipelinePostProcessorHandler = pipelinePostProcessorHandler;
     this.eventHandler = eventHandler;
   }
 
@@ -72,10 +76,12 @@ public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener
     try {
       List<Pipeline> allPipelines = pipelineCache.getPipelinesSync();
       List<Pipeline> matchingPipelines = eventHandler.getMatchingPipelines(event, allPipelines);
-      matchingPipelines.forEach(p -> {
-        recordMatchingPipeline(p);
-        pipelineInitiator.startPipeline(p);
-      });
+      matchingPipelines.stream()
+        .map(pipelinePostProcessorHandler::process)
+        .forEach(p -> {
+          recordMatchingPipeline(p);
+          pipelineInitiator.startPipeline(p);
+        });
     } catch (TimeoutException e) {
       log.error("Failed to get pipeline configs", e);
     }
