@@ -16,20 +16,22 @@
 
 package com.netflix.spinnaker.echo.pipelinetriggers;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spectator.api.patterns.PolledMeter;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.services.Front50Service;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +47,7 @@ import static java.time.Instant.now;
 @Slf4j
 public class PipelineCache implements MonitoredPoller {
   private final int pollingIntervalSeconds;
+  private final int pollingSleepMs;
   private final Front50Service front50;
   private final Registry registry;
   private final ScheduledExecutorService executorService;
@@ -57,18 +60,21 @@ public class PipelineCache implements MonitoredPoller {
 
   @Autowired
   public PipelineCache(int pollingIntervalSeconds,
+                       @Value("${front50.pollingSleepMs:100}") int pollingSleepMs,
                        @NonNull Front50Service front50,
                        @NonNull Registry registry) {
-    this(Executors.newSingleThreadScheduledExecutor(), pollingIntervalSeconds, front50, registry);
+    this(Executors.newSingleThreadScheduledExecutor(), pollingIntervalSeconds, pollingSleepMs, front50, registry);
   }
 
   // VisibleForTesting
   public PipelineCache(ScheduledExecutorService executorService,
                        int pollingIntervalSeconds,
+                       @Value("${front50.pollingSleepMs:100}") int pollingSleepMs,
                        @NonNull Front50Service front50,
                        @NonNull Registry registry) {
     this.executorService = executorService;
     this.pollingIntervalSeconds = pollingIntervalSeconds;
+    this.pollingSleepMs = pollingSleepMs;
     this.front50 = front50;
     this.registry = registry;
     this.running = false;
@@ -78,6 +84,7 @@ public class PipelineCache implements MonitoredPoller {
   @PreDestroy
   public void stop() {
     running = false;
+    executorService.shutdown();
   }
 
   @PostConstruct
@@ -92,6 +99,17 @@ public class PipelineCache implements MonitoredPoller {
         }
       },
       0, pollingIntervalSeconds, TimeUnit.SECONDS);
+
+    PolledMeter
+      .using(registry)
+      .withName("front50.lastPoll")
+      .monitorValue(lastPollTimestamp, this::getDurationSeconds);
+  }
+
+  private Double getDurationSeconds(Instant from) {
+    return lastPollTimestamp == null
+      ? -1d
+      : (double) Duration.between(lastPollTimestamp, now()).getSeconds();
   }
 
   // VisibleForTesting
@@ -154,7 +172,7 @@ public class PipelineCache implements MonitoredPoller {
         }
 
         log.trace("Waiting for initial load of pipeline configs (elapsed={}ms)...", elapsed);
-        Thread.sleep(100);
+        Thread.sleep(pollingSleepMs);
       } catch (InterruptedException e) {
         // ignore
       }

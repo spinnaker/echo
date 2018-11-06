@@ -20,11 +20,11 @@ import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService
 import com.netflix.spinnaker.echo.services.Front50Service
-import rx.Observable
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 import spock.util.concurrent.BlockingVariable
+
 import static com.netflix.spinnaker.echo.config.DryRunConfig.DryRunProperties
 
 class DryRunNotificationAgentSpec extends Specification {

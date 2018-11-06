@@ -44,8 +44,11 @@ class PipelineCacheSpec extends Specification implements RetrofitStubs {
   @Shared
   def interval = 30
 
+  @Shared
+  def sleepMs = 100
+
   @Subject
-  def pipelineCache = new PipelineCache(Mock(ScheduledExecutorService), interval, front50, registry)
+  def pipelineCache = new PipelineCache(Mock(ScheduledExecutorService), interval, sleepMs, front50, registry)
 
   def "keeps polling if Front50 returns an error"() {
     given:

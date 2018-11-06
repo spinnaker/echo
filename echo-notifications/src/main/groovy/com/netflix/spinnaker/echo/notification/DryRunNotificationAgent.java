@@ -91,7 +91,7 @@ public class DryRunNotificationAgent extends AbstractEventNotificationAgent {
           .withNotifications(mapper.convertValue(properties.getNotifications(), List.class)))
         .subscribe(response -> log.info("Pipeline triggered: {}", response));
     } catch (Exception ex) {
-      log.error(format("Error triggering dry run of %s", pipelineConfigId), ex);
+      log.error("Error triggering dry run of {}", pipelineConfigId, ex);
     }
   }
 
