@@ -24,8 +24,8 @@ import javax.annotation.PostConstruct;
 import java.util.Map;
 
 @Component
-public class JinjaTemplateService {
-  private ArtifactTemplateProperties artifactTemplateProperties;
+public final class JinjaTemplateService {
+  private final ArtifactTemplateProperties artifactTemplateProperties;
   private Map<String, CustomJinjaTemplate> customTemplates;
 
   @Autowired
@@ -34,7 +34,7 @@ public class JinjaTemplateService {
   }
 
   @PostConstruct
-  void initializeCustomTemplates() {
+  private void initializeCustomTemplates() {
     this.customTemplates = artifactTemplateProperties.getCustomArtifactTemplates();
   }
 

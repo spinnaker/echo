@@ -58,7 +58,7 @@ public class MessageArtifactTranslator {
       this.jinjaTemplate = "";
     } else {
       try {
-        this.jinjaTemplate = IOUtils.toString(templateStream, Charset.defaultCharset());
+        this.jinjaTemplate = IOUtils.toString(templateStream, Charset.forName("UTF-8"));
       } catch (IOException ioe) {
         throw new RuntimeException(ioe);
       }

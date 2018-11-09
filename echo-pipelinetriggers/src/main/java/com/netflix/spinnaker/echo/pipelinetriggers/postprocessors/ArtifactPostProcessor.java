@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class ArtifactPostProcessor implements PipelinePostProcessor {
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
   @Autowired
   public ArtifactPostProcessor(ObjectMapper objectMapper) {
