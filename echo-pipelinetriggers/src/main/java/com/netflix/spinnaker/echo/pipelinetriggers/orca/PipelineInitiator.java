@@ -38,6 +38,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import retrofit.RetrofitError;
 import retrofit.RetrofitError.Kind;
+import retrofit.client.Response;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -154,7 +155,7 @@ public class PipelineInitiator {
   }
 
   private static boolean isRetryable(Throwable error) {
-    if (!(error instanceof  RetrofitError)) {
+    if (!(error instanceof RetrofitError)) {
       return false;
     }
     RetrofitError retrofitError = (RetrofitError) error;
@@ -163,8 +164,9 @@ public class PipelineInitiator {
       return true;
     }
 
-    if (retrofitError.getKind() == Kind.HTTP && retrofitError.getResponse().getStatus() != HttpStatus.BAD_REQUEST.value()) {
-      return true;
+    if (retrofitError.getKind() == Kind.HTTP) {
+      Response response = retrofitError.getResponse();
+      return (response != null && response.getStatus() != HttpStatus.BAD_REQUEST.value());
     }
 
     return false;
