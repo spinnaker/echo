@@ -21,11 +21,11 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
+import com.netflix.spinnaker.echo.pipelinetriggers.QuietPeriodIndicator
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator
 import com.netflix.spinnaker.echo.scheduler.actions.pipeline.impl.MissedPipelineTriggerCompensationJob
 import org.quartz.CronExpression
-import rx.schedulers.Schedulers
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -37,10 +37,10 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 class MissedPipelineTriggerCompensationJobSpec extends Specification {
-  def scheduler = Schedulers.test()
   def pipelineCache = Mock(PipelineCache)
   def orcaService = Mock(OrcaService)
   def pipelineInitiator = Mock(PipelineInitiator)
+  def quietPeriodIndicator = Mock(QuietPeriodIndicator)
   Registry registry = new NoopRegistry()
 
   def 'should trigger pipelines for all missed executions'() {
@@ -68,8 +68,8 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
     dateContext.triggerWindowFloor() >> getDateOffset(0)
     dateContext.getClock() >> Clock.system(ZoneId.of('America/Los_Angeles'))
 
-    def compensationJob = new MissedPipelineTriggerCompensationJob(scheduler, pipelineCache, orcaService,
-      pipelineInitiator, registry, /* not used */ 30000, 2000, /* not used */ 'America/Los_Angeles', true, 900000, 20, dateContext)
+    def compensationJob = new MissedPipelineTriggerCompensationJob(pipelineCache, orcaService,
+      pipelineInitiator, registry, quietPeriodIndicator, /* not used */ 30000, 2000, /* not used */ 'America/Los_Angeles', true, 900000, 20, dateContext)
 
     when:
     compensationJob.triggerMissedExecutions(pipelines)
@@ -85,7 +85,7 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
         new OrcaService.PipelineResponse(pipelineConfigId: '4', startTime: getDateOffset(30).time)
       ]
     }
-    1 * pipelineInitiator.call((Pipeline) pipelines[0].withTrigger(theTriggeringTrigger))
+    1 * pipelineInitiator.startPipeline((Pipeline) pipelines[0].withTrigger(theTriggeringTrigger))
     0 * orcaService._
     0 * pipelineInitiator._
   }
@@ -102,8 +102,8 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
     ]
 
     and: 'a window that is scoped to minutes [0, 10]'
-    def compensationJob = new MissedPipelineTriggerCompensationJob(scheduler, pipelineCache, orcaService,
-      pipelineInitiator, registry, 30000L, 2000L,
+    def compensationJob = new MissedPipelineTriggerCompensationJob(pipelineCache, orcaService,
+      pipelineInitiator, registry, quietPeriodIndicator, 30000L, 2000L,
       'America/Los_Angeles', false, 900000, 20,
       stubDateContext(0, 10))
 
@@ -117,7 +117,8 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
         // pipeline 2 has _no_ execution, which is a special case that is not considered a missed execution
       ]
     }
-    0 * pipelineInitiator.call(_)
+    0 * pipelineInitiator.startPipeline(_)
+    1 * quietPeriodIndicator.inQuietPeriod(_)
     0 * _
   }
 
@@ -147,8 +148,8 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
     ]
 
     and:
-    def compensationJob = new MissedPipelineTriggerCompensationJob(scheduler, pipelineCache, orcaService,
-      pipelineInitiator, registry, 30000L, 2000L,
+    def compensationJob = new MissedPipelineTriggerCompensationJob(pipelineCache, orcaService,
+      pipelineInitiator, registry, quietPeriodIndicator, 30000L, 2000L,
       'America/Los_Angeles', true, 900000, 20, dateContext)
 
     when:
@@ -183,11 +184,35 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
     ]
 
     when:
-    def result = MissedPipelineTriggerCompensationJob.getEnabledCronTriggers(pipelines)
+    def result = MissedPipelineTriggerCompensationJob.getEnabledCronTriggers(pipelines, false)
 
     then:
     result.collect { it.id } == ['1', '5']
   }
+
+  def 'should respect quiet periods'() {
+    given:
+    def pipelines = [
+      pipelineBuilder('1').triggers([
+        new Trigger.TriggerBuilder().id('1').type(Trigger.Type.CRON.toString()).enabled(true).build(),
+        new Trigger.TriggerBuilder().id('2').type(Trigger.Type.CRON.toString()).enabled(false).build()
+      ]).respectQuietPeriod(true)
+      .build(),
+      pipelineBuilder('2').build(),
+      pipelineBuilder('3').triggers([
+        new Trigger.TriggerBuilder().id('3').enabled(true).build(),
+        new Trigger.TriggerBuilder().id('4').enabled(false).build(),
+        new Trigger.TriggerBuilder().id('5').type(Trigger.Type.CRON.toString()).enabled(true).build()
+      ]).build()
+    ]
+
+    when:
+    def result = MissedPipelineTriggerCompensationJob.getEnabledCronTriggers(pipelines, true)
+
+    then:
+    result.collect { it.id } == ['5']
+  }
+
 
   @Unroll
   def 'should evaluate missed executions only in window'() {
@@ -202,8 +227,8 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
     def now = getDateOffset(nowMinutes)
 
     def dateContext = Mock(MissedPipelineTriggerCompensationJob.DateContext)
-    def compensationJob = new MissedPipelineTriggerCompensationJob(scheduler, pipelineCache, orcaService,
-      pipelineInitiator, registry, 30000L, 2000L, 'America/Los_Angeles', true, 900000, 20, dateContext)
+    def compensationJob = new MissedPipelineTriggerCompensationJob(pipelineCache, orcaService,
+      pipelineInitiator, registry, quietPeriodIndicator, 30000L, 2000L, 'America/Los_Angeles', true, 900000, 20, dateContext)
 
     when:
     def result = compensationJob.missedExecution(expr, lastExecution, windowFloor, now)
@@ -254,8 +279,8 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
     def windowFloor = new Date(now.getTime() - TimeUnit.MINUTES.toMillis(30))   // triggerWindowCeiling - 30m
 
     def dateContext = Mock(MissedPipelineTriggerCompensationJob.DateContext)
-    def compensationJob = new MissedPipelineTriggerCompensationJob(scheduler, pipelineCache, orcaService,
-      pipelineInitiator, registry, 30000L, 2000L, 'America/Los_Angeles', true, 900000, 20, dateContext)
+    def compensationJob = new MissedPipelineTriggerCompensationJob(pipelineCache, orcaService,
+      pipelineInitiator, registry, quietPeriodIndicator, 30000L, 2000L, 'America/Los_Angeles', true, 900000, 20, dateContext)
 
     when:
     def missedExecution = compensationJob.missedExecution(expr, lastExecution, windowFloor, now)
@@ -265,8 +290,8 @@ class MissedPipelineTriggerCompensationJobSpec extends Specification {
   }
 
   def 'verify that the present is a fleeting moment, the past is no more'() {
-    def compensationJob = new MissedPipelineTriggerCompensationJob(scheduler, pipelineCache, orcaService,
-      pipelineInitiator, registry, 30000L, 2000L, 'America/Los_Angeles', true, 900000, 20)
+    def compensationJob = new MissedPipelineTriggerCompensationJob(pipelineCache, orcaService,
+      pipelineInitiator, registry, quietPeriodIndicator, 30000L, 2000L, 'America/Los_Angeles', true, 900000, 20)
 
     def sleepyTimeMs = 100
 

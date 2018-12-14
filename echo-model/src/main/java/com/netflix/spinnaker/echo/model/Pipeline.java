@@ -58,6 +58,12 @@ public class Pipeline {
   boolean limitConcurrent;
 
   @JsonProperty
+  boolean plan;
+
+  @JsonProperty
+  boolean respectQuietPeriod;
+
+  @JsonProperty
   List<Trigger> triggers;
 
   @JsonProperty

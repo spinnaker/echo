@@ -38,7 +38,7 @@ class PipelineTriggerAction extends ActionSupport {
             def eventId = pipeline.trigger.eventId? pipeline.trigger.eventId : "not set"
 
             LOGGER.info("Executing PipelineTriggerAction for '${pipeline}', eventId='${eventId}'")
-            pipelineInitiator.call(pipeline)
+            pipelineInitiator.startPipeline(pipeline)
             LOGGER.info("Successfully executed PipelineTriggerAction for '${pipeline}")
         } catch (Exception e) {
             LOGGER.error("Exception occurred while executing PipelineTriggerAction", e)
