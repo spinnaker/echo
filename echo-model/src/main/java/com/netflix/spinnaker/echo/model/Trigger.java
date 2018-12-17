@@ -109,6 +109,7 @@ public class Trigger {
   Map<String, ?> lastSuccessfulExecution;
 
   List<Map<String, Object>> notifications;
+  List<Map<String, Object>> artifacts;
 
   /**
    * Field to use for custom triggers involving artifacts
