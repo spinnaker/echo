@@ -217,6 +217,7 @@ public class Trigger {
     // be set by Echo.
     @JsonIgnore
     private TriggerBuilder propagateAuth(boolean propagateAuth) {
+      this.propagateAuth = propagateAuth;
       return this;
     }
   }
