@@ -22,7 +22,6 @@ import com.netflix.spinnaker.echo.github.GithubCommit
 import com.netflix.spinnaker.echo.github.GithubService
 import com.netflix.spinnaker.echo.github.GithubStatus
 import com.netflix.spinnaker.echo.model.Event
-import com.netflix.spinnaker.kork.core.RetrySupport
 import retrofit.RetrofitError
 import retrofit.client.Response
 import retrofit.mime.TypedByteArray
@@ -31,13 +30,11 @@ import spock.lang.Subject
 import spock.lang.Unroll
 import spock.util.concurrent.BlockingVariable
 
-import java.util.concurrent.TimeoutException
-
 class GithubNotificationAgentSpec extends Specification {
 
   def github = Mock(GithubService)
   @Subject
-  def agent = new GithubNotificationAgent(new RetrySupport())
+  def agent = new GithubNotificationAgent()
 
   void setup() {
     agent.spinnakerUrl = "http://spinnaker.io"

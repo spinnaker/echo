@@ -46,14 +46,9 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
     "complete", "success",
     "failed", "failure");
 
-  private final RetrySupport retrySupport;
+  private final RetrySupport retrySupport = new RetrySupport();
   private static final int MAX_RETRY = 5;
   private static final long RETRY_BACKOFF = 1000;
-
-  @Autowired
-  public GithubNotificationAgent(@NonNull RetrySupport retrySupport) {
-    this.retrySupport = retrySupport;
-  }
 
   @Override
   public void sendNotifications(
@@ -117,7 +112,7 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
         () -> githubService.updateCheck("token " + token, repo, branchCommit, githubStatus),
         MAX_RETRY,
         RETRY_BACKOFF,
-        true);
+        false);
     } catch (Exception e) {
       log.error(String.format("Failed to send github status for application: '%s' pipeline: '%s', %s",
         application, content.getPipeline(), e));
