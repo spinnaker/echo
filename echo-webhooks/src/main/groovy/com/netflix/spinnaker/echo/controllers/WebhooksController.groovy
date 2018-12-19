@@ -80,7 +80,7 @@ class WebhooksController {
           sendEvent = false
         } else {
           event.content.hash = postedEvent.after
-          event.content.branch = postedEvent.ref.replace('refs/heads/', '')
+          event.content.branch = postedEvent.ref?.replace('refs/heads/', '')
           event.content.repoProject = postedEvent.repository.owner.name
           event.content.slug = postedEvent.repository.name
         }
