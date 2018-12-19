@@ -91,8 +91,8 @@ class WebhooksController {
         }
 
         if (event.content.event_type == "repo:push" && event.content.push) {
-          event.content.hash = postedEvent.push.changes?.first().commits?.first().hash ?: ""
-          event.content.branch = postedEvent.push.changes?.first().new.name
+          event.content.hash = postedEvent.push.changes?.first().commits?.first().hash
+          event.content.branch = postedEvent.push.changes?.first().new.name ?: ""
         } else if (event.content.event_type == "pullrequest:fulfilled" && event.content.pullrequest) {
           event.content.hash = postedEvent.pullrequest.merge_commit?.hash
           event.content.branch = postedEvent.pullrequest.destination?.branch?.name
