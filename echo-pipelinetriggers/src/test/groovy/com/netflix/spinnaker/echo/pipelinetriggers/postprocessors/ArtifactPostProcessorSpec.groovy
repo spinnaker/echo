@@ -77,4 +77,16 @@ class ArtifactPostProcessorSpec extends Specification implements RetrofitStubs {
     outputPipeline.receivedArtifacts[0].name == "testName"
     outputPipeline.receivedArtifacts[1].name == "test-artifact-1.0"
   }
+
+  def "parseCustomFormat correctly parses booleans and strings"() {
+    expect:
+    result == artifactPostProcessor.parseCustomFormat(customFormat)
+
+    where:
+    customFormat || result
+    true         || true
+    false        || false
+    "true"       || true
+    "false"      || false
+  }
 }
