@@ -134,7 +134,7 @@ public class ArtifactPostProcessor implements PipelinePostProcessor {
       return Boolean.parseBoolean((String) customFormat);
     }
 
-    throw new RuntimeException("Unexpected customFormat in property file.");
+    throw new RuntimeException("Unexpected customFormat in property file: " + customFormat);
   }
 
   public PostProcessorPriority priority() {
