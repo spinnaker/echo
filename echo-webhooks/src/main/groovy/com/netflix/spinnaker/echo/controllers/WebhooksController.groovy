@@ -19,14 +19,14 @@ package com.netflix.spinnaker.echo.controllers
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.echo.artifacts.ArtifactExtractor
 import com.netflix.spinnaker.echo.events.EventPropagator
+import com.netflix.spinnaker.echo.scm.ScmWebhookHandler
+import com.netflix.spinnaker.echo.scm.GitWebhookHandler
 import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.model.Metadata
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.web.bind.annotation.*
-
-import static net.logstash.logback.argument.StructuredArguments.kv
 
 @RestController
 @Slf4j
@@ -41,6 +41,9 @@ class WebhooksController {
   @Autowired
   ArtifactExtractor artifactExtractor
 
+  @Autowired
+  ScmWebhookHandler scmWebhookHandler
+
   @RequestMapping(value = '/webhooks/{type}/{source}', method = RequestMethod.POST)
   WebhooksController.WebhookResponse forwardEvent(@PathVariable String type,
                                                   @PathVariable String source,
@@ -54,6 +57,10 @@ class WebhooksController {
     event.details.requestHeaders = headers
     event.rawContent = rawPayload
 
+    if (!rawPayload && source == 'bitbucket') {
+      rawPayload = '{}'
+    }
+
     Map postedEvent
     try {
       postedEvent = mapper.readValue(rawPayload, Map) ?: [:]
@@ -63,52 +70,16 @@ class WebhooksController {
     }
     event.content = postedEvent
     event.payload = new HashMap(postedEvent)
+    if (headers.containsKey('X-Event-Key')) {
+      event.content.event_type = headers['X-Event-Key'][0]
+    }
 
-    // TODO: refactor this large if/else block
     if (type == 'git') {
-      if (source == 'stash') {
-        event.content.hash = postedEvent.refChanges?.first().toHash
-        event.content.branch = postedEvent.refChanges?.first().refId.replace('refs/heads/', '')
-        event.content.repoProject = postedEvent.repository.project.key
-        event.content.slug = postedEvent.repository.slug
-        if (event.content.hash.toString().startsWith('000000000')) {
-          sendEvent = false
-        }
-      } else if (source == 'github') {
-        if (event.content.hook_id) {
-          log.info('Webhook ping received from github {} {} {}', kv('hook_id', event.content.hook_id), kv('repository', event.content.repository.full_name))
-          sendEvent = false
-        } else {
-          event.content.hash = postedEvent.after
-          event.content.branch = postedEvent.ref.replace('refs/heads/', '')
-          event.content.repoProject = postedEvent.repository.owner.name
-          event.content.slug = postedEvent.repository.name
-        }
-      } else if (source == 'bitbucket') {
-
-        if (headers.containsKey('X-Event-Key')) {
-          event.content.event_type = headers['X-Event-Key'][0]
-        }
-
-        if (event.content.event_type == "repo:push" && event.content.push) {
-          event.content.hash = postedEvent.push.changes?.first().commits?.first().hash
-          event.content.branch = postedEvent.push.changes?.first().new.name
-        } else if (event.content.event_type == "pullrequest:fulfilled" && event.content.pullrequest) {
-          event.content.hash = postedEvent.pullrequest.merge_commit?.hash
-          event.content.branch = postedEvent.pullrequest.destination?.branch?.name
-        }
-        event.content.repoProject = postedEvent.repository.owner.username
-        event.content.slug = postedEvent.repository.full_name.tokenize('/')[1]
-        if (event.content.hash.toString().startsWith('000000000')) {
-          sendEvent = false
-        }
-        log.info('Webhook event received {} {} {} {} {} {}', kv('type', type), kv('event_type', event.content.event_type), kv('hook_id', event.content.hook_id), kv('repository', event.content.repository.full_name), kv('request_id', event.content.request_id), kv('branch', event.content.branch))
-      } else if (source == 'gitlab') {
-        event.content.hash = postedEvent.after;
-        event.content.branch = postedEvent.ref.replace('refs/heads/', '')
-        event.content.repoProject = postedEvent.project.namespace
-        event.content.slug = postedEvent.project.name
-      }
+      GitWebhookHandler handler = scmWebhookHandler.getHandler(source)
+      handler.handle(event, postedEvent)
+      // shouldSendEvent should be called after the event
+      // has been processed
+      sendEvent = handler.shouldSendEvent(event)
     }
 
     if (!event.content.artifacts) {
