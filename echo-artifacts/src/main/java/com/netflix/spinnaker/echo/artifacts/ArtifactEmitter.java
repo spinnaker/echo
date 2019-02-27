@@ -18,13 +18,12 @@ package com.netflix.spinnaker.echo.artifacts;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.echo.config.ArtifactEmitterUrls;
-import com.netflix.spinnaker.echo.config.Service;
+import com.netflix.spinnaker.echo.config.ArtifactEmitterProperties;
 import com.netflix.spinnaker.echo.model.ArtifactEvent;
+import com.netflix.spinnaker.echo.services.KeelService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -34,26 +33,26 @@ import java.util.Map;
 
 /**
  * In an effort to move towards a more artifact centric workflow, this collector will accept
- *  artifacts from all over echo, and will publish them to any configured endpoint.
+ *  artifacts from all over echo, and will publish them to any keel.
  *
- *  todo: emit via configurable pubsub as well as REST
+ *  todo eb: figure out if there are other cases for emitting artifacts, and if so make this solution more general
  */
 @Component
 @ConditionalOnExpression("${artifact-emitter.enabled:false}")
 public class ArtifactEmitter {
   private static final Logger log = LoggerFactory.getLogger(ArtifactEmitter.class);
-  private final ArtifactEmitterUrls artifactEmitterUrls;
   private final ObjectMapper objectMapper;
-
-  @Value("${artifact-emitter.defaultEventName:spinnaker_artifacts}")
-  String eventName;
-
-  @Value("${artifact-emitter.defaultFieldName:payload}")
-  String fieldName;
+  private final KeelService keelService;
+  private final ArtifactEmitterProperties artifactEmitterProperties;
 
   @Autowired
-  public ArtifactEmitter(ArtifactEmitterUrls artifactEmitterUrls, ObjectMapper objectMapper) {
-    this.artifactEmitterUrls = artifactEmitterUrls;
+  public ArtifactEmitter(
+    KeelService keelService,
+    ArtifactEmitterProperties artifactEmitterProperties,
+    ObjectMapper objectMapper
+  ) {
+    this.keelService = keelService;
+    this.artifactEmitterProperties = artifactEmitterProperties;
     this.objectMapper = objectMapper;
     log.info("Preparing to emit artifacts");
   }
@@ -61,26 +60,14 @@ public class ArtifactEmitter {
   @EventListener
   @SuppressWarnings("unchecked")
   public void processEvent(ArtifactEvent event) {
-    for (Service service: artifactEmitterUrls.services){
-      try {
-        Map eventAsMap = new HashMap();
-        if (service.getConfig().isFlatten()) {
-          eventAsMap.put("artifacts", objectMapper.writeValueAsString(event.getArtifacts()));
-          eventAsMap.put("details", objectMapper.writeValueAsString(event.getDetails()));
-        } else {
-          eventAsMap = objectMapper.convertValue(event, Map.class);
-        }
+    try {
+      Map sentEvent = new HashMap();
+      sentEvent.put("eventName", artifactEmitterProperties.getEventName());
+      sentEvent.put(artifactEmitterProperties.getFieldName(), objectMapper.convertValue(event, Map.class));
 
-        Map sentEvent = new HashMap();
-        String resolvedEventName = service.getConfig().getEventName() != null ? service.getConfig().getEventName() : eventName;
-        sentEvent.put("eventName", resolvedEventName);
-        String resolvedFieldName = service.getConfig().getFieldName() != null ? service.getConfig().getFieldName() : fieldName;
-        sentEvent.put(resolvedFieldName, eventAsMap);
-
-        service.getClient().recordEvent(sentEvent);
-      } catch (Exception e) {
-        log.error("Could not send event {} to {}", event, service.getConfig().getUrl(), e);
-      }
+      keelService.sendArtifactEvent(sentEvent);
+    } catch (Exception e) {
+      log.error("Could not send event {} to Keel", event, e);
     }
   }
 }

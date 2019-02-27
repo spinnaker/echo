@@ -17,22 +17,27 @@
 package com.netflix.spinnaker.echo.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Helper class to map hosts in properties file into a list
- */
 @ConfigurationProperties(prefix = "artifact-emitter")
+@Configuration
 public class ArtifactEmitterProperties {
-  public List<ArtifactEndpointConfiguration> endpoints = new ArrayList<>();
+  String eventName = "spinnaker_artifacts";
+  String fieldName = "payload";
 
-  public List<ArtifactEndpointConfiguration> getEndpoints() {
-    return endpoints;
+  public String getEventName() {
+    return eventName;
   }
 
-  public void setEndpoints(List<ArtifactEndpointConfiguration> endpoints) {
-    this.endpoints = endpoints;
+  public void setEventName(String eventName) {
+    this.eventName = eventName;
+  }
+
+  public String getFieldName() {
+    return fieldName;
+  }
+
+  public void setFieldName(String fieldName) {
+    this.fieldName = fieldName;
   }
 }

@@ -16,8 +16,6 @@
 
 dependencies {
   compile project(':echo-core')
-  compile project(':echo-rest')
 
   spinnaker.group("bootWeb")
-  spinnaker.group("spockBase")
 }
