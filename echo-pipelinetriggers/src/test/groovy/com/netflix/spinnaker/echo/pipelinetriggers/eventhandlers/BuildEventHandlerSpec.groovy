@@ -5,6 +5,7 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.build.BuildInfoService
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent
+import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.BuildArtifactExtractor
 import com.netflix.spinnaker.echo.services.IgorService
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.core.RetrySupport
@@ -19,6 +20,9 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
   def igorService = Mock(IgorService)
   def buildInformation = new BuildInfoService(igorService, new RetrySupport())
+  def artifactExtractor = Stub(BuildArtifactExtractor) {
+    extractArtifacts(_) >> Collections.emptyList()
+  }
 
   String MASTER_NAME = "jenkins-server"
   String JOB_NAME = "my-job"
@@ -32,7 +36,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   ]
 
   @Subject
-  def eventHandler = new BuildEventHandler(registry, objectMapper, Optional.of(buildInformation))
+  def eventHandler = new BuildEventHandler(registry, objectMapper, Optional.of(buildInformation), artifactExtractor)
 
   @Unroll
   def "triggers pipelines for successful builds for #triggerType"() {

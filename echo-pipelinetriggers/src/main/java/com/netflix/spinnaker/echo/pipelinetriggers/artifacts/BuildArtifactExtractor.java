@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.pipelinetriggers.postprocessors;
+package com.netflix.spinnaker.echo.pipelinetriggers.artifacts;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.echo.artifacts.MessageArtifactTranslator;
-import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaTemplate;
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaTemplateService;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -43,13 +40,13 @@ import java.util.stream.Collectors;
  */
 @Component
 @Slf4j
-public class ArtifactPostProcessor implements PipelinePostProcessor {
+public class BuildArtifactExtractor {
   private final ObjectMapper objectMapper;
   private final JinjaTemplateService jinjaTemplateService;
   private final ApplicationEventPublisher applicationEventPublisher;
 
   @Autowired
-  public ArtifactPostProcessor(
+  public BuildArtifactExtractor(
     ObjectMapper objectMapper,
     JinjaTemplateService jinjaTemplateService,
     ApplicationEventPublisher applicationEventPublisher
@@ -59,21 +56,7 @@ public class ArtifactPostProcessor implements PipelinePostProcessor {
     this.applicationEventPublisher = applicationEventPublisher;
   }
 
-  public Pipeline processPipeline(Pipeline inputPipeline) {
-    List<Artifact> newArtifacts = extractArtifacts(inputPipeline.getTrigger());
-    List<Artifact> existingArtifacts = inputPipeline.getReceivedArtifacts();
-
-    List<Artifact> receivedArtifacts = new ArrayList<>();
-    if (existingArtifacts != null) {
-      receivedArtifacts.addAll(existingArtifacts);
-    }
-    if (newArtifacts != null) {
-      receivedArtifacts.addAll(newArtifacts);
-    }
-    return inputPipeline.withReceivedArtifacts(receivedArtifacts);
-  }
-
-  private List<Artifact> extractArtifacts(Trigger inputTrigger) {
+  public List<Artifact> extractArtifacts(Trigger inputTrigger) {
     final String messageString;
     try {
       messageString = objectMapper.writeValueAsString(inputTrigger);
@@ -145,9 +128,5 @@ public class ArtifactPostProcessor implements PipelinePostProcessor {
     }
 
     throw new RuntimeException("Unexpected customFormat in property file: " + customFormat);
-  }
-
-  public PostProcessorPriority priority() {
-    return PostProcessorPriority.ARTIFACT_EXTRACTION;
   }
 }
