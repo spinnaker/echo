@@ -179,11 +179,11 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     def event = getBuildEvent()
 
     when:
-    def outputPipeline = eventHandler.buildTrigger(inputPipeline, event).apply(trigger)
+    def outputTrigger = eventHandler.buildTrigger(event).apply(trigger)
 
     then:
     1 * igorService.getBuild(BUILD_NUMBER, MASTER_NAME, JOB_NAME) >> BUILD_INFO
-    outputPipeline.trigger.buildInfo.equals(BUILD_INFO)
+    outputTrigger.buildInfo.equals(BUILD_INFO)
   }
 
   def "fetches property file if defined"() {
@@ -198,13 +198,13 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     def event = getBuildEvent()
 
     when:
-    def outputPipeline = eventHandler.buildTrigger(inputPipeline, event).apply(trigger)
+    def outputTrigger = eventHandler.buildTrigger(event).apply(trigger)
 
     then:
     1 * igorService.getBuild(BUILD_NUMBER, MASTER_NAME, JOB_NAME) >> BUILD_INFO
     1 * igorService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER_NAME, JOB_NAME) >> PROPERTIES
-    outputPipeline.trigger.buildInfo.equals(BUILD_INFO)
-    outputPipeline.trigger.properties.equals(PROPERTIES)
+    outputTrigger.buildInfo.equals(BUILD_INFO)
+    outputTrigger.properties.equals(PROPERTIES)
   }
 
   def "retries on failure to communicate with igor"() {
@@ -219,13 +219,13 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     def event = getBuildEvent()
 
     when:
-    def outputPipeline = eventHandler.buildTrigger(inputPipeline, event).apply(trigger)
+    def outputTrigger = eventHandler.buildTrigger(event).apply(trigger)
 
     then:
     2 * igorService.getBuild(BUILD_NUMBER, MASTER_NAME, JOB_NAME) >> { throw new RuntimeException() } >> BUILD_INFO
     1 * igorService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER_NAME, JOB_NAME) >> PROPERTIES
-    outputPipeline.trigger.buildInfo.equals(BUILD_INFO)
-    outputPipeline.trigger.properties.equals(PROPERTIES)
+    outputTrigger.buildInfo.equals(BUILD_INFO)
+    outputTrigger.properties.equals(PROPERTIES)
   }
 
   def getBuildEvent() {

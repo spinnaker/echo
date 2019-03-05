@@ -22,10 +22,16 @@ import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
+import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher;
+import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Base implementation of {@link TriggerEventHandler} for events that require looking for matching
@@ -50,9 +56,15 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements
         return pipeline.getTriggers()
           .stream()
           .filter(this::isValidTrigger)
-          .filter(matchTriggerFor(event, pipeline))
+          .filter(matchTriggerFor(event))
+          .map(t -> new TriggerWithArtifacts(t, getArtifactsFromEvent(event)))
+          .filter(ta -> ArtifactMatcher.anyArtifactsMatchExpected(ta.artifacts, ta.trigger, pipeline.getExpectedArtifacts()))
           .findFirst()
-          .map(buildTrigger(pipeline, event));
+          .map(ta -> {
+            Trigger trigger = buildTrigger(event).apply(ta.trigger);
+            List<Artifact> artifacts = ta.artifacts;
+            return pipeline.withTrigger(trigger).withReceivedArtifacts(artifacts);
+          });
       } catch (Exception e) {
         onSubscriberError(e);
         return Optional.empty();
@@ -70,11 +82,19 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements
     return  objectMapper.convertValue(event, getEventType());
   }
 
-  protected abstract Predicate<Trigger> matchTriggerFor(T event, Pipeline pipeline);
+  protected abstract Predicate<Trigger> matchTriggerFor(T event);
 
-  protected abstract Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, T event);
+  protected abstract Function<Trigger, Trigger> buildTrigger(T event);
 
   protected abstract boolean isValidTrigger(Trigger trigger);
 
   protected abstract Class<T> getEventType();
+
+  protected abstract List<Artifact> getArtifactsFromEvent(T event);
+
+  @Value
+  private class TriggerWithArtifacts {
+    Trigger trigger;
+    List<Artifact> artifacts;
+  }
 }

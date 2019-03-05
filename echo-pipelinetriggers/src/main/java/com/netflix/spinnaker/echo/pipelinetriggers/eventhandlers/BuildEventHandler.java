@@ -20,7 +20,6 @@ package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.build.BuildInfoService;
-import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
@@ -33,8 +32,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import static com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher.anyArtifactsMatchExpected;
 
 /**
  * Implementation of TriggerEventHandler for events of type {@link BuildEvent}, which occur when
@@ -68,7 +65,7 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   }
 
   @Override
-  public Function<Trigger, Pipeline> buildTrigger(Pipeline pipeline, BuildEvent buildEvent) {
+  public Function<Trigger, Trigger> buildTrigger(BuildEvent buildEvent) {
     return inputTrigger -> {
       Trigger trigger = inputTrigger.atBuildNumber(buildEvent.getBuildNumber())
         .withEventId(buildEvent.getEventId())
@@ -77,9 +74,7 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
         trigger = trigger.withBuildInfo(buildInfoService.get().getBuildInfo(buildEvent))
           .withProperties(buildInfoService.get().getProperties(buildEvent, inputTrigger.getPropertyFile()));
       }
-      return pipeline
-        .withTrigger(trigger)
-        .withReceivedArtifacts(getArtifacts(buildEvent));
+      return trigger;
     };
   }
 
@@ -94,20 +89,19 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   }
 
   @Override
-  protected Predicate<Trigger> matchTriggerFor(BuildEvent buildEvent, Pipeline pipeline) {
+  protected Predicate<Trigger> matchTriggerFor(BuildEvent buildEvent) {
     String jobName = buildEvent.getContent().getProject().getName();
     String master = buildEvent.getContent().getMaster();
     return trigger -> isBuildTrigger(trigger)
       && trigger.getJob().equals(jobName)
-      && trigger.getMaster().equals(master)
-      && anyArtifactsMatchExpected(getArtifacts(buildEvent), trigger, pipeline);
+      && trigger.getMaster().equals(master);
   }
 
   private boolean isBuildTrigger(Trigger trigger) {
     return Arrays.stream(BUILD_TRIGGER_TYPES).anyMatch(triggerType -> triggerType.equals(trigger.getType()));
   }
 
-  private List<Artifact> getArtifacts(BuildEvent event) {
+  protected List<Artifact> getArtifactsFromEvent(BuildEvent event) {
     return Optional.ofNullable(event.getContent())
       .map(BuildEvent.Content::getProject)
       .map(BuildEvent.Project::getLastBuild)
