@@ -3,7 +3,6 @@ package com.netflix.spinnaker.echo.scheduler.actions.pipeline
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
-import com.netflix.spinnaker.echo.scheduler.actions.pipeline.impl.TriggerRepository
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll

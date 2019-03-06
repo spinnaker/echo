@@ -1,4 +1,4 @@
-package com.netflix.spinnaker.echo.scheduler.actions.pipeline.impl
+package com.netflix.spinnaker.echo.scheduler.actions.pipeline
 
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.Trigger
@@ -40,7 +40,7 @@ class TriggerRepository {
    * @return null if no trigger is mapped to id
    */
   @Nullable
-  public Trigger getTrigger(String id) {
+  Trigger getTrigger(String id) {
     if (id == null) {
       return null
     }
@@ -48,7 +48,7 @@ class TriggerRepository {
     return triggersById.get(id) ?: triggersById.get(extractTriggerId(id))
   }
 
-  public Trigger remove(String id) {
+  Trigger remove(String id) {
     if (id == null) {
       return null
     }
@@ -56,7 +56,7 @@ class TriggerRepository {
     return triggersById.remove(id) ?: triggersById.remove(extractTriggerId(id))
   }
 
-  public Collection<Trigger> triggers() {
+  Collection<Trigger> triggers() {
     return triggersById.values()
   }
 }

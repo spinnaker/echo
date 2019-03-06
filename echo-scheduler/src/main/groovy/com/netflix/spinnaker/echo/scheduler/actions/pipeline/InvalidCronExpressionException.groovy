@@ -1,7 +1,7 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
+package com.netflix.spinnaker.echo.scheduler.actions.pipeline
 
-package com.netflix.spinnaker.echo.config
-
-import com.netflix.scheduledactions.web.config.SpringWebConfiguration
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
-
-@Configuration
-@Import(SpringWebConfiguration)
-class SchedulerWebConfiguration {
+class InvalidCronExpressionException extends IllegalArgumentException {
+  InvalidCronExpressionException(String cronExpression) {
+    super("Invalid CRON expression: ${cronExpression}")
+  }
 }

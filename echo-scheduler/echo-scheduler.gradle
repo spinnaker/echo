@@ -24,8 +24,9 @@ dependencies {
   compile spinnaker.dependency('eurekaClient')
   compile spinnaker.dependency('logstashEncoder')
   compile spinnaker.dependency('spectatorApi')
+  compile spinnaker.dependency('korkSql')
+  compile ('org.quartz-scheduler:quartz:2.3.0')
+  compile ("org.springframework:spring-context-support:${spinnaker.version('spring')}")
 
   testRuntime spinnaker.dependency('slf4jSimple')
-  compile spinnaker.dependency('scheduledActionsCore')
-  compile spinnaker.dependency('scheduledActionsWeb')
 }

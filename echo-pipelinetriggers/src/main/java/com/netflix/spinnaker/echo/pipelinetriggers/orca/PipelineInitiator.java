@@ -131,6 +131,7 @@ public class PipelineInitiator {
       try {
         AuthenticatedRequest.propagate(() -> orcaResponse.subscribe(), korkUser).call();
       } catch (Exception e) {
+        registry.counter("orca.error").increment();
         log.error("Unable to trigger pipeline {}: {}", pipeline, e);
       }
     }
