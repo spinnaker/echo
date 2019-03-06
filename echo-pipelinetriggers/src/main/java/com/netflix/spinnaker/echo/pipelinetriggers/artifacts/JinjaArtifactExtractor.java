@@ -34,19 +34,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Post-processor extracts artifacts from a pipeline using a supplied Jinja template and adds
- * these artifacts to the pipeline as received artifacts.
- * This post-processor is not implemented yet and is currently a no-op.
+ * Extracts artifacts from a trigger using a supplied Jinja template
  */
 @Component
 @Slf4j
-public class BuildArtifactExtractor {
+public class JinjaArtifactExtractor {
   private final ObjectMapper objectMapper;
   private final JinjaTemplateService jinjaTemplateService;
   private final ApplicationEventPublisher applicationEventPublisher;
 
   @Autowired
-  public BuildArtifactExtractor(
+  public JinjaArtifactExtractor(
     ObjectMapper objectMapper,
     JinjaTemplateService jinjaTemplateService,
     ApplicationEventPublisher applicationEventPublisher

@@ -19,7 +19,7 @@ package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.model.Pipeline
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.BuildArtifactExtractor
+import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaArtifactExtractor
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import spock.lang.Specification
@@ -29,7 +29,7 @@ import spock.lang.Unroll
 class DockerEventHandlerSpec extends Specification implements RetrofitStubs {
   def registry = new NoopRegistry()
   def objectMapper = new ObjectMapper()
-  def artifactExtractor = Stub(BuildArtifactExtractor) {
+  def artifactExtractor = Stub(JinjaArtifactExtractor) {
     extractArtifacts(_) >> Collections.emptyList()
   }
 

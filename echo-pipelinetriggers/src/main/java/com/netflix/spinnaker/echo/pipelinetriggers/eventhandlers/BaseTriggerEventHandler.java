@@ -23,7 +23,7 @@ import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.ArtifactMatcher;
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.BuildArtifactExtractor;
+import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaArtifactExtractor;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -43,12 +43,12 @@ import java.util.function.Predicate;
 public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements TriggerEventHandler<T> {
   private final Registry registry;
   protected final ObjectMapper objectMapper;
-  private final BuildArtifactExtractor buildArtifactExtractor;
+  private final JinjaArtifactExtractor jinjaArtifactExtractor;
 
-  BaseTriggerEventHandler(Registry registry, ObjectMapper objectMapper, BuildArtifactExtractor buildArtifactExtractor) {
+  BaseTriggerEventHandler(Registry registry, ObjectMapper objectMapper, JinjaArtifactExtractor jinjaArtifactExtractor) {
     this.registry = registry;
     this.objectMapper = objectMapper;
-    this.buildArtifactExtractor = buildArtifactExtractor;
+    this.jinjaArtifactExtractor = jinjaArtifactExtractor;
   }
 
   public Optional<Pipeline> withMatchingTrigger(T event, Pipeline pipeline) {
@@ -90,7 +90,7 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent> implements
   }
 
   private List<Artifact> extractArtifacts(Trigger trigger) {
-    return buildArtifactExtractor.extractArtifacts(trigger);
+    return jinjaArtifactExtractor.extractArtifacts(trigger);
   }
 
   protected abstract Predicate<Trigger> matchTriggerFor(T event);

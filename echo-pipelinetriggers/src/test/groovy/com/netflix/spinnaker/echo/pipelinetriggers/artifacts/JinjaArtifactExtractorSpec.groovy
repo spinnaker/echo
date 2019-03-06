@@ -22,13 +22,13 @@ import org.springframework.context.ApplicationEventPublisher
 import spock.lang.Specification
 import spock.lang.Subject
 
-class BuildArtifactExtractorSpec extends Specification implements RetrofitStubs {
+class JinjaArtifactExtractorSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
   def jinjaTemplateService = GroovyMock(JinjaTemplateService)
   def applicationEventPublisher = Mock(ApplicationEventPublisher)
 
   @Subject
-  def artifactExtractor = new BuildArtifactExtractor(objectMapper, jinjaTemplateService, applicationEventPublisher)
+  def artifactExtractor = new JinjaArtifactExtractor(objectMapper, jinjaTemplateService, applicationEventPublisher)
 
   def "parses an artifact returns it artifacts"() {
     given:

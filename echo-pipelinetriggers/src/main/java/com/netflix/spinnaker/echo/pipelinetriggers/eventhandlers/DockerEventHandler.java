@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.DockerEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.BuildArtifactExtractor;
+import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaArtifactExtractor;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,8 +41,8 @@ public class DockerEventHandler extends BaseTriggerEventHandler<DockerEvent> {
   private static final String TRIGGER_TYPE = "docker";
 
   @Autowired
-  public DockerEventHandler(Registry registry, ObjectMapper objectMapper, BuildArtifactExtractor buildArtifactExtractor) {
-    super(registry, objectMapper, buildArtifactExtractor);
+  public DockerEventHandler(Registry registry, ObjectMapper objectMapper, JinjaArtifactExtractor jinjaArtifactExtractor) {
+    super(registry, objectMapper, jinjaArtifactExtractor);
   }
 
   @Override

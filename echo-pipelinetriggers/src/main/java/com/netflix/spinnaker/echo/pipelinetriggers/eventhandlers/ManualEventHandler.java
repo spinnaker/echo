@@ -24,7 +24,7 @@ import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent.Content;
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.BuildArtifactExtractor;
+import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaArtifactExtractor;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -49,7 +49,7 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
 
   private final ObjectMapper objectMapper;
   private final Optional<BuildInfoService> buildInfoService;
-  private final BuildArtifactExtractor buildArtifactExtractor;
+  private final JinjaArtifactExtractor jinjaArtifactExtractor;
 
   @Override
   public boolean handleEventType(String eventType) {
@@ -126,7 +126,7 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
   }
 
   private List<Artifact> getArtifacts(Trigger trigger) {
-    return buildArtifactExtractor.extractArtifacts(trigger);
+    return jinjaArtifactExtractor.extractArtifacts(trigger);
   }
 
 }

@@ -19,7 +19,7 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.WebhookEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.BuildArtifactExtractor;
+import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaArtifactExtractor;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,8 +41,8 @@ public class WebhookEventHandler extends BaseTriggerEventHandler<WebhookEvent> {
   private static final String TRIGGER_TYPE = "webhook";
 
   @Autowired
-  public WebhookEventHandler(Registry registry, ObjectMapper objectMapper, BuildArtifactExtractor buildArtifactExtractor) {
-    super(registry, objectMapper, buildArtifactExtractor);
+  public WebhookEventHandler(Registry registry, ObjectMapper objectMapper, JinjaArtifactExtractor jinjaArtifactExtractor) {
+    super(registry, objectMapper, jinjaArtifactExtractor);
   }
 
   @Override

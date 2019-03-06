@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.GitEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.BuildArtifactExtractor;
+import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaArtifactExtractor;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.HmacUtils;
@@ -46,8 +46,8 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
   private static final String GITHUB_SECURE_SIGNATURE_HEADER = "X-Hub-Signature";
 
   @Autowired
-  public GitEventHandler(Registry registry, ObjectMapper objectMapper, BuildArtifactExtractor buildArtifactExtractor) {
-    super(registry, objectMapper, buildArtifactExtractor);
+  public GitEventHandler(Registry registry, ObjectMapper objectMapper, JinjaArtifactExtractor jinjaArtifactExtractor) {
+    super(registry, objectMapper, jinjaArtifactExtractor);
   }
 
   @Override
