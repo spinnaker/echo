@@ -32,7 +32,7 @@ allprojects {
     group = "com.netflix.spinnaker.echo"
 
     ext {
-        spinnakerDependenciesVersion = '1.35.0'
+        spinnakerDependenciesVersion = '2.0.0-rc.21-springBoot2'
         if (project.hasProperty('spinnakerDependenciesVersion')) {
             spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
         }
@@ -69,9 +69,6 @@ allprojects {
         exclude group: 'javax.servlet', module: 'servlet-api'
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
         exclude group: 'org.slf4j', module: 'slf4j-simple'
-        resolutionStrategy {
-            force 'com.google.guava:guava:20.0'
-        }
     }
 
     tasks.withType(JavaExec) {

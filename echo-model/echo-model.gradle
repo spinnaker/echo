@@ -19,4 +19,5 @@ dependencies {
 
   compile spinnaker.dependency("kork")
   compile spinnaker.dependency("korkArtifacts")
+  compile "org.springframework:spring-web:${spinnaker.version('spring')}"
 }
