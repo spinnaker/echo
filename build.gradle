@@ -22,6 +22,7 @@ buildscript {
     }
     dependencies {
         classpath "com.netflix.spinnaker.gradle:spinnaker-dev-plugin:5.2.2"
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:2.1.3.RELEASE"
     }
 }
 
@@ -29,10 +30,14 @@ allprojects {
     apply plugin: "spinnaker.base-project"
     apply plugin: "groovy"
     apply plugin: 'jacoco'
+
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
     group = "com.netflix.spinnaker.echo"
 
     ext {
-        spinnakerDependenciesVersion = '1.33.0'
+        spinnakerDependenciesVersion = '2.0.0-rc.21-springBoot2'
         if (project.hasProperty('spinnakerDependenciesVersion')) {
             spinnakerDependenciesVersion = project.property('spinnakerDependenciesVersion')
         }
@@ -69,9 +74,6 @@ allprojects {
         exclude group: 'javax.servlet', module: 'servlet-api'
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
         exclude group: 'org.slf4j', module: 'slf4j-simple'
-        resolutionStrategy {
-            force 'com.google.guava:guava:20.0'
-        }
     }
 
     tasks.withType(JavaExec) {
