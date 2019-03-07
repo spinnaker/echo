@@ -51,8 +51,8 @@ public class Application extends SpringBootServletInitializer {
   }
 
   public static void main(String... args) {
-    new SpringApplicationBuilder().properties(DEFAULT_PROPS).sources(Application.class).run(args);
     System.setProperty("spring.main.allow-bean-definition-overriding", "true");
+    new SpringApplicationBuilder().properties(DEFAULT_PROPS).sources(Application.class).run(args);
   }
 
   @Override

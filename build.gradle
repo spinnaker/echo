@@ -22,7 +22,6 @@ buildscript {
     }
     dependencies {
         classpath "com.netflix.spinnaker.gradle:spinnaker-dev-plugin:5.2.2"
-        classpath "org.springframework.boot:spring-boot-gradle-plugin:2.1.3.RELEASE"
     }
 }
 
@@ -30,9 +29,6 @@ allprojects {
     apply plugin: "spinnaker.base-project"
     apply plugin: "groovy"
     apply plugin: 'jacoco'
-
-    apply plugin: 'org.springframework.boot'
-    apply plugin: 'io.spring.dependency-management'
 
     group = "com.netflix.spinnaker.echo"
 
@@ -81,6 +77,7 @@ allprojects {
         jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8189'
       }
     }
+
 }
 
 subprojects {

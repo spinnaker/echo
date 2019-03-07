@@ -59,8 +59,8 @@ public class PipelineCache implements MonitoredPoller {
   private transient List<Pipeline> pipelines;
 
   @Autowired
-  public PipelineCache(@Value("${front50.pollingIntervalMs:10000}") int pollingIntervalMs,
-                       @Value("${front50.pollingSleepMs:100}") int pollingSleepMs,
+  public PipelineCache(@Value("${front50.polling-interval-ms:10000}") int pollingIntervalMs,
+                       @Value("${front50.polling-sleep-ms:100}") int pollingSleepMs,
                        @NonNull Front50Service front50,
                        @NonNull Registry registry) {
     this(Executors.newSingleThreadScheduledExecutor(), pollingIntervalMs, pollingSleepMs, front50, registry);
