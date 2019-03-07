@@ -60,7 +60,7 @@ class TriggerConverter {
     }
 
     org.quartz.Trigger trigger = newTrigger()
-      .withIdentity(pipelineTrigger.id)
+      .withIdentity(pipelineTrigger.id, PipelineConfigsPollingJob.PIPELINE_TRIGGER_GROUP_PREFIX + pipelineTrigger.parent.id)
       .withSchedule(cronSchedule(cronExpression)
         .inTimeZone(timeZoneId))
       .usingJobData(new JobDataMap(toParamMap(pipelineTrigger, timeZoneId.getID())))

@@ -116,6 +116,7 @@ class TriggerConverterSpec extends Specification {
 
         then:
         triggerInstance.key.name == trigger.id
+        triggerInstance.key.group == PipelineConfigsPollingJob.PIPELINE_TRIGGER_GROUP_PREFIX + trigger.parent.id
         triggerInstance.jobKey.name == TriggerConverter.JOB_ID
         triggerInstance instanceof CronTrigger
         ((CronTrigger) triggerInstance).cronExpression == trigger.cronExpression

@@ -7,31 +7,23 @@ import org.quartz.Trigger
 import org.quartz.TriggerKey
 import org.quartz.impl.triggers.CronTriggerImpl
 import org.springframework.http.MediaType
+import org.springframework.scheduling.quartz.SchedulerFactoryBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import spock.lang.Shared
 import spock.lang.Specification
 
 class ScheduledActionsControllerSpec extends Specification {
   ObjectMapper objectMapper = new ObjectMapper()
   Scheduler scheduler = Mock(Scheduler)
-  def mvc = MockMvcBuilders.standaloneSetup(new ScheduledActionsController(scheduler)).build()
+  SchedulerFactoryBean schedulerFactoryBean = Mock(SchedulerFactoryBean)
+  ScheduledActionsController sac
 
   @Shared CronTrigger trigger1 = makeTrigger("1", "America/New_York", true)
-  @Shared CronTrigger trigger2 = makeTrigger("1", "America/Los_Angeles", false)
+  @Shared CronTrigger trigger2 = makeTrigger("2", "America/Los_Angeles", false)
 
-  private CronTrigger makeTrigger(String id, String timezone, boolean rebake) {
-    def trigger = new CronTriggerImpl(
-      "key" + id, "user", "job","job",
-      id + " 10 0/12 1/1 * ? *")
-
-    trigger.jobDataMap.put("application", "app" + id)
-    trigger.jobDataMap.put("id", "id" + id)
-    trigger.jobDataMap.put("runAsUser", "runAsUser" + id)
-    trigger.jobDataMap.put("timeZone", timezone)
-    trigger.jobDataMap.put("triggerRebake", rebake)
-
-    return trigger
+  void setup() {
+    schedulerFactoryBean.scheduler >> scheduler
+    sac = new ScheduledActionsController(schedulerFactoryBean)
   }
 
   void 'should get all triggers'() {
@@ -46,48 +38,35 @@ class ScheduledActionsControllerSpec extends Specification {
     scheduler.getTrigger(_) >>> [trigger1, trigger2]
 
     when:
-    def result =
-      mvc.perform(MockMvcRequestBuilders
-        .get("/scheduledActions"))
-        .andReturn()
-
-    def responseBody = objectMapper.readValue(result.response.contentAsByteArray, Map)
+    def result = sac.getAllScheduledActions()
 
     then:
-    responseBody.pipeline.size() == 1
-    responseBody.manuallyCreated.size() == 1
+    result.manuallyCreated.size() == 1
+    result.pipeline.size() == 1
 
-    responseBody.pipeline[0] == [
-      id: trigger1.key.name,
-      application: trigger1.jobDataMap.getString("application"),
-      pipelineId: trigger1.jobDataMap.getString("id"),
-      cronExpression: trigger1.cronExpression,
-      runAsUser: trigger1.jobDataMap.getString("runAsUser"),
-      timezone: trigger1.timeZone.getID(),
-      forceRebake: trigger1.jobDataMap.getBoolean("triggerRebake")
-    ]
+    result.pipeline[0].id == trigger1.key.name
+    result.pipeline[0].application == trigger1.jobDataMap.getString("application")
+    result.pipeline[0].pipelineId == trigger1.jobDataMap.getString("id")
+    result.pipeline[0].cronExpression == trigger1.cronExpression
+    result.pipeline[0].runAsUser == trigger1.jobDataMap.getString("runAsUser")
+    result.pipeline[0].timezone == trigger1.timeZone.getID()
+    result.pipeline[0].forceRebake == trigger1.jobDataMap.getBoolean("triggerRebake")
 
-    responseBody.manuallyCreated[0] == [
-      id: trigger2.key.name,
-      application: trigger2.jobDataMap.getString("application"),
-      pipelineId: trigger2.jobDataMap.getString("id"),
-      cronExpression: trigger2.cronExpression,
-      runAsUser: trigger2.jobDataMap.getString("runAsUser"),
-      timezone: trigger2.timeZone.getID(),
-      forceRebake: trigger2.jobDataMap.getBoolean("triggerRebake")
-    ]
+    result.manuallyCreated[0].id == trigger2.key.name
+    result.manuallyCreated[0].application == trigger2.jobDataMap.getString("application")
+    result.manuallyCreated[0].pipelineId == trigger2.jobDataMap.getString("id")
+    result.manuallyCreated[0].cronExpression == trigger2.cronExpression
+    result.manuallyCreated[0].runAsUser == trigger2.jobDataMap.getString("runAsUser")
+    result.manuallyCreated[0].timezone == trigger2.timeZone.getID()
+    result.manuallyCreated[0].forceRebake == trigger2.jobDataMap.getBoolean("triggerRebake")
   }
 
   void 'should fail creating a trigger with missing params'() {
     when:
-    def result = mvc.perform(MockMvcRequestBuilders
-      .post("/scheduledActions")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(payload))
-      .andReturn()
+    sac.createScheduledAction((TriggerDescription)objectMapper.readValue(payload, TriggerDescription.class))
 
     then:
-    result.response.status == 400
+    thrown(IllegalArgumentException)
 
     where:
     payload                                                                                    | _
@@ -106,14 +85,7 @@ class ScheduledActionsControllerSpec extends Specification {
       ]
 
     when:
-    def result =
-      mvc.perform(MockMvcRequestBuilders
-        .post("/scheduledActions")
-          .contentType(MediaType.APPLICATION_JSON)
-          .content(objectMapper.writeValueAsString(payload)))
-        .andReturn()
-
-    def responseBody = objectMapper.readValue(result.response.contentAsByteArray, Map)
+    def result = sac.createScheduledAction((TriggerDescription)objectMapper.convertValue(payload, TriggerDescription.class))
 
     then:
     1 * scheduler.scheduleJob(_ as Trigger) >> { t ->
@@ -126,19 +98,18 @@ class ScheduledActionsControllerSpec extends Specification {
       assert (trigger.getJobDataMap().getString("application") == payload.application)
     }
 
-    responseBody == payload + [
+    result == (TriggerDescription)objectMapper.convertValue(payload + [
       forceRebake: false,
       runAsUser: null,
       timezone: TimeZone.getDefault().getID()]
+      , TriggerDescription.class)
   }
 
   void 'should delete trigger'() {
     scheduler.getTrigger(_) >> trigger1
 
     when:
-    mvc.perform(MockMvcRequestBuilders
-      .delete("/scheduledActions/key1"))
-      .andReturn()
+    sac.deleteScheduledAction("key1")
 
     then:
     1 * scheduler.getTrigger(_ as TriggerKey) >> { args ->
@@ -152,5 +123,21 @@ class ScheduledActionsControllerSpec extends Specification {
 
       return true
     }
+  }
+
+
+  private CronTrigger makeTrigger(String id, String timezone, boolean rebake) {
+    def trigger = new CronTriggerImpl(
+      "key" + id, "user", "job","job",
+      id + " 10 0/12 1/1 * ? *")
+    trigger.timeZone = TimeZone.getTimeZone(timezone)
+
+    trigger.jobDataMap.put("application", "app" + id)
+    trigger.jobDataMap.put("id", "id" + id)
+    trigger.jobDataMap.put("runAsUser", "runAsUser" + id)
+    trigger.jobDataMap.put("timeZone", timezone)
+    trigger.jobDataMap.put("triggerRebake", rebake)
+
+    return trigger
   }
 }

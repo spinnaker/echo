@@ -21,9 +21,13 @@ import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
+import org.quartz.CronTrigger
 import org.quartz.JobDataMap
 import org.quartz.JobExecutionContext
 import org.quartz.Scheduler
+import org.quartz.TriggerKey
+import org.quartz.impl.triggers.CronTriggerImpl
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -36,7 +40,13 @@ class PipelineConfigsPollingJobSpec extends Specification {
   def jobDataMap = new JobDataMap()
 
   @Subject
-  pollingAgent = new PipelineConfigsPollingJob(registry, pipelineCache)
+    pollingAgent = new PipelineConfigsPollingJob(registry, pipelineCache)
+
+  void setup() {
+    jobDataMap.put("timeZoneId", "America/Los_Angeles")
+    pollingJobContext.scheduler >> scheduler
+    pollingJobContext.mergedJobDataMap >> jobDataMap
+  }
 
   void 'when a new pipeline trigger is added, a scheduled action instance is registered with an id same as the trigger id'() {
     given:
@@ -47,130 +57,60 @@ class PipelineConfigsPollingJobSpec extends Specification {
       .build()
     Pipeline pipeline = buildPipeline([trigger])
 
-    pipelineCache.getPipelinesSync() >> PipelineCache.decorateTriggers([pipeline])
-    pollingJobContext.scheduler >> scheduler
-    pollingJobContext.mergedJobDataMap >> jobDataMap
-    jobDataMap.put("timeZoneId",  "America/Los_Angeles")
-
-    //scheduler.getActionInstances() >> []
+    List<Pipeline> pipelines = PipelineCache.decorateTriggers([pipeline])
+    pipelineCache.getPipelinesSync() >> pipelines
 
     when:
     pollingAgent.execute(pollingJobContext)
 
     then:
-    1 * scheduler.scheduleJob(_)
+    1 * scheduler.scheduleJob(_ as CronTrigger) >> { args ->
+      assert (args[0] as CronTrigger).key.name == pipelines[0].triggers[0].id
+    }
     0 * scheduler.unscheduleJob(_)
-  }
-//
-//    @Unroll
-//    void 'with triggerEnabled=#triggerEnabled and pipelineDisabled=#pipelineDisabled, corresponding scheduled action is disabled'() {
-//        given:
-//        Trigger trigger = Trigger.builder()
-//            .enabled(triggerEnabled)
-//            .id('t1')
-//            .type(Trigger.Type.CRON.toString())
-//            .cronExpression('* 0/30 * * * ? *')
-//            .build()
-//        Pipeline pipeline = buildPipeline([trigger], pipelineDisabled)
-//        def decoratedPipelines = PipelineCache.decorateTriggers([pipeline]) // new id for trigger will be generated here
-//        ActionInstance actionInstance = buildScheduledAction(decoratedPipelines[0].triggers[0].id, '* 0/30 * * * ? *', true)
-//        pipelineCache.getPipelinesSync() >> decoratedPipelines
-//        actionsOperator.getActionInstances() >> [actionInstance]
-//
-//        when:
-//        pollingAgent.execute()
-//
-//        then:
-//        !actionInstance.disabled
-//        0 * actionsOperator.enableActionInstance(_)
-//        0 * actionsOperator.enableActionInstance(_)
-//        0 * actionsOperator.updateActionInstance(_)
-//        0 * actionsOperator.registerActionInstance(_)
-//        0 * actionsOperator.deleteActionInstance(_)
-//        1 * actionsOperator.disableActionInstance(actionInstance)
-//
-//        where:
-//        triggerEnabled | pipelineDisabled
-//        false          | false
-//        true           | true
-//    }
-//
-//    void 'when an existing pipeline trigger is removed, corresponding scheduled action is also removed'() {
-//        given:
-//        Pipeline pipeline = buildPipeline([])
-//        ActionInstance actionInstance = buildScheduledAction('t1', '* 0/30 * * * ? *', true)
-//        pipelineCache.getPipelinesSync() >> PipelineCache.decorateTriggers([pipeline])
-//        actionsOperator.getActionInstances() >> [actionInstance]
-//
-//        when:
-//        pollingAgent.execute()
-//
-//        then:
-//        0 * actionsOperator.updateActionInstance(_)
-//        0 * actionsOperator.registerActionInstance(_)
-//        0 * actionsOperator.disableActionInstance(_)
-//        0 * actionsOperator.enableActionInstance(_)
-//        1 * actionsOperator.deleteActionInstance(actionInstance)
-//    }
-//
-//    @Unroll
-//    void 'when we make changes to pipeline triggers, they are reflected in their corresponding action instance'() {
-//        given:
-//        def actionCron = '* 0/30 * * * ? *'
-//
-//        Trigger trigger = Trigger.builder()
-//          .enabled(triggerEnabled)
-//          .id('t1')
-//          .type(Trigger.Type.CRON.toString())
-//          .cronExpression(changeTrigger ? actionCron.replaceAll('30', '45') : actionCron)
-//          .build()
-//        Pipeline pipeline = buildPipeline([trigger])
-//        def decoratedPipelines = PipelineCache.decorateTriggers([pipeline]) // new id for trigger will be generated here
-//        ActionInstance actionInstance = buildScheduledAction(changeTrigger ? trigger.id : decoratedPipelines[0].triggers[0].id, actionCron, actionEnabled)
-//        pipelineCache.getPipelinesSync() >> decoratedPipelines
-//        actionsOperator.getActionInstances() >> [actionInstance]
-//
-//        when:
-//        pollingAgent.execute()
-//
-//        then:
-//        numRegister * actionsOperator.registerActionInstance(_)
-//        0 * actionsOperator.disableActionInstance(_)
-//        numEnable * actionsOperator.enableActionInstance(_)
-//        numDelete * actionsOperator.deleteActionInstance(_)
-//        0 * actionsOperator.updateActionInstance(_ as ActionInstance)
-//
-//        where:
-//        triggerEnabled | changeTrigger | actionEnabled || numRegister || numEnable || numDelete
-//        true           | true          | true          || 1           || 0         || 1  // existing trigger is updated -> deleted and created again
-//        false          | true          | false         || 0           || 0         || 1  // existing trigger is updated but disabled -> deleted and NOT created again
-//        true           | false         | false         || 0           || 1         || 0  // existing trigger is enabled -> action is enabled
-//        true           | false         | true          || 0           || 0         || 0  // no changes to pipeline trigger, no scheduled actions are updated
-//    }
-//
-    private static Pipeline buildPipeline(List<Trigger> triggers) {
-        buildPipeline(triggers, false)
-    }
 
-    private static Pipeline buildPipeline(List<Trigger> triggers, boolean disabled) {
-      Pipeline
-        .builder()
-        .application('api')
-        .name('Pipeline 1')
-        .id('p1')
-        .parallel(true)
-        .triggers(triggers)
-        .disabled(disabled)
-        .build()
+  }
+
+  void 'when an existing pipeline trigger is removed, corresponding scheduled action is also removed'() {
+    given:
+    Pipeline pipeline = buildPipeline([])
+    pipelineCache.getPipelinesSync() >> PipelineCache.decorateTriggers([pipeline])
+    CronTrigger trigger1 = makeTrigger("1", "America/New_York", true)
+
+    scheduler.getTriggerKeys(_) >> [trigger1.key]
+
+    when:
+    pollingAgent.execute(pollingJobContext)
+
+    then:
+    1 * scheduler.unscheduleJob(_ as TriggerKey) >> { args ->
+      assert (args[0] as TriggerKey) == trigger1.key
     }
-//
-//    private static ActionInstance buildScheduledAction(String id, String cronExpression, boolean enabled) {
-//        ActionInstance actionInstance = ActionInstance.newActionInstance()
-//            .withId(id)
-//            .withTrigger(new CronTrigger(cronExpression))
-//            .withParameters([triggerTimeZoneId: 'America/Los_Angeles'])
-//            .build()
-//        actionInstance.disabled = !enabled
-//        return actionInstance
-//    }
+    0 * scheduler.scheduleJob(_)
+  }
+
+  private static Pipeline buildPipeline(List<Trigger> triggers) {
+    Pipeline
+      .builder()
+      .application('api')
+      .name('Pipeline 1')
+      .id('p1')
+      .parallel(true)
+      .triggers(triggers)
+      .build()
+  }
+
+  private CronTrigger makeTrigger(String id, String timezone, boolean rebake) {
+    def trigger = new CronTriggerImpl(
+      "key" + id, "trigger_", "job", "job",
+      id + " 10 0/12 1/1 * ? *")
+
+    trigger.jobDataMap.put("application", "app" + id)
+    trigger.jobDataMap.put("id", "id" + id)
+    trigger.jobDataMap.put("runAsUser", "runAsUser" + id)
+    trigger.jobDataMap.put("timeZone", timezone)
+    trigger.jobDataMap.put("triggerRebake", rebake)
+
+    return trigger
+  }
 }

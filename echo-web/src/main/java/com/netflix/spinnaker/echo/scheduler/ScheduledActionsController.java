@@ -17,8 +17,10 @@
 package com.netflix.spinnaker.echo.scheduler;
 
 import com.netflix.spinnaker.echo.cron.CronExpressionFuzzer;
+import com.netflix.spinnaker.echo.scheduler.actions.pipeline.PipelineConfigsPollingJob;
 import com.netflix.spinnaker.echo.scheduler.actions.pipeline.TriggerConverter;
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
+import org.omg.CosNaming.NamingContextPackage.NotEmpty;
 import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +30,13 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.TriggerKey.triggerKey;
@@ -48,10 +54,17 @@ public class ScheduledActionsController {
     this.scheduler = schedulerBean.getScheduler();
   }
 
+//  public ScheduledActionsController(Scheduler scheduler) {
+//    this.scheduler = scheduler;
+//  }
+
   @RequestMapping(value = "/scheduledActions", method = RequestMethod.GET)
   public TriggerListResponse getAllScheduledActions() throws SchedulerException {
-    Set<TriggerKey> triggerKeys = scheduler.getTriggerKeys(GroupMatcher.triggerGroupEquals(Scheduler.DEFAULT_GROUP));
-    Set<TriggerKey> manuallyCreatedKeys = scheduler.getTriggerKeys(GroupMatcher.triggerGroupEquals(USER_TRIGGER_GROUP));
+    Set<TriggerKey> triggerKeys = scheduler.getTriggerKeys(
+      GroupMatcher.triggerGroupStartsWith(PipelineConfigsPollingJob.PIPELINE_TRIGGER_GROUP_PREFIX));
+
+    Set<TriggerKey> manuallyCreatedKeys = scheduler.getTriggerKeys(
+      GroupMatcher.triggerGroupEquals(USER_TRIGGER_GROUP));
 
     ArrayList<TriggerDescription> pipelineTriggers = new ArrayList<>(triggerKeys.size());
     ArrayList<TriggerDescription> manualTriggers = new ArrayList<>(manuallyCreatedKeys.size());
@@ -64,12 +77,20 @@ public class ScheduledActionsController {
       manualTriggers.add(toTriggerDescription((CronTrigger)scheduler.getTrigger(triggerKey)));
     }
 
-    return new TriggerListResponse(manualTriggers, pipelineTriggers);
+    return new TriggerListResponse(pipelineTriggers, manualTriggers);
   }
 
   @RequestMapping(value = "/scheduledActions", method = RequestMethod.POST)
   @ResponseStatus(HttpStatus.CREATED)
-  public TriggerDescription createScheduledAction(@RequestBody @Validated TriggerDescription newTrigger) throws SchedulerException {
+  public TriggerDescription createScheduledAction(@RequestBody TriggerDescription newTrigger) throws SchedulerException {
+    Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+    Set<ConstraintViolation<TriggerDescription>> violations = validator.validate(newTrigger);
+
+    if (violations.size() > 0) {
+      String errorMessage = violations.stream().map(v -> v.getPropertyPath() + " " + v.getMessage()).collect(Collectors.joining(","));
+      throw new IllegalArgumentException(errorMessage);
+    }
+
     org.quartz.CronTrigger trigger = (CronTrigger) scheduler.getTrigger(
       triggerKey(newTrigger.getId(), USER_TRIGGER_GROUP));
 

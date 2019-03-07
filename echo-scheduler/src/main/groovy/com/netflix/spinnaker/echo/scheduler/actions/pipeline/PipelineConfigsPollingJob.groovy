@@ -36,6 +36,8 @@ import java.util.concurrent.TimeUnit
 @Slf4j
 @DisallowConcurrentExecution
 class PipelineConfigsPollingJob implements Job {
+  public static final String PIPELINE_TRIGGER_GROUP_PREFIX = "trigger_"
+
   private TimeZone timeZoneId
   private Scheduler scheduler
   private Registry registry
@@ -90,21 +92,21 @@ class PipelineConfigsPollingJob implements Job {
    * @param pipelineTriggers all active pipeline CRON triggers
    */
   void removeStaleTriggers(TriggerRepository pipelineTriggers) {
-    int removed
-    int failed
+    int removeCount
+    int failCount
 
     try {
       Set<TriggerKey> triggerKeys = scheduler.getTriggerKeys(
-        GroupMatcher.triggerGroupEquals(Scheduler.DEFAULT_GROUP))
+        GroupMatcher.triggerGroupStartsWith(PIPELINE_TRIGGER_GROUP_PREFIX))
 
       triggerKeys.each { triggerKey ->
         if (pipelineTriggers.getTrigger(triggerKey.name) == null) {
           try {
             scheduler.unscheduleJob(triggerKey)
-            removed++
+            removeCount++
           } catch (Exception e) {
             log.error("Failed to unschedule job with triggerId: ${triggerKey.name}", e)
-            failed++
+            failCount++
           }
         }
       }
@@ -113,9 +115,12 @@ class PipelineConfigsPollingJob implements Job {
       log.error("Failed during stale trigger removal", e)
     }
 
-    if ((removed > 0) || (failed > 0)) {
-      log.debug("Removed $removed stale triggers successfully, $failed removals failed")
+    if ((removeCount + failCount) > 0) {
+      log.debug("Removed $removeCount stale triggers successfully, $failCount removals failed")
     }
+
+    registry.gauge("trigger.removeCount").set(removeCount)
+    registry.gauge("trigger.removeFailCount").set(failCount)
   }
 
   /**
@@ -131,7 +136,9 @@ class PipelineConfigsPollingJob implements Job {
 
     try {
       pipelineTriggers.triggers().each { pipelineTrigger ->
-        CronTrigger trigger = scheduler.getTrigger(TriggerKey.triggerKey(pipelineTrigger.id)) as CronTrigger
+        CronTrigger trigger = scheduler.getTrigger(
+          TriggerKey.triggerKey(pipelineTrigger.id, PIPELINE_TRIGGER_GROUP_PREFIX + pipelineTrigger.parent.id)
+        ) as CronTrigger
 
         if (!trigger) {
           if (registerNewTrigger(pipelineTrigger)) {
@@ -161,6 +168,7 @@ class PipelineConfigsPollingJob implements Job {
     }
 
     registry.gauge("trigger.failedUpdateCount").set(failCount)
+    registry.gauge("trigger.addCount").set(addCount)
   }
 
   /**
