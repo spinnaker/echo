@@ -21,6 +21,7 @@ import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
 import org.quartz.CronExpression
+import org.quartz.CronTrigger
 import org.quartz.JobDataMap
 
 import static org.quartz.CronScheduleBuilder.cronSchedule
@@ -92,10 +93,15 @@ class TriggerConverter {
     return existingPipeline.withTrigger(triggerBuilder.build())
   }
 
-  static boolean isInSync(org.quartz.CronTrigger trigger, Trigger pipelineTrigger, TimeZone timeZoneId) {
-    if ((trigger.cronExpression != CronExpressionFuzzer.fuzz(pipelineTrigger.id, pipelineTrigger.cronExpression)) ||
-      (trigger.jobDataMap.getString("runAsUser") != pipelineTrigger.runAsUser) ||
-      !trigger.timeZone.hasSameRules(timeZoneId)) {
+  static boolean isInSync(CronTrigger trigger, Trigger pipelineTrigger, TimeZone timeZoneId) {
+    CronTrigger other = toQuartzTrigger(pipelineTrigger, timeZoneId) as CronTrigger
+
+    boolean cronExpressionMismatch = (trigger.cronExpression != other.cronExpression)
+    boolean timezoneMismatch = !trigger.timeZone.hasSameRules(other.timeZone)
+    boolean runAsUserMismatch =
+      (trigger.jobDataMap.getString("runAsUser") != other.jobDataMap.getString("runAsUser"))
+
+    if (cronExpressionMismatch || runAsUserMismatch || timezoneMismatch) {
       return false
     }
 

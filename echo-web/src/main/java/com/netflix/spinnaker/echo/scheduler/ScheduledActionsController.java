@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.ConstraintViolation;
@@ -42,7 +41,6 @@ import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.TriggerKey.triggerKey;
 
 @RestController
-
 @ConditionalOnExpression("${scheduler.enabled:false}")
 public class ScheduledActionsController {
   private static final String USER_TRIGGER_GROUP = "user";
@@ -53,10 +51,6 @@ public class ScheduledActionsController {
   public ScheduledActionsController(SchedulerFactoryBean schedulerBean) {
     this.scheduler = schedulerBean.getScheduler();
   }
-
-//  public ScheduledActionsController(Scheduler scheduler) {
-//    this.scheduler = scheduler;
-//  }
 
   @RequestMapping(value = "/scheduledActions", method = RequestMethod.GET)
   public TriggerListResponse getAllScheduledActions() throws SchedulerException {

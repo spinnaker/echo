@@ -15,6 +15,8 @@
  */
 
 package com.netflix.spinnaker.echo.scheduler.actions.pipeline
+
+import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator
 import org.quartz.Job
@@ -31,17 +33,18 @@ class PipelineTriggerJob implements Job {
 
   @Override
   void execute(JobExecutionContext context) throws JobExecutionException {
+    Pipeline pipeline = null
+
     try {
       def pipelineInitiator = (PipelineInitiator) SchedulerBeanDependencies.getBean(PipelineInitiator)
       def pipelineCache = (PipelineCache) SchedulerBeanDependencies.getBean(PipelineCache)
-      def pipeline = TriggerConverter.toPipeline(pipelineCache, context.getMergedJobDataMap().getWrappedMap())
+      pipeline = TriggerConverter.toPipeline(pipelineCache, context.getMergedJobDataMap().getWrappedMap())
       def eventId = pipeline.trigger.eventId ? pipeline.trigger.eventId : "not set"
 
       LOGGER.info("Executing PipelineTriggerJob for '${pipeline}', eventId='${eventId}'")
       pipelineInitiator.startPipeline(pipeline)
-      LOGGER.info("Successfully executed PipelineTriggerJob for '${pipeline}")
     } catch (Exception e) {
-      LOGGER.error("Exception occurred while executing PipelineTriggerJob", e)
+      LOGGER.error("Exception occurred while executing PipelineTriggerJob for ${pipeline}", e)
       throw new JobExecutionException(e)
     }
   }

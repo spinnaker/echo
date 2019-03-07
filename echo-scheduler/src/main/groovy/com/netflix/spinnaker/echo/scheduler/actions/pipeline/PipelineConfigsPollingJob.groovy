@@ -91,8 +91,8 @@ class PipelineConfigsPollingJob implements Job {
    * @param pipelineTriggers all active pipeline CRON triggers
    */
   void removeStaleTriggers(TriggerRepository pipelineTriggers) {
-    int removeCount
-    int failCount
+    int removeCount = 0
+    int failCount = 0
 
     try {
       Set<TriggerKey> triggerKeys = scheduler.getTriggerKeys(
@@ -129,9 +129,9 @@ class PipelineConfigsPollingJob implements Job {
    * @param pipelineTriggers all active pipeline CRON triggers
    */
   void updateChangedTriggers(TriggerRepository pipelineTriggers) {
-    int addCount
-    int updateCount
-    int failCount
+    int addCount = 0
+    int updateCount = 0
+    int failCount = 0
 
     try {
       pipelineTriggers.triggers().each { pipelineTrigger ->
@@ -175,7 +175,7 @@ class PipelineConfigsPollingJob implements Job {
    * @param pipelineTrigger
    */
   boolean registerNewTrigger(Trigger pipelineTrigger) {
-    boolean isSuccess
+    boolean isSuccess = false
 
     try {
       scheduler.scheduleJob(TriggerConverter.toQuartzTrigger(pipelineTrigger, timeZoneId))

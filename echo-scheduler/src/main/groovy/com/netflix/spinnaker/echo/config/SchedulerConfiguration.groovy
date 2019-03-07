@@ -88,7 +88,7 @@ class SchedulerConfiguration {
    * Trigger for the job to sync pipeline triggers
    */
   @Bean
-  @ConditionalOnExpression('${scheduler.enabled:false} && ${scheduler.pipelineConfigsPoller.enabled:true}')
+  @ConditionalOnExpression('${scheduler.pipelineConfigsPoller.enabled:true}')
   SimpleTriggerFactoryBean syncJobTriggerBean(
     @Value('${scheduler.pipelineConfigsPoller.pollingIntervalMs:30000}') long intervalMs,
     JobDetail pipelineSyncJobBean

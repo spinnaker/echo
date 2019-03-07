@@ -134,6 +134,8 @@ class TriggerConverterSpec extends Specification {
     void 'isInSync() should return true if cronExpression, timezone of the trigger, and runAsUser match the ActionInstance'() {
         setup:
         Trigger pipelineTrigger = Trigger.builder()
+                                 .id("id1")
+                                 .parent(pipeline)
                                  .type(Trigger.Type.CRON.toString())
                                  .cronExpression('* 0/30 * * * ? *')
                                  .runAsUser("batman")
