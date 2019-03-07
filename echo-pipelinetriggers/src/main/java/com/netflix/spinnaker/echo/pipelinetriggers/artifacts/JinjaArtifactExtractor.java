@@ -21,10 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.echo.artifacts.MessageArtifactTranslator;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -37,22 +36,12 @@ import java.util.stream.Collectors;
  * Extracts artifacts from a trigger using a supplied Jinja template
  */
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class JinjaArtifactExtractor {
   private final ObjectMapper objectMapper;
   private final JinjaTemplateService jinjaTemplateService;
-  private final ApplicationEventPublisher applicationEventPublisher;
-
-  @Autowired
-  public JinjaArtifactExtractor(
-    ObjectMapper objectMapper,
-    JinjaTemplateService jinjaTemplateService,
-    ApplicationEventPublisher applicationEventPublisher
-  ) {
-    this.objectMapper = objectMapper;
-    this.jinjaTemplateService = jinjaTemplateService;
-    this.applicationEventPublisher = applicationEventPublisher;
-  }
+  private final MessageArtifactTranslator.Factory artifactTranslatorFactory;
 
   public List<Artifact> extractArtifacts(Trigger inputTrigger) {
     final String messageString;
@@ -70,11 +59,7 @@ public class JinjaArtifactExtractor {
   }
 
   private List<Artifact> processTemplate(JinjaTemplate template, String messageString) {
-    MessageArtifactTranslator messageArtifactTranslator = new MessageArtifactTranslator(
-      template.getAsStream(),
-      applicationEventPublisher
-    );
-    return messageArtifactTranslator.parseArtifacts(messageString);
+    return artifactTranslatorFactory.createJinja(template.getAsStream()).parseArtifacts(messageString);
   }
 
   private List<JinjaTemplate> getArtifactTemplates(Trigger trigger) {

@@ -17,6 +17,8 @@
 package com.netflix.spinnaker.echo.pipelinetriggers.artifacts
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.kork.artifacts.parsing.DefaultJinjavaFactory
+import com.netflix.spinnaker.echo.artifacts.MessageArtifactTranslator
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import org.springframework.context.ApplicationEventPublisher
 import spock.lang.Specification
@@ -25,10 +27,11 @@ import spock.lang.Subject
 class JinjaArtifactExtractorSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
   def jinjaTemplateService = GroovyMock(JinjaTemplateService)
-  def applicationEventPublisher = Mock(ApplicationEventPublisher)
+  def jinjaArtifactExtractorFactory = new com.netflix.spinnaker.kork.artifacts.parsing.JinjaArtifactExtractor.Factory(new DefaultJinjavaFactory())
+  def messageArtifactTranslatorFactory = new MessageArtifactTranslator.Factory(Mock(ApplicationEventPublisher), jinjaArtifactExtractorFactory)
 
   @Subject
-  def artifactExtractor = new JinjaArtifactExtractor(objectMapper, jinjaTemplateService, applicationEventPublisher)
+  def artifactExtractor = new JinjaArtifactExtractor(objectMapper, jinjaTemplateService, messageArtifactTranslatorFactory)
 
   def "parses an artifact returns it artifacts"() {
     given:
