@@ -29,6 +29,7 @@ allprojects {
     apply plugin: "spinnaker.base-project"
     apply plugin: "groovy"
     apply plugin: 'jacoco'
+
     group = "com.netflix.spinnaker.echo"
 
     ext {
@@ -76,6 +77,7 @@ allprojects {
         jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8189'
       }
     }
+
 }
 
 subprojects {
