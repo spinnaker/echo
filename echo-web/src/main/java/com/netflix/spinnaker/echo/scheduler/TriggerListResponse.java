@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class TriggerListResponse {
-  List<TriggerDescription> pipeline;
+  private final List<TriggerDescription> pipeline;
 
-  List<TriggerDescription> manuallyCreated;
+  private final List<TriggerDescription> manuallyCreated;
 }

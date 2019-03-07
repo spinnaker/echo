@@ -6,9 +6,7 @@ import org.quartz.Scheduler
 import org.quartz.Trigger
 import org.quartz.TriggerKey
 import org.quartz.impl.triggers.CronTriggerImpl
-import org.springframework.http.MediaType
 import org.springframework.scheduling.quartz.SchedulerFactoryBean
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import spock.lang.Shared
 import spock.lang.Specification
 

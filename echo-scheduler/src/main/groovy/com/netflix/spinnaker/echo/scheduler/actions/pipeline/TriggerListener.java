@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 public class TriggerListener extends TriggerListenerSupport {
-  Registry registry;
+  private final Registry registry;
 
   public TriggerListener(Registry registry) {
     this.registry = registry;

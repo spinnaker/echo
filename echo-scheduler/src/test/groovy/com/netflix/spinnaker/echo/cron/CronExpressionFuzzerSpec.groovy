@@ -30,9 +30,9 @@ class CronExpressionFuzzerSpec extends Specification {
 
     where:
     triggerId | expression      || expected
-    "abcd"    | "H * * * * *"   || "22 * * * * *"
-    "abcde"   | "* * H * * *"   || "* * 15 * * *"
-    "abcd"    | "H/5 * * * * *" || "22/5 * * * * *"
+    "abcd"    | "H * * * * *"   || "34 * * * * *"
+    "abcde"   | "* * H * * *"   || "* * 3 * * *"
+    "abcd"    | "H/5 * * * * *" || "34/5 * * * * *"
   }
 }
 

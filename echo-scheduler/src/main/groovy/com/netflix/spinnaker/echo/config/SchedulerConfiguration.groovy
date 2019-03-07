@@ -57,7 +57,7 @@ class SchedulerConfiguration {
     Trigger syncJobTrigger
   ) {
     SchedulerFactoryBean factoryBean = new SchedulerFactoryBean()
-    if (dataSourceOptional.present) {
+    if (dataSourceOptional.isPresent()) {
       factoryBean.dataSource = dataSourceOptional.get()
     }
 

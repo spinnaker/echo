@@ -19,24 +19,19 @@ class TriggerRepository {
           throw new IllegalStateException("Trigger with null id ${trigger}")
         }
 
-        Trigger previous = triggersById.put(trigger.id, trigger)
-        if (previous) {
-          log.warn("Duplicate trigger ids found: ${previous} with parent ${previous.parent} and ${trigger} with parent ${trigger.parent}")
+        if ((Trigger.Type.CRON.toString().equalsIgnoreCase(trigger.type)) &&
+          trigger.enabled) {
+          Trigger previous = triggersById.put(trigger.id, trigger)
+          if (previous) {
+            log.warn("Duplicate trigger ids found: ${previous} with parent ${previous.parent} and ${trigger} with parent ${trigger.parent}")
+          }
         }
       }
     }
   }
 
-  // visible for testing
-  static String extractTriggerId(String id) {
-    int index = id.lastIndexOf(':')
-    return (index == -1) ? id : id.substring(index + 1)
-  }
-
   /**
-   * @param id can be a straight-up trigger id or an ActionInstance composite id of the form:
-   *           composites are of the form <pipeId>:className:<triggerId>, so in this case we want to extract <triggerId>
-   *           for the lookup
+   * @param id
    * @return null if no trigger is mapped to id
    */
   @Nullable
@@ -45,7 +40,7 @@ class TriggerRepository {
       return null
     }
 
-    return triggersById.get(id) ?: triggersById.get(extractTriggerId(id))
+    return triggersById.get(id)
   }
 
   Trigger remove(String id) {
@@ -53,7 +48,7 @@ class TriggerRepository {
       return null
     }
 
-    return triggersById.remove(id) ?: triggersById.remove(extractTriggerId(id))
+    return triggersById.remove(id)
   }
 
   Collection<Trigger> triggers() {

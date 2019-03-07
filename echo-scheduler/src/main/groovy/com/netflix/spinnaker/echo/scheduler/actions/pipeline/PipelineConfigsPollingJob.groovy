@@ -65,13 +65,12 @@ class PipelineConfigsPollingJob implements Job {
 
       // Only interested in pipelines that have enabled CRON triggers
       def pipelinesWithCronTriggers = pipelineCache.getPipelinesSync().findAll { pipeline ->
-        !pipeline.disabled && pipeline.triggers && pipeline.triggers.enabled &&
-          pipeline.triggers.any { Trigger.Type.CRON.toString().equalsIgnoreCase(it.type) }
+        !pipeline.disabled && pipeline.triggers
       }
 
-      log.debug("Found ${pipelinesWithCronTriggers.size()} pipeline CRON triggers that are active")
-
       def pipelineTriggers = new TriggerRepository(pipelinesWithCronTriggers)
+
+      log.debug("Found ${pipelineTriggers.triggers().size()} pipeline CRON triggers that are active")
 
       removeStaleTriggers(pipelineTriggers)
       updateChangedTriggers(pipelineTriggers)

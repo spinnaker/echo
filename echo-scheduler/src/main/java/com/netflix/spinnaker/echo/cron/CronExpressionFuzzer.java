@@ -97,8 +97,8 @@ public class CronExpressionFuzzer {
         : format("%s %s %s %s %s %s %s", seconds, minutes, hours, dayOfMonth, month, dayOfWeek, year);
     }
 
-    private String hash(String id, Integer maxRange) {
-      return Integer.toString(Math.abs(id.hashCode() % maxRange));
+    private String hash(String id, int maxRange) {
+      return Integer.toString(Math.abs(id.hashCode() % (maxRange + 1)));
     }
   }
 }

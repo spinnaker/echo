@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.scheduler.actions.pipeline
+package com.netflix.spinnaker.echo.scheduler.actions.pipeline;
 
-class InvalidCronExpressionException extends IllegalArgumentException {
-  InvalidCronExpressionException(String cronExpression) {
-    super("Invalid CRON expression: ${cronExpression}")
+public class InvalidCronExpressionException extends IllegalArgumentException {
+  public InvalidCronExpressionException(String cronExpression) {
+    super("Invalid CRON expression: " + cronExpression);
   }
 }
