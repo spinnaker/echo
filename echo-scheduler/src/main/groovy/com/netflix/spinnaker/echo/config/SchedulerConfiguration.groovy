@@ -46,9 +46,6 @@ class SchedulerConfiguration {
   @Value('${scheduler.pipelineConfigsPoller.pollingIntervalMs:30000}')
   long syncInterval
 
-  @Autowired
-  TriggerListener triggerListener
-
   @Bean
   SchedulerFactoryBean schedulerFactoryBean(
     Optional<DataSource> dataSourceOptional,
