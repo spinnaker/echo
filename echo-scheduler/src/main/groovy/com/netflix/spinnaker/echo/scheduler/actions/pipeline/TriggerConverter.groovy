@@ -24,6 +24,8 @@ import org.quartz.CronExpression
 import org.quartz.CronTrigger
 import org.quartz.JobDataMap
 
+import java.text.ParseException
+
 import static org.quartz.CronScheduleBuilder.cronSchedule
 import static org.quartz.TriggerBuilder.newTrigger
 
@@ -51,13 +53,15 @@ class TriggerConverter {
 
   static org.quartz.Trigger toQuartzTrigger(Trigger pipelineTrigger, TimeZone timeZoneId) {
     if (pipelineTrigger.cronExpression == null) {
-      throw new InvalidCronExpressionException("<NULL>")
+      throw new InvalidCronExpressionException("null", "cron expression can't be null")
     }
 
     String cronExpression = CronExpressionFuzzer.fuzz(pipelineTrigger.id, pipelineTrigger.cronExpression)
 
-    if (!CronExpression.isValidExpression(cronExpression)) {
-      throw new InvalidCronExpressionException(pipelineTrigger.cronExpression)
+    try {
+      new CronExpression(cronExpression)
+    } catch (ParseException e) {
+      throw new InvalidCronExpressionException(cronExpression, e.getMessage())
     }
 
     org.quartz.Trigger trigger = newTrigger()

@@ -21,6 +21,7 @@ import com.netflix.spinnaker.echo.cron.CronExpressionFuzzer;
 import com.netflix.spinnaker.echo.scheduler.actions.pipeline.InvalidCronExpressionException;
 import net.redhogs.cronparser.CronExpressionDescriptor;
 import net.redhogs.cronparser.Options;
+import org.quartz.CronExpression;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +38,13 @@ public class ValidationController {
     public Map<String,Object> validateCronExpression(@RequestParam String cronExpression) {
       ImmutableMap.Builder<String, Object> mapBuilder = ImmutableMap.builder();
 
-      if (CronExpressionFuzzer.isValid(cronExpression)) {
+      try {
+        if (cronExpression == null) {
+          throw new InvalidCronExpressionException("null", "cron expression can't be null");
+        }
+
+        new CronExpression(CronExpressionFuzzer.fuzz("", cronExpression));
+
         mapBuilder.put("response", "Cron expression is valid");
         if (CronExpressionFuzzer.hasFuzzyExpression(cronExpression)) {
           mapBuilder.put("description", "No description available for fuzzy cron expressions");
@@ -53,8 +60,9 @@ public class ValidationController {
 
         return mapBuilder.build();
       }
-
-      throw new InvalidCronExpressionException(cronExpression);
+      catch (ParseException e) {
+        throw new InvalidCronExpressionException(cronExpression, e.getMessage());
+      }
     }
 
     @SuppressWarnings("unused")

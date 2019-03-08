@@ -36,7 +36,7 @@ class ValidationControllerSpec extends Specification {
 
     then:
     result.response.status == 400
-    result.response.errorMessage == "Invalid CRON expression: 0 0 10 * * 1"
+    result.response.errorMessage == "Invalid CRON expression: '0 0 10 * * 1' explanation: Support for specifying both a day-of-week AND a day-of-month parameter is not implemented."
   }
 
   void 'should validate fuzzy expressions'() {
