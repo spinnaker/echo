@@ -24,7 +24,6 @@ import com.netflix.spinnaker.kork.sql.config.DefaultSqlConfiguration
 import com.squareup.okhttp.OkHttpClient
 import org.quartz.JobDetail
 import org.quartz.Trigger
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Bean

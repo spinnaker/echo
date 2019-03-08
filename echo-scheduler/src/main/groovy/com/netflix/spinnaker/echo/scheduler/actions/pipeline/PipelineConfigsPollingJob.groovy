@@ -75,13 +75,14 @@ class PipelineConfigsPollingJob implements Job {
       removeStaleTriggers(pipelineTriggers)
       updateChangedTriggers(pipelineTriggers)
 
-      registry.gauge("trigger.count").set(pipelinesWithCronTriggers.size())
+      registry.gauge("echo.triggers.count").set(pipelineTriggers.triggers().size())
     } catch (Exception e) {
       log.error("Failed to synchronize pipeline triggers", e)
+      registry.counter("echo.triggers.sync.error").increment()
     } finally {
       long elapsedMillis = System.currentTimeMillis() - start
       log.info("Done polling for pipeline configs in ${elapsedMillis/1000}s")
-      registry.timer("pipelineConfigsPollingAgent.executionTimeMillis").record(elapsedMillis, TimeUnit.MILLISECONDS)
+      registry.timer("echo.triggers.sync.executionTimeMillis").record(elapsedMillis, TimeUnit.MILLISECONDS)
     }
   }
 
@@ -118,8 +119,8 @@ class PipelineConfigsPollingJob implements Job {
       log.debug("Removed $removeCount stale triggers successfully, $failCount removals failed")
     }
 
-    registry.gauge("trigger.removeCount").set(removeCount)
-    registry.gauge("trigger.removeFailCount").set(failCount)
+    registry.gauge("echo.triggers.sync.removeCount").set(removeCount)
+    registry.gauge("echo.triggers.sync.removeFailCount").set(failCount)
   }
 
   /**
@@ -166,8 +167,8 @@ class PipelineConfigsPollingJob implements Job {
       log.debug("Added $addCount new triggers, updated $updateCount existing triggers, $failCount failed")
     }
 
-    registry.gauge("trigger.failedUpdateCount").set(failCount)
-    registry.gauge("trigger.addCount").set(addCount)
+    registry.gauge("echo.triggers.sync.failedUpdateCount").set(failCount)
+    registry.gauge("echo.triggers.sync.addCount").set(addCount)
   }
 
   /**
