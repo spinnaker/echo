@@ -37,8 +37,8 @@ dependencies {
   compile spinnaker.dependency('rxJava')
   compile spinnaker.dependency('springContext')
   compile spinnaker.dependency('spectatorApi')
-  compile group: 'commons-codec', name: 'commons-codec', version: '1.10'
-  compile group: 'org.apache.commons', name:'commons-lang3', version: '3.4'
+  compile spinnaker.dependency('commonsLang')
+  compile group: 'commons-codec', name: 'commons-codec', version: '1.12'
 
   testCompile project(':echo-test')
   testCompile spinnaker.dependency('bootTest')
