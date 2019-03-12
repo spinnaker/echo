@@ -22,7 +22,6 @@ import com.netflix.spinnaker.echo.hipchat.HipchatNotificationService
 import com.netflix.spinnaker.echo.hipchat.HipchatService
 import com.netflix.spinnaker.echo.twilio.TwilioNotificationService
 import com.netflix.spinnaker.echo.twilio.TwilioService
-import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration
 import org.springframework.boot.autoconfigure.freemarker.FreeMarkerNonWebConfiguration
 import org.springframework.boot.autoconfigure.freemarker.FreeMarkerProperties
 import spock.lang.Shared
