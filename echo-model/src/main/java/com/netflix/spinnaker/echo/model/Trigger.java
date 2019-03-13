@@ -67,7 +67,7 @@ public class Trigger {
 
   // Configuration for pipeline triggers
   String parentPipelineId;
-  String paraentPipelineApplication;
+  String parentPipelineApplication;
 
   // Configuration for git triggers
   String project;
