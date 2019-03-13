@@ -22,7 +22,6 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.build.BuildInfoService;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent;
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaArtifactExtractor;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -44,8 +43,8 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
   private final Optional<BuildInfoService> buildInfoService;
 
   @Autowired
-  public BuildEventHandler(Registry registry, ObjectMapper objectMapper, Optional<BuildInfoService> buildInfoService, JinjaArtifactExtractor jinjaArtifactExtractor) {
-    super(registry, objectMapper, jinjaArtifactExtractor);
+  public BuildEventHandler(Registry registry, ObjectMapper objectMapper, Optional<BuildInfoService> buildInfoService) {
+    super(registry, objectMapper);
     this.buildInfoService = buildInfoService;
   }
 
@@ -102,11 +101,10 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
     return Arrays.stream(BUILD_TRIGGER_TYPES).anyMatch(triggerType -> triggerType.equals(trigger.getType()));
   }
 
-  protected List<Artifact> getArtifactsFromEvent(BuildEvent event) {
-    return Optional.ofNullable(event.getContent())
-      .map(BuildEvent.Content::getProject)
-      .map(BuildEvent.Project::getLastBuild)
-      .map(BuildEvent.Build::getArtifacts)
-      .orElse(Collections.emptyList());
+  protected List<Artifact> getArtifactsFromEvent(BuildEvent event, Trigger trigger) {
+    if (buildInfoService.isPresent()) {
+      return buildInfoService.get().getArtifactsFromBuildEvent(event, trigger);
+    }
+    return Collections.emptyList();
   }
 }

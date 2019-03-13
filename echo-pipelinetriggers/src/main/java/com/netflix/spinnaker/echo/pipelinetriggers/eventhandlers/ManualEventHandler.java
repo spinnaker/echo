@@ -24,16 +24,12 @@ import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent.Content;
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaArtifactExtractor;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Implementation of TriggerEventHandler for events of type {@link ManualEvent}, which occur when a
@@ -49,7 +45,6 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
 
   private final ObjectMapper objectMapper;
   private final Optional<BuildInfoService> buildInfoService;
-  private final JinjaArtifactExtractor jinjaArtifactExtractor;
 
   @Override
   public boolean handleEventType(String eventType) {
@@ -82,18 +77,20 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
   private Pipeline buildTrigger(Pipeline pipeline, Trigger manualTrigger) {
     List<Map<String, Object>> notifications = buildNotifications(pipeline.getNotifications(), manualTrigger.getNotifications());
     Trigger trigger = manualTrigger.atPropagateAuth(true);
-    if (buildInfoService.isPresent()) {
-      Optional<BuildEvent> buildEvent = extractBuildInformation(manualTrigger);
-      if (buildEvent.isPresent()) {
-        trigger = trigger
-          .withBuildInfo(buildInfoService.get().getBuildInfo(buildEvent.get()))
-          .withProperties(buildInfoService.get().getProperties(buildEvent.get(), manualTrigger.getPropertyFile()));
-      }
+    List<Artifact> artifacts = Collections.emptyList();
+    String master = manualTrigger.getMaster();
+    String job = manualTrigger.getJob();
+    if (buildInfoService.isPresent() && StringUtils.isNoneEmpty(master, job)) {
+      BuildEvent buildEvent = buildInfoService.get().getBuildEvent(master, job, manualTrigger.getBuildNumber());
+      trigger = trigger
+        .withBuildInfo(buildInfoService.get().getBuildInfo(buildEvent))
+        .withProperties(buildInfoService.get().getProperties(buildEvent, manualTrigger.getPropertyFile()));
+      artifacts = buildInfoService.get().getArtifactsFromBuildEvent(buildEvent, manualTrigger);
     }
     return pipeline
       .withTrigger(trigger)
       .withNotifications(notifications)
-      .withReceivedArtifacts(getArtifacts(trigger));
+      .withReceivedArtifacts(artifacts);
   }
 
   private List<Map<String, Object>> buildNotifications(List<Map<String, Object>> pipelineNotifications, List<Map<String, Object>> triggerNotifications) {
@@ -106,27 +103,4 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
     }
     return notifications;
   }
-
-  // Manual triggers try to replicate actual events (and in some cases build events) but rather than pass the event to
-  // echo, they add the information to the trigger. It may make sense to refactor manual triggering to pass a trigger and
-  // an event as with other triggers, but for now we'll see whether we can extract a build event from the trigger.
-  private Optional<BuildEvent> extractBuildInformation(Trigger manualTrigger) {
-    String master = manualTrigger.getMaster();
-    String job = manualTrigger.getJob();
-    if (StringUtils.isNoneEmpty(master, job)) {
-      BuildEvent.Build build = new BuildEvent.Build();
-      build.setNumber(manualTrigger.getBuildNumber());
-      BuildEvent.Project project = new BuildEvent.Project(job, build);
-      BuildEvent.Content content = new BuildEvent.Content(project, master);
-      BuildEvent buildEvent = new BuildEvent();
-      buildEvent.setContent(content);
-      return Optional.of(buildEvent);
-    }
-    return Optional.empty();
-  }
-
-  private List<Artifact> getArtifacts(Trigger trigger) {
-    return jinjaArtifactExtractor.extractArtifacts(trigger);
-  }
-
 }
