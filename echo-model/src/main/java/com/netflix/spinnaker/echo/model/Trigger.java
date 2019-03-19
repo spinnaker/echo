@@ -41,6 +41,7 @@ public class Trigger {
   public enum Type {
     CRON("cron"),
     GIT("git"),
+    CONCOURSE("concourse"),
     JENKINS("jenkins"),
     DOCKER("docker"),
     WEBHOOK("webhook"),
@@ -65,13 +66,17 @@ public class Trigger {
   String type;
   boolean enabled;
 
+  // Configuration for pipeline triggers
+  String parentPipelineId;
+  String parentPipelineApplication;
+
   // Configuration for git triggers
   String project;
   String slug;
   String source;
   String branch;
 
-  // Configuration for Jenkins triggers
+  // Configuration for Jenkins, Travis, Concourse triggers
   String master;
   String job;
   String propertyFile;
@@ -99,6 +104,9 @@ public class Trigger {
   // Configuration for pipeline triggers
   List<String> status;
   String user;
+
+  // Configuration for artifactory triggers
+  String artifactorySearchName;
 
   // Artifact constraints
   List<String> expectedArtifactIds;
@@ -229,6 +237,12 @@ public class Trigger {
   public Trigger atPropagateAuth(final boolean propagateAuth) {
     return this.toBuilder()
       .propagateAuth(propagateAuth)
+      .build();
+  }
+
+  public Trigger atArtifactorySearchName(final String artifactorySearchName) {
+    return this.toBuilder()
+      .artifactorySearchName(artifactorySearchName)
       .build();
   }
 

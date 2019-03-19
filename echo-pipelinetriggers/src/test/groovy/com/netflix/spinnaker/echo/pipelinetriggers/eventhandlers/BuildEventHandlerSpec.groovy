@@ -5,7 +5,6 @@ import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.build.BuildInfoService
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent
-import com.netflix.spinnaker.echo.pipelinetriggers.artifacts.JinjaArtifactExtractor
 import com.netflix.spinnaker.echo.services.IgorService
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.core.RetrySupport
@@ -20,9 +19,6 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
   def igorService = Mock(IgorService)
   def buildInformation = new BuildInfoService(igorService, new RetrySupport())
-  def artifactExtractor = Stub(JinjaArtifactExtractor) {
-    extractArtifacts(_) >> Collections.emptyList()
-  }
 
   String MASTER_NAME = "jenkins-server"
   String JOB_NAME = "my-job"
@@ -36,7 +32,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   ]
 
   @Subject
-  def eventHandler = new BuildEventHandler(registry, objectMapper, Optional.of(buildInformation), artifactExtractor)
+  def eventHandler = new BuildEventHandler(registry, objectMapper, Optional.of(buildInformation))
 
   @Unroll
   def "triggers pipelines for successful builds for #triggerType"() {
@@ -75,10 +71,11 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     result[0].trigger.buildNumber == event.content.project.lastBuild.number
 
     where:
-    event                         | pipeline                                                     | triggerType | expectedTrigger
-    createBuildEventWith(SUCCESS) | createPipelineWith(enabledJenkinsTrigger, nonJenkinsTrigger) | 'jenkins'   | enabledJenkinsTrigger
-    createBuildEventWith(SUCCESS) | createPipelineWith(enabledTravisTrigger, nonJenkinsTrigger)  | 'travis'    | enabledTravisTrigger
-    createBuildEventWith(SUCCESS) | createPipelineWith(enabledWerckerTrigger, nonJenkinsTrigger) | 'wercker'   | enabledWerckerTrigger
+    event                         | pipeline                                                       | triggerType | expectedTrigger
+    createBuildEventWith(SUCCESS) | createPipelineWith(enabledJenkinsTrigger, nonJenkinsTrigger)   | 'jenkins'   | enabledJenkinsTrigger
+    createBuildEventWith(SUCCESS) | createPipelineWith(enabledTravisTrigger, nonJenkinsTrigger)    | 'travis'    | enabledTravisTrigger
+    createBuildEventWith(SUCCESS) | createPipelineWith(enabledWerckerTrigger, nonJenkinsTrigger)   | 'wercker'   | enabledWerckerTrigger
+    createBuildEventWith(SUCCESS) | createPipelineWith(enabledConcourseTrigger, nonJenkinsTrigger) | 'concourse' | enabledConcourseTrigger
   }
 
   def "an event can trigger multiple pipelines"() {
@@ -136,6 +133,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     disabledJenkinsTrigger                  | "disabled jenkins"
     disabledTravisTrigger                   | "disabled travis"
     disabledWerckerTrigger                  | "disabled wercker"
+    disabledConcourseTrigger                | "disabled concourse"
     nonJenkinsTrigger                       | "non-Jenkins"
     enabledStashTrigger                     | "stash"
     enabledBitBucketTrigger                 | "bitbucket"

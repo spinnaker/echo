@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+test {
+  useJUnitPlatform {
+    includeEngines "junit-vintage", "junit-jupiter"
+  }
+}
+
 dependencies {
   spinnaker.group('fiat')
   spinnaker.group('lombok')
@@ -36,6 +42,12 @@ dependencies {
   compile group: 'commons-codec', name: 'commons-codec', version: '1.10'
   compile group: 'org.apache.commons', name:'commons-lang3', version: '3.4'
 
-  spinnaker.group('test')
   testCompile project(':echo-test')
+  testCompile spinnaker.dependency('bootTest')
+  testCompile spinnaker.dependency('cglib')
+  testCompile spinnaker.dependency('junitJupiterApi')
+  testCompile spinnaker.dependency('assertj')
+
+  testRuntimeOnly spinnaker.dependency("junitJupiterEngine")
+  testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${spinnaker.version('jupiter')}"
 }
