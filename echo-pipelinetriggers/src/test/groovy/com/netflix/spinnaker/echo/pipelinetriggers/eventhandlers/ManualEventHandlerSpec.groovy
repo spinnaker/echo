@@ -24,9 +24,8 @@ import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.test.RetrofitStubs
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
-import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import retrofit.RetrofitError
+import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -34,8 +33,6 @@ class ManualEventHandlerSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
   def buildInfoService = Mock(BuildInfoService)
   def artifactInfoService = Mock(ArtifactInfoService)
-
-  private static final Logger log = LoggerFactory.getLogger(ManualEventHandler.class)
 
   Artifact artifact = new Artifact(
     "deb",
@@ -76,6 +73,7 @@ class ManualEventHandlerSpec extends Specification implements RetrofitStubs {
     then:
     resolvedPipeline.receivedArtifacts.size() == 1
     resolvedPipeline.receivedArtifacts.first().name == "my-package"
+    resolvedPipeline.receivedArtifacts.first().reference == "https://artifactory/my-package/"
   }
 
   def "should resolve artifact if it exists"() {
@@ -106,14 +104,19 @@ class ManualEventHandlerSpec extends Specification implements RetrofitStubs {
     List<Map<String, Object>> triggerArtifacts = [triggerArtifact]
 
     when:
-    artifactInfoService.getArtifactByVersion("artifactory", "my-package", "v2.2.2") >> { throw new NotFoundException() }
+    artifactInfoService.getArtifactByVersion("artifactory", "my-package", "v2.2.2") >> {
+      throw RetrofitError.httpError("http://foo", new Response("http://foo", 404, "not found", [], null), null, null)
+    }
     List<Artifact> resolvedArtifacts = eventHandler.resolveArtifacts(triggerArtifacts)
+    Map<String, Object> firstArtifact = objectMapper.convertValue(resolvedArtifacts.first(), Map.class)
+    firstArtifact = firstArtifact.findAll { key, value -> value != null && key != "customKind"}
 
     then:
-    resolvedArtifacts.size() == 0
+    resolvedArtifacts.size() == 1
+    firstArtifact == triggerArtifact
   }
 
-  def "should remove artifact if it doesn't exist"() {
+  def "should do nothing with artifact if it doesn't exist"() {
     given:
     Map<String, Object> triggerArtifact = [
       name: "my-package",
@@ -125,11 +128,33 @@ class ManualEventHandlerSpec extends Specification implements RetrofitStubs {
     Trigger manualTrigger = Trigger.builder().type("manual").artifacts([triggerArtifact]).build()
 
     when:
-    artifactInfoService.getArtifactByVersion("artifactory", "my-package", "v2.2.2") >> { throw new NotFoundException() }
+    artifactInfoService.getArtifactByVersion("artifactory", "my-package", "v2.2.2") >> {
+      throw RetrofitError.httpError("http://foo", new Response("http://foo", 404, "not found", [], null), null, null)
+    }
     def resolvedPipeline = eventHandler.buildTrigger(inputPipeline, manualTrigger)
 
     then:
-    resolvedPipeline.receivedArtifacts.size() == 0
+    resolvedPipeline.receivedArtifacts.size() == 1
+  }
+
+  def "should do nothing with artifact if it doesn't have the right fields"() {
+    given:
+    Map<String, Object> triggerArtifact = [
+      name: "my-package",
+      version: "v2.2.2",
+    ]
+    Trigger trigger = Trigger.builder().enabled(true).type("artifact").artifactName("my-package").build()
+    Pipeline inputPipeline = createPipelineWith(trigger)
+    Trigger manualTrigger = Trigger.builder().type("manual").artifacts([triggerArtifact]).build()
+
+    when:
+    artifactInfoService.getArtifactByVersion("artifactory", "my-package", "v2.2.2") >> {
+      throw RetrofitError.httpError("http://foo", new Response("http://foo", 404, "not found", [], null), null, null)
+    }
+    def resolvedPipeline = eventHandler.buildTrigger(inputPipeline, manualTrigger)
+
+    then:
+    resolvedPipeline.receivedArtifacts.size() == 1
   }
 
 }

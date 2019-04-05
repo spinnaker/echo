@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.netflix.spinnaker.echo.artifacts.ArtifactInfoService;
@@ -28,12 +29,13 @@ import com.netflix.spinnaker.echo.model.trigger.ManualEvent;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent.Content;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import retrofit.RetrofitError;
 
 import java.util.*;
 
@@ -109,15 +111,25 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
     if (artifactInfoService.isPresent() && manualTrigger.getArtifacts().size() != 0) {
       List<Artifact> resolvedArtifacts = resolveArtifacts(manualTrigger.getArtifacts());
       artifacts.addAll(resolvedArtifacts);
-      // Remove the artifact lookup information. It will be replaced with the full artifacts if they can be resolved.
-      trigger = trigger.withArtifacts(Collections.emptyList());
+      // update the artifacts on the manual trigger with the resolved artifacts
+      trigger = trigger.withArtifacts(convertToListOfMaps(resolvedArtifacts));
     }
+
     return pipeline
       .withTrigger(trigger)
       .withNotifications(notifications)
       .withReceivedArtifacts(artifacts);
   }
 
+  private List<Map<String, Object>> convertToListOfMaps(List<Artifact> artifacts) {
+    return objectMapper.convertValue(artifacts, new TypeReference<List<Map<String,Object>>>() {});
+  }
+
+  /**
+   * If possible, replace trigger artifact with full artifact from the artifactInfoService.
+   * If there are no artifactInfo providers, or if the artifact is not found,
+   *   the artifact is returned as is.
+   */
   protected List<Artifact> resolveArtifacts(List<Map<String, Object>> manualTriggerArtifacts) {
     List<Artifact> resolvedArtifacts = new ArrayList<>();
     for (Map a : manualTriggerArtifacts) {
@@ -128,16 +140,19 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
         Strings.isNullOrEmpty(artifact.getLocation())) {
         log.error("Artifact does not have enough information to fetch. " +
           "Artifact must contain name, version, and location.");
+        resolvedArtifacts.add(artifact);
       } else {
         try {
           Artifact resolvedArtifact = artifactInfoService.get()
             .getArtifactByVersion(artifact.getLocation(), artifact.getName(), artifact.getVersion());
-          if (resolvedArtifact != null) {
-            resolvedArtifacts.add(resolvedArtifact);
+          resolvedArtifacts.add(resolvedArtifact);
+        } catch (RetrofitError e) {
+          if (e.getResponse() != null && e.getResponse().getStatus() == HttpStatus.NOT_FOUND.value()) {
+            log.error("Artifact " + artifact.getName() + " " + artifact.getVersion() +
+              " not found in image provider " + artifact.getLocation());
+            resolvedArtifacts.add(artifact);
           }
-        } catch (NotFoundException e) {
-          log.error("Artifact " + artifact.getName() + " " + artifact.getVersion() +
-            " not found in image provider " + artifact.getLocation());
+          else throw e;
         }
       }
     }
