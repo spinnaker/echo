@@ -19,6 +19,7 @@ package com.netflix.spinnaker.echo.pipelinetriggers;
 import static java.time.Instant.now;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.patterns.PolledMeter;
 import com.netflix.spinnaker.echo.model.Pipeline;
@@ -27,10 +28,7 @@ import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService;
 import com.netflix.spinnaker.echo.services.Front50Service;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -170,7 +168,15 @@ public class PipelineCache implements MonitoredPoller {
         }
       })
       .filter(m -> !m.isEmpty())
-      .map(m -> objectMapper.convertValue(m, Pipeline.class))
+      .map(m -> {
+        try {
+          return objectMapper.convertValue(m, Pipeline.class);
+        } catch (Exception e) {
+          log.warn("Pipeline failed to be converted to Pipeline.class: {}", m, e);
+          return null;
+        }
+      })
+      .filter(Objects::nonNull)
       .collect(Collectors.toList());
   }
 
