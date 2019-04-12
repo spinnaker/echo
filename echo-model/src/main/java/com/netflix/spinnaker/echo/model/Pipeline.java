@@ -73,6 +73,12 @@ public class Pipeline {
   String type;
 
   @JsonProperty
+  String schema;
+
+  @JsonProperty
+  Object template;
+
+  @JsonProperty
   List<Map<String, Object>> stages;
 
   @JsonProperty
@@ -94,5 +100,13 @@ public class Pipeline {
 
   @JsonPOJOBuilder(withPrefix = "")
   public static final class PipelineBuilder {
+    @JsonProperty("config")
+    private void unpackConfig(Map<String, Object> config) {
+      if (config == null) {
+        return;
+      }
+      this.config = config;
+      schema = (String) config.get("schema");
+    }
   }
 }

@@ -26,8 +26,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import retrofit.Endpoint;
 import retrofit.Endpoints;
+import retrofit.RequestInterceptor;
 import retrofit.RestAdapter.Builder;
 import retrofit.RestAdapter.LogLevel;
+import retrofit.converter.JacksonConverter;
 
 @Configuration
 @ConditionalOnProperty("igor.enabled")
@@ -40,11 +42,13 @@ public class IgorConfig {
 
   @Bean
   public IgorService igorService(Endpoint igorEndpoint, Ok3Client ok3Client,
-    LogLevel retrofitLogLevel) {
+                                 LogLevel retrofitLogLevel, RequestInterceptor spinnakerRequestInterceptor) {
     log.info("igor service loaded");
     return new Builder()
       .setEndpoint(igorEndpoint)
+      .setConverter(new JacksonConverter())
       .setClient(ok3Client)
+      .setRequestInterceptor(spinnakerRequestInterceptor)
       .setLogLevel(retrofitLogLevel)
       .setLog(new Slf4jRetrofitLogger(IgorService.class)).build()
       .create(IgorService.class);

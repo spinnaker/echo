@@ -16,32 +16,34 @@
 
 package com.netflix.spinnaker.echo.pipelinetriggers;
 
+import static java.time.Instant.now;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.patterns.PolledMeter;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
+import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService;
 import com.netflix.spinnaker.echo.services.Front50Service;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
-import static java.time.Instant.now;
 
 @Component
 @Slf4j
@@ -49,8 +51,10 @@ public class PipelineCache implements MonitoredPoller {
   private final int pollingIntervalMs;
   private final int pollingSleepMs;
   private final Front50Service front50;
+  private final OrcaService orca;
   private final Registry registry;
   private final ScheduledExecutorService executorService;
+  private final ObjectMapper objectMapper;
 
   private transient Boolean running;
   private transient Instant lastPollTimestamp;
@@ -61,21 +65,27 @@ public class PipelineCache implements MonitoredPoller {
   @Autowired
   public PipelineCache(@Value("${front50.polling-interval-ms:10000}") int pollingIntervalMs,
                        @Value("${front50.polling-sleep-ms:100}") int pollingSleepMs,
+                       ObjectMapper objectMapper,
                        @NonNull Front50Service front50,
+                       @NonNull OrcaService orca,
                        @NonNull Registry registry) {
-    this(Executors.newSingleThreadScheduledExecutor(), pollingIntervalMs, pollingSleepMs, front50, registry);
+    this(Executors.newSingleThreadScheduledExecutor(), pollingIntervalMs, pollingSleepMs, objectMapper, front50, orca, registry);
   }
 
   // VisibleForTesting
   public PipelineCache(ScheduledExecutorService executorService,
                        int pollingIntervalMs,
                        int pollingSleepMs,
+                       ObjectMapper objectMapper,
                        @NonNull Front50Service front50,
+                       @NonNull OrcaService orca,
                        @NonNull Registry registry) {
+    this.objectMapper = objectMapper;
     this.executorService = executorService;
     this.pollingIntervalMs = pollingIntervalMs;
     this.pollingSleepMs = pollingSleepMs;
     this.front50 = front50;
+    this.orca = orca;
     this.registry = registry;
     this.running = false;
     this.pipelines = null;
@@ -121,7 +131,7 @@ public class PipelineCache implements MonitoredPoller {
     try {
       log.debug("Getting pipelines from Front50...");
       long start = System.currentTimeMillis();
-      pipelines = decorateTriggers(front50.getPipelines());
+      pipelines = decorateTriggers(fetchHydratedPipelines());
 
       lastPollTimestamp = now();
       registry.counter("front50.requests").increment();
@@ -129,6 +139,56 @@ public class PipelineCache implements MonitoredPoller {
     } catch (Exception e) {
       log.error("Error fetching pipelines from Front50", e);
       registry.counter("front50.errors").increment();
+    }
+  }
+
+  private List<Pipeline> fetchHydratedPipelines() {
+    List<Map<String, Object>> rawPipelines = front50.getPipelines();
+    if (rawPipelines == null) {
+      return Collections.emptyList();
+    }
+
+    Predicate<Map<String, Object>> isV2Pipeline = p -> {
+      return p.getOrDefault("type", "").equals("templatedPipeline") &&
+        p.getOrDefault("schema", "").equals("v2");
+    };
+
+    return rawPipelines.stream()
+      .map((Map<String, Object> p) -> planPipelineIfNeeded(p, isV2Pipeline))
+      .filter(m -> !m.isEmpty())
+      .map(m -> convertToPipeline(m))
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+  }
+
+  /**
+   * If the pipeline is a v2 pipeline, plan that pipeline.
+   * Returns an empty map if the plan fails, so that the pipeline is skipped.
+   */
+  private Map<String, Object> planPipelineIfNeeded(Map<String, Object> pipeline, Predicate<Map<String, Object>> isV2Pipeline) {
+    if (isV2Pipeline.test(pipeline)) {
+      try {
+        return orca.v2Plan(pipeline);
+      } catch (Exception e) {
+        // Don't fail the entire cache cycle if we fail a plan.
+        log.error("Caught exception while planning templated pipeline: {}", pipeline, e);
+        return Collections.emptyMap();
+      }
+    } else {
+      return pipeline;
+    }
+  }
+
+  /**
+   * Converts map to pipeline.
+   * Returns null if conversion fails so that the pipeline is skipped.
+   */
+  private Pipeline convertToPipeline(Map<String, Object> pipeline) {
+    try {
+      return objectMapper.convertValue(pipeline, Pipeline.class);
+    } catch (Exception e) {
+      log.warn("Pipeline failed to be converted to Pipeline.class: {}", pipeline, e);
+      return null;
     }
   }
 
