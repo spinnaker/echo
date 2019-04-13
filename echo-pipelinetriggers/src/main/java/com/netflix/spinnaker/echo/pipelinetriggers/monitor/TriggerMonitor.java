@@ -27,6 +27,7 @@ import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.TriggerEventHan
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.PipelineInitiator;
 import com.netflix.spinnaker.echo.pipelinetriggers.postprocessors.PipelinePostProcessorHandler;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import lombok.NonNull;
@@ -77,6 +78,10 @@ public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener
       List<Pipeline> allPipelines = pipelineCache.getPipelinesSync();
       List<Pipeline> matchingPipelines = eventHandler.getMatchingPipelines(event, allPipelines);
       matchingPipelines.stream()
+        .map(pipelineCache::refresh) // make sure we don't start an execution of a stale pipeline config
+        .map(p -> eventHandler.withMatchingTrigger(event, p)) // there is a possibility the refreshed pipeline no longer matches the trigger
+        .filter(Optional::isPresent)
+        .map(Optional::get)
         .map(pipelinePostProcessorHandler::process)
         .forEach(p -> {
           recordMatchingPipeline(p);
