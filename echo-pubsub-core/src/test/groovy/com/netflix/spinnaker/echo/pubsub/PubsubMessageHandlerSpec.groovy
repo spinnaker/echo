@@ -16,11 +16,12 @@
 
 package com.netflix.spinnaker.echo.pubsub
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spectator.api.NoopRegistry
+import com.netflix.spinnaker.echo.artifacts.MessageArtifactTranslator
 import com.netflix.spinnaker.echo.events.EventPropagator
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription
 import com.netflix.spinnaker.echo.model.pubsub.PubsubSystem
+import com.netflix.spinnaker.echo.pubsub.model.EventCreator
 import com.netflix.spinnaker.echo.pubsub.model.MessageAcknowledger
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
@@ -49,13 +50,16 @@ class PubsubMessageHandlerSpec extends Specification {
 
   EventPropagator eventPropagator = Mock(EventPropagator)
 
-  @Subject
-  PubsubMessageHandler pubsubMessageHandler = new PubsubMessageHandler(
+  PubsubMessageHandler.Factory pubsubMessageHandlerFactory = new PubsubMessageHandler.Factory(
     eventPropagator,
-    new ObjectMapper(),
     redisClientSelector,
     new NoopRegistry()
   )
+
+  EventCreator eventCreator = new PubsubEventCreator(Optional.empty())
+
+  @Subject
+  PubsubMessageHandler pubsubMessageHandler = pubsubMessageHandlerFactory.create(eventCreator)
 
   def setupSpec() {
     embeddedRedis = EmbeddedRedis.embed()
