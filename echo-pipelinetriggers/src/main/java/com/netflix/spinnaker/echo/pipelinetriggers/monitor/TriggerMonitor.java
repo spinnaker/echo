@@ -78,10 +78,6 @@ public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener
       List<Pipeline> allPipelines = pipelineCache.getPipelinesSync();
       List<Pipeline> matchingPipelines = eventHandler.getMatchingPipelines(event, allPipelines);
       matchingPipelines.stream()
-        .map(pipelineCache::refresh) // make sure we don't start an execution of a stale pipeline config
-        .map(p -> eventHandler.withMatchingTrigger(event, p)) // there is a possibility the refreshed pipeline no longer matches the trigger
-        .filter(Optional::isPresent)
-        .map(Optional::get)
         .map(pipelinePostProcessorHandler::process)
         .forEach(p -> {
           recordMatchingPipeline(p);
