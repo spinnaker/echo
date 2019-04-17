@@ -19,10 +19,10 @@ package com.netflix.spinnaker.echo.pubsub;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spinnaker.echo.events.EventPropagator;
 import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.echo.model.Metadata;
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription;
-import com.netflix.spinnaker.echo.pipelinetriggers.monitor.TriggerEventListener;
 import com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers.PubsubEventHandler;
 import com.netflix.spinnaker.echo.pubsub.model.MessageAcknowledger;
 import com.netflix.spinnaker.kork.jedis.RedisClientDelegate;
@@ -46,7 +46,7 @@ import java.util.zip.CRC32;
 @Slf4j
 public class PubsubMessageHandler {
 
-  private final TriggerEventListener pubsubEventMonitor;
+  private final EventPropagator eventPropagator;
   private final ObjectMapper objectMapper;
   private RedisClientDelegate redisClientDelegate;
   private final Registry registry;
@@ -55,11 +55,11 @@ public class PubsubMessageHandler {
   private static final String SET_EXPIRE_TIME_SECONDS = "EX";
   private static final String SUCCESS = "OK";
   @Autowired
-  public PubsubMessageHandler(TriggerEventListener triggerEventListener,
+  public PubsubMessageHandler(EventPropagator eventPropagator,
                               ObjectMapper objectMapper,
                               Optional<RedisClientSelector> redisClientSelector,
                               Registry registry) {
-    this.pubsubEventMonitor = triggerEventListener;
+    this.eventPropagator = eventPropagator;
     this.objectMapper = objectMapper;
     redisClientSelector.ifPresent(selector -> this.redisClientDelegate = selector.primary("default"));
     this.registry = registry;
@@ -167,7 +167,7 @@ public class PubsubMessageHandler {
 
     event.setContent(content);
     event.setDetails(details);
-    pubsubEventMonitor.processEvent(event);
+    eventPropagator.processEvent(event);
   }
 
   /**
