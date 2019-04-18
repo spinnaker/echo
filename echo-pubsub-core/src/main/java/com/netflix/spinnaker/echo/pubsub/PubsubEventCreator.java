@@ -46,6 +46,8 @@ public class PubsubEventCreator implements EventCreator {
   }
 
   public Event createEvent(MessageDescription description) {
+    log.trace("Processing pubsub event with payload {}", description.getMessagePayload());
+
     try {
       description.setArtifacts(parseArtifacts(description.getMessagePayload()));
     } catch (FatalTemplateErrorsException e) {
