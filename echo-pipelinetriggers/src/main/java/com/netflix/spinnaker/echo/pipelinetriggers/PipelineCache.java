@@ -198,16 +198,6 @@ public class PipelineCache implements MonitoredPoller {
   }
 
   private static Map<String, List<Trigger>> extractEnabledTriggersFrom(List<Pipeline> pipelines) {
-    List<Trigger> nullTypes = pipelines.stream()
-      .filter(p -> !p.isDisabled())
-      .flatMap(p -> Optional.ofNullable(p.getTriggers()).orElse(Collections.emptyList()).stream())
-      .filter(Trigger::isEnabled)
-      .filter(t -> t.getType() == null)
-      .collect(Collectors.toList());
-    for (Trigger t: nullTypes) {
-      log.warn("trigger: {}", t);
-    }
-
     return pipelines.stream()
       .filter(p -> !p.isDisabled())
       .flatMap(p -> Optional.ofNullable(p.getTriggers()).orElse(Collections.emptyList()).stream())
