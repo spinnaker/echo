@@ -63,6 +63,9 @@ public class PipelineCache implements MonitoredPoller {
   @Nullable
   private transient List<Pipeline> pipelines;
 
+  @Nullable
+  private transient Map<String, List<Trigger>> triggers;
+
   @Autowired
   public PipelineCache(@Value("${front50.pollingIntervalMs:10000}") int pollingIntervalMs,
                        @Value("${front50.pollingSleepMs:100}") int pollingSleepMs,
@@ -90,6 +93,7 @@ public class PipelineCache implements MonitoredPoller {
     this.registry = registry;
     this.running = false;
     this.pipelines = null;
+    this.triggers = null;
   }
 
   @PreDestroy
@@ -134,6 +138,9 @@ public class PipelineCache implements MonitoredPoller {
       long start = System.currentTimeMillis();
       pipelines = fetchHydratedPipelines();
 
+      // refresh the triggers view every time we fetch the latest pipelines
+      triggers = extractEnabledTriggersFrom(pipelines);
+
       lastPollTimestamp = now();
       registry.counter("front50.requests").increment();
       log.debug("Fetched {} pipeline configs in {}ms", pipelines.size(), System.currentTimeMillis() - start);
@@ -176,6 +183,37 @@ public class PipelineCache implements MonitoredPoller {
       .filter(Optional::isPresent)
       .map(Optional::get)
       .collect(Collectors.toList());
+  }
+
+  @Nonnull
+  public Map<String, List<Trigger>> getEnabledTriggersSync() throws TimeoutException {
+    List<Pipeline> pipelines = getPipelinesSync();
+
+    // When getPipelinesSync returns, this means that we have populated the pipeline cache.
+    // At this point, we don't expect triggers to be null but we check anyway to avoid a
+    // potential race condition.
+    return triggers == null
+      ? extractEnabledTriggersFrom(pipelines)
+      : triggers;
+  }
+
+  private static Map<String, List<Trigger>> extractEnabledTriggersFrom(List<Pipeline> pipelines) {
+    List<Trigger> nullTypes = pipelines.stream()
+      .filter(p -> !p.isDisabled())
+      .flatMap(p -> Optional.ofNullable(p.getTriggers()).orElse(Collections.emptyList()).stream())
+      .filter(Trigger::isEnabled)
+      .filter(t -> t.getType() == null)
+      .collect(Collectors.toList());
+    for (Trigger t: nullTypes) {
+      log.warn("trigger: {}", t);
+    }
+
+    return pipelines.stream()
+      .filter(p -> !p.isDisabled())
+      .flatMap(p -> Optional.ofNullable(p.getTriggers()).orElse(Collections.emptyList()).stream())
+      .filter(Trigger::isEnabled)
+      .filter(t -> t.getType() != null)
+      .collect(Collectors.groupingBy(Trigger::getType));
   }
 
   // looks up the latest version in front50 of a (potentially stale) pipeline config from the cache
