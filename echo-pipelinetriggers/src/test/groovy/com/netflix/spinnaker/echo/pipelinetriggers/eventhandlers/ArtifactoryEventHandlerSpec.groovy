@@ -22,17 +22,10 @@ import com.netflix.spinnaker.echo.model.Metadata
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.model.trigger.ArtifactoryEvent
-import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
 import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact
 import spock.lang.Specification
 import spock.lang.Subject
-
-import java.util.Arrays
-import java.util.Collections
-import java.util.List
-
-import static org.assertj.core.api.Assertions.assertThat
 
 class ArtifactoryEventHandlerSpec extends Specification {
   def handlerSupport = new EventHandlerSupport()

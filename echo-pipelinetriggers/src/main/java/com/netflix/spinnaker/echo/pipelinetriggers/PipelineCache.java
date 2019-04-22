@@ -19,7 +19,6 @@ package com.netflix.spinnaker.echo.pipelinetriggers;
 import static java.time.Instant.now;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.patterns.PolledMeter;
 import com.netflix.spinnaker.echo.model.Pipeline;
@@ -57,14 +56,14 @@ public class PipelineCache implements MonitoredPoller {
   private final ScheduledExecutorService executorService;
   private final ObjectMapper objectMapper;
 
-  private transient Boolean running;
-  private transient Instant lastPollTimestamp;
+  private volatile Boolean running;
+  private volatile Instant lastPollTimestamp;
 
   @Nullable
-  private transient List<Pipeline> pipelines;
+  private volatile List<Pipeline> pipelines;
 
   @Nullable
-  private transient Map<String, List<Trigger>> triggers;
+  private volatile Map<String, List<Trigger>> triggersByType;
 
   @Autowired
   public PipelineCache(@Value("${front50.pollingIntervalMs:10000}") int pollingIntervalMs,
@@ -93,7 +92,7 @@ public class PipelineCache implements MonitoredPoller {
     this.registry = registry;
     this.running = false;
     this.pipelines = null;
-    this.triggers = null;
+    this.triggersByType = null;
   }
 
   @PreDestroy
@@ -139,7 +138,7 @@ public class PipelineCache implements MonitoredPoller {
       pipelines = fetchHydratedPipelines();
 
       // refresh the triggers view every time we fetch the latest pipelines
-      triggers = extractEnabledTriggersFrom(pipelines);
+      triggersByType = extractEnabledTriggersFrom(pipelines);
 
       lastPollTimestamp = now();
       registry.counter("front50.requests").increment();
@@ -192,9 +191,8 @@ public class PipelineCache implements MonitoredPoller {
     // When getPipelinesSync returns, this means that we have populated the pipeline cache.
     // At this point, we don't expect triggers to be null but we check anyway to avoid a
     // potential race condition.
-    return triggers == null
-      ? extractEnabledTriggersFrom(pipelines)
-      : triggers;
+    return Optional.ofNullable(triggersByType)
+      .orElse(extractEnabledTriggersFrom(pipelines));
   }
 
   private static Map<String, List<Trigger>> extractEnabledTriggersFrom(List<Pipeline> pipelines) {
