@@ -15,7 +15,7 @@
  */
 
 dependencies {
-  compile project(':echo-core')
-
-  spinnaker.group("bootWeb")
+  implementation project(':echo-core')
+  implementation "com.jakewharton.retrofit:retrofit1-okhttp3-client:1.1.0"
+  implementation "org.springframework.boot:spring-boot-starter-web"
 }

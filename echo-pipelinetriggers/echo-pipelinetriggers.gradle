@@ -21,33 +21,35 @@ test {
 }
 
 dependencies {
-  spinnaker.group('fiat')
-  spinnaker.group('lombok')
-  spinnaker.group('retrofitDefault')
+  api project(':echo-model')
+  api "com.netflix.spinnaker.kork:kork-artifacts"
+  implementation "com.netflix.spinnaker.fiat:fiat-api:$fiatVersion"
+  implementation "com.netflix.spinnaker.fiat:fiat-core:$fiatVersion"
+  implementation "com.squareup.retrofit:retrofit"
+  implementation "com.squareup.retrofit:converter-jackson"
+  implementation "com.squareup.okhttp:okhttp"
+  implementation "com.squareup.okhttp:okhttp-urlconnection"
+  implementation "com.squareup.okhttp:okhttp-apache"
 
-  compile project(':echo-core')
-  compile project(':echo-model')
-  compile spinnaker.dependency('kork')
-  compile spinnaker.dependency('korkArtifacts')
-  compile spinnaker.dependency('korkSecurity')
-  compile spinnaker.dependency('korkWeb')
-  compile spinnaker.dependency('korkExpressions')
+  implementation project(':echo-core')
+  implementation "com.netflix.spinnaker.kork:kork-core"
+  implementation "com.netflix.spinnaker.kork:kork-security"
+  implementation "com.netflix.spinnaker.kork:kork-web"
+  implementation "com.netflix.spinnaker.kork:kork-expressions"
 
-  compile spinnaker.dependency('bootWeb')
-  compile spinnaker.dependency('bootActuator')
-  compile spinnaker.dependency('jacksonDatabind')
-  compile spinnaker.dependency('rxJava')
-  compile spinnaker.dependency('springContext')
-  compile spinnaker.dependency('spectatorApi')
-  compile spinnaker.dependency('commonsLang')
-  compile group: 'commons-codec', name: 'commons-codec', version: '1.12'
+  implementation "org.springframework.boot:spring-boot-starter-web"
+  implementation "com.fasterxml.jackson.core:jackson-databind"
+  implementation "io.reactivex:rxjava"
+  implementation "org.springframework:spring-context"
+  implementation "com.netflix.spectator:spectator-api"
+  implementation "org.apache.commons:commons-lang3"
+  implementation "commons-codec:commons-codec"
 
-  testCompile project(':echo-test')
-  testCompile spinnaker.dependency('bootTest')
-  testCompile spinnaker.dependency('cglib')
-  testCompile spinnaker.dependency('junitJupiterApi')
-  testCompile spinnaker.dependency('assertj')
+  testImplementation project(':echo-test')
+  testImplementation "org.springframework.boot:spring-boot-starter-test"
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testImplementation "org.assertj:assertj-core"
 
-  testRuntimeOnly spinnaker.dependency("junitJupiterEngine")
-  testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${spinnaker.version('jupiter')}"
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+  testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
 }

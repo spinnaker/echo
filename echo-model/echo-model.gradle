@@ -15,9 +15,7 @@
  */
 
 dependencies {
-  spinnaker.group("lombok")
-
-  compile spinnaker.dependency("kork")
-  compile spinnaker.dependency("korkArtifacts")
-  compile "org.springframework:spring-web:${spinnaker.version('spring')}"
+  implementation "com.netflix.spinnaker.kork:kork-core"
+  implementation "com.netflix.spinnaker.kork:kork-artifacts"
+  implementation "org.springframework:spring-web"
 }
