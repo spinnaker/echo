@@ -16,6 +16,7 @@
 
 dependencies {
     implementation project(':echo-core')
+    implementation project(':echo-model')
     implementation project(":echo-pipelinetriggers")
     implementation "org.springframework.boot:spring-boot-starter-web"
     implementation "com.squareup.retrofit:retrofit"
@@ -24,6 +25,7 @@ dependencies {
     implementation "com.squareup.okhttp:okhttp-urlconnection"
     implementation "com.squareup.okhttp:okhttp-apache"
     implementation "com.netflix.spinnaker.kork:kork-core"
+    implementation "com.netflix.spinnaker.kork:kork-artifacts"
     implementation "com.netflix.spinnaker.kork:kork-web"
     implementation "io.reactivex:rxjava"
     implementation "javax.mail:mail:1.4.1"

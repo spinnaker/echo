@@ -15,13 +15,13 @@
  */
 
 dependencies {
-    api project(":echo-model")
+    implementation project(":echo-model")
 
-    api "com.squareup.retrofit:retrofit"
-    api "com.squareup.retrofit:converter-jackson"
-    api "com.jakewharton.retrofit:retrofit1-okhttp3-client:1.1.0"
-    api "com.netflix.spinnaker.kork:kork-web"
-    api "com.netflix.spinnaker.kork:kork-artifacts"
+    implementation "com.squareup.retrofit:retrofit"
+    implementation "com.squareup.retrofit:converter-jackson"
+    implementation "com.jakewharton.retrofit:retrofit1-okhttp3-client:1.1.0"
+    implementation "com.netflix.spinnaker.kork:kork-web"
+    implementation "com.netflix.spinnaker.kork:kork-artifacts"
     implementation "com.squareup.okhttp:okhttp"
     implementation "com.squareup.okhttp:okhttp-urlconnection"
     implementation "com.squareup.okhttp:okhttp-apache"
