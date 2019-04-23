@@ -255,8 +255,6 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     outputTrigger.properties.equals(PROPERTIES)
   }
 
-
-
   def getBuildEvent() {
     def build = new BuildEvent.Build(number: BUILD_NUMBER, building: false, result: SUCCESS)
     def project = new BuildEvent.Project(name: JOB_NAME, lastBuild: build)
