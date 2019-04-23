@@ -40,6 +40,8 @@ import org.springframework.util.CollectionUtils;
 import retrofit.RetrofitError;
 
 import java.util.*;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of TriggerEventHandler for events of type {@link ManualEvent}, which occur when a
@@ -52,6 +54,7 @@ import java.util.*;
 public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
   private static final String MANUAL_TRIGGER_TYPE = "manual";
   private static final Logger log = LoggerFactory.getLogger(ManualEventHandler.class);
+  private static final List<String> supportedTriggerTypes = Collections.singletonList(MANUAL_TRIGGER_TYPE);
 
   private final ObjectMapper objectMapper;
   private final Optional<BuildInfoService> buildInfoService;
@@ -72,6 +75,11 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
   }
 
   @Override
+  public List<String> supportedTriggerTypes() {
+    return supportedTriggerTypes;
+  }
+
+  @Override
   public boolean handleEventType(String eventType) {
     return eventType.equalsIgnoreCase(ManualEvent.TYPE);
   }
@@ -81,8 +89,7 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
     return objectMapper.convertValue(event, ManualEvent.class);
   }
 
-  @Override
-  public Optional<Pipeline> withMatchingTrigger(ManualEvent manualEvent, Pipeline pipeline) {
+  private Optional<Pipeline> withMatchingTrigger(ManualEvent manualEvent, Pipeline pipeline) {
     Content content = manualEvent.getContent();
     String application = content.getApplication();
     String pipelineNameOrId = content.getPipelineNameOrId();
@@ -91,6 +98,19 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
     } else {
       return Optional.empty();
     }
+  }
+
+  @Override
+  public List<Pipeline> getMatchingPipelines(ManualEvent event, PipelineCache pipelineCache) throws TimeoutException {
+    if (!isSuccessfulTriggerEvent(event)) {
+      return Collections.emptyList();
+    }
+
+    return pipelineCache.getPipelinesSync().stream()
+      .map(p -> withMatchingTrigger(event, p))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .collect(Collectors.toList());
   }
 
   private boolean pipelineMatches(String application, String nameOrId, Pipeline pipeline) {

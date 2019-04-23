@@ -19,6 +19,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   def objectMapper = new ObjectMapper()
   def igorService = Mock(IgorService)
   def buildInformation = new BuildInfoService(igorService, new RetrySupport())
+  def handlerSupport = new EventHandlerSupport()
 
   String MASTER_NAME = "jenkins-server"
   String JOB_NAME = "my-job"
@@ -38,7 +39,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   def "triggers pipelines for successful builds for #triggerType"() {
     given:
     def pipeline = createPipelineWith(trigger)
-    def pipelines = [pipeline]
+    def pipelines = handlerSupport.pipelineCache(pipeline)
 
     when:
     def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
@@ -58,7 +59,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "attaches #triggerType trigger to the pipeline"() {
     given:
-    def pipelines = [pipeline]
+    def pipelines = handlerSupport.pipelineCache(pipeline)
 
     when:
     def result = eventHandler.getMatchingPipelines(event, pipelines)
@@ -79,8 +80,11 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   }
 
   def "an event can trigger multiple pipelines"() {
+    given:
+    def cache = handlerSupport.pipelineCache(pipelines)
+
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, cache)
 
     then:
     matchingPipelines.size() == pipelines.size()
@@ -97,13 +101,34 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     }
   }
 
+  def "an event triggers a pipeline with 2 triggers only once"() {
+    given:
+    def pipeline = Pipeline.builder()
+      .application("application")
+      .name("pipeline")
+      .id("id")
+      .triggers([
+        enabledJenkinsTrigger,
+        enabledJenkinsTrigger.withJob("someOtherJob")])
+      .build()
+    def cache = handlerSupport.pipelineCache(pipeline)
+    def event = createBuildEventWith(SUCCESS)
+
+    when:
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, cache)
+
+    then:
+    matchingPipelines.size() == 1
+    matchingPipelines.get(0).trigger.job == "job"
+  }
+
   @Unroll
   def "does not trigger pipelines for #description builds"() {
     when:
-    def matchingPipelines = eventHandler.getMatchingPipelines(event, [pipeline])
+    def matchingPipelines = eventHandler.getMatchingPipelines(event, handlerSupport.pipelineCache(pipeline))
 
     then:
-    matchingPipelines.size() == 0
+    matchingPipelines.isEmpty()
 
     where:
     result   | _
@@ -120,13 +145,13 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger #description pipelines"() {
     given:
-    def pipelines = [pipeline]
+    def pipelines = handlerSupport.pipelineCache(pipeline)
 
     when:
     def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
 
     then:
-    matchingPipelines.size() == 0
+    matchingPipelines.isEmpty()
 
     where:
     trigger                                 | description
@@ -147,7 +172,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
   @Unroll
   def "does not trigger a pipeline that has an enabled #triggerType trigger with missing #field"() {
     given:
-    def pipelines = [badPipeline, goodPipeline]
+    def pipelines = handlerSupport.pipelineCache(badPipeline, goodPipeline)
 
     when:
     def matchingPipelines = eventHandler.getMatchingPipelines(event, pipelines)
