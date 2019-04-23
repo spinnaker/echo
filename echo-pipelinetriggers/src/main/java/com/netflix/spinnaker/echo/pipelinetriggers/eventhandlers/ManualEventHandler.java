@@ -27,6 +27,7 @@ import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.BuildEvent;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent;
 import com.netflix.spinnaker.echo.model.trigger.ManualEvent.Content;
+import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +40,8 @@ import org.springframework.util.CollectionUtils;
 import retrofit.RetrofitError;
 
 import java.util.*;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of TriggerEventHandler for events of type {@link ManualEvent}, which occur when a
@@ -51,20 +54,29 @@ import java.util.*;
 public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
   private static final String MANUAL_TRIGGER_TYPE = "manual";
   private static final Logger log = LoggerFactory.getLogger(ManualEventHandler.class);
+  private static final List<String> supportedTriggerTypes = Collections.singletonList(MANUAL_TRIGGER_TYPE);
 
   private final ObjectMapper objectMapper;
   private final Optional<BuildInfoService> buildInfoService;
   private final Optional<ArtifactInfoService> artifactInfoService;
+  private final PipelineCache pipelineCache;
 
   @Autowired
   public ManualEventHandler(
     ObjectMapper objectMapper,
     Optional<BuildInfoService> buildInfoService,
-    Optional<ArtifactInfoService> artifactInfoService
+    Optional<ArtifactInfoService> artifactInfoService,
+    PipelineCache pipelineCache
   ) {
     this.objectMapper = objectMapper;
     this.buildInfoService = buildInfoService;
     this.artifactInfoService = artifactInfoService;
+    this.pipelineCache = pipelineCache;
+  }
+
+  @Override
+  public List<String> supportedTriggerTypes() {
+    return supportedTriggerTypes;
   }
 
   @Override
@@ -77,16 +89,28 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
     return objectMapper.convertValue(event, ManualEvent.class);
   }
 
-  @Override
-  public Optional<Pipeline> withMatchingTrigger(ManualEvent manualEvent, Pipeline pipeline) {
+  private Optional<Pipeline> withMatchingTrigger(ManualEvent manualEvent, Pipeline pipeline) {
     Content content = manualEvent.getContent();
     String application = content.getApplication();
     String pipelineNameOrId = content.getPipelineNameOrId();
     if (pipelineMatches(application, pipelineNameOrId, pipeline)) {
-      return Optional.of(buildTrigger(pipeline, content.getTrigger()));
+      return Optional.of(buildTrigger(pipelineCache.refresh(pipeline), content.getTrigger()));
     } else {
       return Optional.empty();
     }
+  }
+
+  @Override
+  public List<Pipeline> getMatchingPipelines(ManualEvent event, PipelineCache pipelineCache) throws TimeoutException {
+    if (!isSuccessfulTriggerEvent(event)) {
+      return Collections.emptyList();
+    }
+
+    return pipelineCache.getPipelinesSync().stream()
+      .map(p -> withMatchingTrigger(event, p))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .collect(Collectors.toList());
   }
 
   private boolean pipelineMatches(String application, String nameOrId, Pipeline pipeline) {
@@ -101,8 +125,9 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
     List<Artifact> artifacts = new ArrayList<>();
     String master = manualTrigger.getMaster();
     String job = manualTrigger.getJob();
-    if (buildInfoService.isPresent() && StringUtils.isNoneEmpty(master, job)) {
-      BuildEvent buildEvent = buildInfoService.get().getBuildEvent(master, job, manualTrigger.getBuildNumber());
+    Integer buildNumber = manualTrigger.getBuildNumber();
+    if (buildInfoService.isPresent() && StringUtils.isNoneEmpty(master, job) && buildNumber != null) {
+      BuildEvent buildEvent = buildInfoService.get().getBuildEvent(master, job, buildNumber);
       trigger = trigger
         .withBuildInfo(buildInfoService.get().getBuildInfo(buildEvent))
         .withProperties(buildInfoService.get().getProperties(buildEvent, manualTrigger.getPropertyFile()));

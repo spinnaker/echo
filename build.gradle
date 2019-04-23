@@ -33,6 +33,7 @@ buildscript {
 }
 
 allprojects {
+    group = "com.netflix.spinnaker.echo"
     apply plugin: "spinnaker.base-project"
     if (Boolean.valueOf(enablePublishing)) {
         apply plugin: "spinnaker.project"
