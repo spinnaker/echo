@@ -21,15 +21,18 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.parsing.ArtifactExtractor;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import retrofit.mime.TypedByteArray;
 import retrofit.mime.TypedInput;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class GoogleCloudBuildArtifactExtractor implements ArtifactExtractor {
   private final String account;
   private final IgorService igorService;
@@ -51,7 +54,12 @@ public class GoogleCloudBuildArtifactExtractor implements ArtifactExtractor {
   public List<Artifact> getArtifacts(String messagePayload) {
     TypedInput build =
         new TypedByteArray("application/json", messagePayload.getBytes(StandardCharsets.UTF_8));
-    return retrySupport.retry(
-        () -> igorService.extractGoogleCloudBuildArtifacts(account, build), 5, 2000, false);
+    try {
+      return retrySupport.retry(
+          () -> igorService.extractGoogleCloudBuildArtifacts(account, build), 5, 2000, false);
+    } catch (Exception e) {
+      log.error("Failed to fetch artifacts for build: {}", e);
+      return Collections.emptyList();
+    }
   }
 }
