@@ -16,47 +16,47 @@
 
 package com.netflix.spinnaker.echo.artifacts;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class NexusArtifactExtractorTest {
   @Test
   void extractNexusArtifact() throws IOException {
     ObjectMapper mapper = new ObjectMapper();
 
-    String payloadStr = "{" +
-      "\"action\": \"UPDATED\"," +
-      "\"component\": {" +
-      "   \"format\": \"maven2\"," +
-      "   \"group\": \"io.pivotal.spinnaker\"," +
-      "   \"id\": \"76d7d7e4186a390fd96db295b80986ab\"," +
-      "   \"name\": \"multifoundationmetrics\"," +
-      "   \"version\": \"0.3.3\"" +
-      "}," +
-      "\"initiator\": \"admin/172.17.0.1\"," +
-      "\"nodeId\": \"25F88840-1F7BAEDC-C7C8DFE0-DF41CE6C-697E9B6C\"," +
-      "\"repositoryName\": \"maven-releases\"," +
-      "\"timestamp\": \"2019-05-10T16:08:38.565+0000\"" +
-    "}";
+    String payloadStr =
+        "{"
+            + "\"action\": \"UPDATED\","
+            + "\"component\": {"
+            + "   \"format\": \"maven2\","
+            + "   \"group\": \"io.pivotal.spinnaker\","
+            + "   \"id\": \"76d7d7e4186a390fd96db295b80986ab\","
+            + "   \"name\": \"multifoundationmetrics\","
+            + "   \"version\": \"0.3.3\""
+            + "},"
+            + "\"initiator\": \"admin/172.17.0.1\","
+            + "\"nodeId\": \"25F88840-1F7BAEDC-C7C8DFE0-DF41CE6C-697E9B6C\","
+            + "\"repositoryName\": \"maven-releases\","
+            + "\"timestamp\": \"2019-05-10T16:08:38.565+0000\""
+            + "}";
 
     Map payload = mapper.readValue(payloadStr, Map.class);
 
     NexusArtifactExtractor extractor = new NexusArtifactExtractor();
 
-    assertThat(extractor.getArtifacts("nexus", payload)).containsExactly(
-      Artifact.builder()
-        .type("maven/file")
-        .name("io.pivotal.spinnaker:multifoundationmetrics")
-        .reference("io.pivotal.spinnaker:multifoundationmetrics:0.3.3")
-        .version("0.3.3")
-        .provenance("maven-releases")
-        .build()
-    );
+    assertThat(extractor.getArtifacts("nexus", payload))
+        .containsExactly(
+            Artifact.builder()
+                .type("maven/file")
+                .name("io.pivotal.spinnaker:multifoundationmetrics")
+                .reference("io.pivotal.spinnaker:multifoundationmetrics:0.3.3")
+                .version("0.3.3")
+                .provenance("maven-releases")
+                .build());
   }
 }

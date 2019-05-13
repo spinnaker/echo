@@ -19,17 +19,16 @@ package com.netflix.spinnaker.echo.artifacts;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import lombok.Data;
-import org.springframework.stereotype.Component;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import lombok.Data;
+import org.springframework.stereotype.Component;
 
 @Component
 public class NexusArtifactExtractor implements WebhookArtifactExtractor {
-  private final ObjectMapper mapper = new ObjectMapper()
-    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+  private final ObjectMapper mapper =
+      new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
   @Override
   public List<Artifact> getArtifacts(String source, Map payloadMap) {
@@ -38,13 +37,15 @@ public class NexusArtifactExtractor implements WebhookArtifactExtractor {
       return Collections.emptyList();
     } else {
       Component component = payload.getComponent();
-      return Collections.singletonList(Artifact.builder()
-        .type("maven/file")
-        .name(component.getGroup() + ":" + component.getName())
-        .reference(component.getGroup() + ":" + component.getName() + ":" + component.getVersion())
-        .version(component.getVersion())
-        .provenance(payload.getRepositoryName())
-        .build());
+      return Collections.singletonList(
+          Artifact.builder()
+              .type("maven/file")
+              .name(component.getGroup() + ":" + component.getName())
+              .reference(
+                  component.getGroup() + ":" + component.getName() + ":" + component.getVersion())
+              .version(component.getVersion())
+              .provenance(payload.getRepositoryName())
+              .build());
     }
   }
 

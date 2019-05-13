@@ -17,13 +17,12 @@
 package com.netflix.spinnaker.echo.artifacts;
 
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
