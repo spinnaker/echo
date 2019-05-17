@@ -31,6 +31,9 @@ public class ScmWebhookHandler {
   }
 
   public GitWebhookHandler getHandler(String source) {
-    return webhookEventHandlers.stream().filter(h -> h.handles(source)).findFirst().orElse(null);
+    return webhookEventHandlers.stream()
+        .filter(h -> h.handles(source))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Unknown Git SCM source " + source));
   }
 }

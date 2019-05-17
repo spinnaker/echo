@@ -25,6 +25,7 @@ import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.model.Metadata
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.info.ProjectInfoProperties
 import org.springframework.http.HttpHeaders
 import org.springframework.web.bind.annotation.*
 
@@ -75,7 +76,15 @@ class WebhooksController {
     }
 
     if (type == 'git') {
-      GitWebhookHandler handler = scmWebhookHandler.getHandler(source)
+      GitWebhookHandler handler
+
+      try {
+        handler = scmWebhookHandler.getHandler(source)
+      } catch(Exception e) {
+        log.error("Failed to find SCM handler for source {}", source)
+        throw e
+      }
+
       handler.handle(event, postedEvent)
       // shouldSendEvent should be called after the event
       // has been processed
