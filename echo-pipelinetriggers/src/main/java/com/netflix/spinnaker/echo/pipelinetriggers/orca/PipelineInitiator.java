@@ -37,6 +37,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
+import javax.swing.text.html.Option;
+
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -156,7 +158,7 @@ public class PipelineInitiator {
         }
       } catch (Exception e) {
         log.error("Unable to trigger pipeline {}: {}", pipeline, e);
-        logOrcaErrorMetric(e.getClass().getName(), triggerSource.name());
+        logOrcaErrorMetric(e.getClass().getName(), triggerSource.name(), getTriggerType(pipeline));
       }
     } else {
       log.info(
@@ -197,6 +199,8 @@ public class PipelineInitiator {
 
       log.info("Successfully triggered {}: execution id: {}", pipeline, response.getRef());
 
+      registry.counter("orca.trigger.success", "triggerSource", triggerSource.name(), "triggerType", getTriggerType(pipeline))
+        .increment();
     } catch (RetrofitError e) {
       String orcaResponse = "N/A";
       int status = 0;
@@ -216,12 +220,12 @@ public class PipelineInitiator {
           orcaResponse,
           pipelineAsString(pipeline));
 
-      logOrcaErrorMetric(e.getClass().getName(), triggerSource.name());
+      logOrcaErrorMetric(e.getClass().getName(), triggerSource.name(), getTriggerType(pipeline));
     } catch (Exception e) {
       log.error(
           "Failed to trigger {}\nerror: {}\npayload: {}", pipeline, e, pipelineAsString(pipeline));
 
-      logOrcaErrorMetric(e.getClass().getName(), triggerSource.name());
+      logOrcaErrorMetric(e.getClass().getName(), triggerSource.name(), getTriggerType(pipeline));
     }
   }
 
@@ -235,15 +239,18 @@ public class PipelineInitiator {
       } catch (RetrofitError e) {
         if ((attempts >= retryCount) || !isRetryableError(e)) {
           throw e;
+        } else {
+          log.warn("Error triggering {} with {} (attempt {}/{}). Retrying...", pipeline, e, attempts, retryCount);
         }
       }
 
       try {
         Thread.sleep(retryDelayMillis);
+        registry
+          .counter("orca.trigger.retries")
+          .increment();
       } catch (InterruptedException ignored) {
       }
-
-      log.warn("Retrying pipeline trigger for {}", pipeline);
     }
   }
   /**
@@ -277,13 +284,13 @@ public class PipelineInitiator {
         .collect(Collectors.toSet());
   }
 
-  private void logOrcaErrorMetric(String exceptionName, String triggerSource) {
+  private void logOrcaErrorMetric(String exceptionName, String triggerSource, String triggerType) {
     registry
-        .counter("orca.errors", "exception", exceptionName, "triggerSource", triggerSource)
+        .counter("orca.errors", "exception", exceptionName, "triggerSource", triggerSource, "triggerType", triggerType)
         .increment();
 
     registry
-        .counter("orca.trigger.errors", "exception", exceptionName, "triggerSource", triggerSource)
+        .counter("orca.trigger.errors", "exception", exceptionName, "triggerSource", triggerSource, "triggerType", triggerType)
         .increment();
   }
 
@@ -294,6 +301,14 @@ public class PipelineInitiator {
       log.warn("Failed to convert pipeline to json, using raw toString", jsonException);
       return pipeline.toString();
     }
+  }
+
+  private String getTriggerType(Pipeline pipeline) {
+    if (pipeline.getTrigger() != null) {
+      return pipeline.getTrigger().getType();
+    }
+
+    return "N/A";
   }
 
   private static boolean isRetryableError(Throwable error) {
