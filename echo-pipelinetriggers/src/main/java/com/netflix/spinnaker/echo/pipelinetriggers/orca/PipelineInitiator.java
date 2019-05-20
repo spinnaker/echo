@@ -37,8 +37,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
-import javax.swing.text.html.Option;
-
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -199,8 +197,14 @@ public class PipelineInitiator {
 
       log.info("Successfully triggered {}: execution id: {}", pipeline, response.getRef());
 
-      registry.counter("orca.trigger.success", "triggerSource", triggerSource.name(), "triggerType", getTriggerType(pipeline))
-        .increment();
+      registry
+          .counter(
+              "orca.trigger.success",
+              "triggerSource",
+              triggerSource.name(),
+              "triggerType",
+              getTriggerType(pipeline))
+          .increment();
     } catch (RetrofitError e) {
       String orcaResponse = "N/A";
       int status = 0;
@@ -240,15 +244,18 @@ public class PipelineInitiator {
         if ((attempts >= retryCount) || !isRetryableError(e)) {
           throw e;
         } else {
-          log.warn("Error triggering {} with {} (attempt {}/{}). Retrying...", pipeline, e, attempts, retryCount);
+          log.warn(
+              "Error triggering {} with {} (attempt {}/{}). Retrying...",
+              pipeline,
+              e,
+              attempts,
+              retryCount);
         }
       }
 
       try {
         Thread.sleep(retryDelayMillis);
-        registry
-          .counter("orca.trigger.retries")
-          .increment();
+        registry.counter("orca.trigger.retries").increment();
       } catch (InterruptedException ignored) {
       }
     }
@@ -286,11 +293,25 @@ public class PipelineInitiator {
 
   private void logOrcaErrorMetric(String exceptionName, String triggerSource, String triggerType) {
     registry
-        .counter("orca.errors", "exception", exceptionName, "triggerSource", triggerSource, "triggerType", triggerType)
+        .counter(
+            "orca.errors",
+            "exception",
+            exceptionName,
+            "triggerSource",
+            triggerSource,
+            "triggerType",
+            triggerType)
         .increment();
 
     registry
-        .counter("orca.trigger.errors", "exception", exceptionName, "triggerSource", triggerSource, "triggerType", triggerType)
+        .counter(
+            "orca.trigger.errors",
+            "exception",
+            exceptionName,
+            "triggerSource",
+            triggerSource,
+            "triggerType",
+            triggerType)
         .increment();
   }
 
