@@ -136,7 +136,7 @@ public class PipelineInitiator {
               String orcaResponse = "N/A";
 
               if (e.getResponse() != null && e.getResponse().getBody() != null) {
-                new String(((TypedByteArray) e.getResponse().getBody()).getBytes());
+                orcaResponse = new String(((TypedByteArray) e.getResponse().getBody()).getBytes());
               }
 
               log.error("Failed planning {}: \n{}", pipeline, orcaResponse);
