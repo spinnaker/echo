@@ -70,14 +70,14 @@ class SchedulerConfiguration {
   @Bean
   @ConditionalOnExpression('${scheduler.pipeline-configs-poller.enabled:true}')
   SimpleTriggerFactoryBean syncJobTriggerBean(
-    @Value('${scheduler.pipeline-configs-poller.polling-interval-ms:30000}') long intervalMs,
+    @Value('${scheduler.pipeline-configs-poller.polling-interval-ms:60000}') long intervalMs,
     JobDetail pipelineSyncJobBean
   ) {
     SimpleTriggerFactoryBean triggerBean = new SimpleTriggerFactoryBean()
 
     triggerBean.setName("Sync Pipelines")
     triggerBean.setGroup("Sync")
-    triggerBean.setStartDelay(TimeUnit.MINUTES.toMillis(1))
+    triggerBean.setStartDelay(TimeUnit.SECONDS.toMillis(60 + new Random().nextInt() % 60))
     triggerBean.setRepeatInterval(intervalMs)
     triggerBean.setJobDetail(pipelineSyncJobBean)
 
@@ -100,7 +100,9 @@ class SchedulerConfiguration {
   @Bean
   SchedulerFactoryBeanCustomizer echoSchedulerFactoryBeanCustomizer(
     Optional<DataSource> dataSourceOptional,
-    TriggerListener triggerListener
+    TriggerListener triggerListener,
+    @Value('${sql.enabled:false}')
+    boolean sqlEnabled
   ) {
     return new SchedulerFactoryBeanCustomizer() {
       @Override
@@ -109,9 +111,11 @@ class SchedulerConfiguration {
           schedulerFactoryBean.setDataSource(dataSourceOptional.get())
         }
 
-        Properties props = new Properties()
-        props.put("org.quartz.jobStore.isClustered", "true")
-        schedulerFactoryBean.setQuartzProperties(props)
+        if (sqlEnabled) {
+          Properties props = new Properties()
+          props.put("org.quartz.jobStore.isClustered", "true")
+          schedulerFactoryBean.setQuartzProperties(props)
+        }
         schedulerFactoryBean.setGlobalTriggerListeners(triggerListener)
       }
     }

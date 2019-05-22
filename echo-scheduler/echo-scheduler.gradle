@@ -35,4 +35,6 @@ dependencies {
   implementation ("org.quartz-scheduler:quartz") {
     exclude group: 'com.zaxxer', module: 'HikariCP-java7'
   }
+  
+  implementation "org.mariadb.jdbc:mariadb-java-client:2.2.3"
 }
