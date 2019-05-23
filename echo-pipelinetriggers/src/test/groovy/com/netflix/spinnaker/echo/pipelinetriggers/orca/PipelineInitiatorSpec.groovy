@@ -127,8 +127,8 @@ class PipelineInitiatorSpec extends Specification {
     MDC.remove(AuthenticatedRequest.Header.USER.header)
 
     // Wait for orce to actually be called (happens on separate thread)
-    //executor.shutdown()
-    //executor.awaitTermination(2, TimeUnit.SECONDS)
+    executor.shutdown()
+    executor.awaitTermination(2, TimeUnit.SECONDS)
 
     then:
     _ * fiatStatus.isEnabled() >> { return enabled }
