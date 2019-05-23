@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -166,7 +167,20 @@ public class PipelineInitiator {
 
   private void triggerPipeline(Pipeline pipeline, TriggerSource triggerSource)
       throws RejectedExecutionException {
-    executorService.submit(() -> triggerPipelineImpl(pipeline, triggerSource));
+    final Map<String, String> mdc = MDC.getCopyOfContextMap();
+
+    executorService.submit(
+        () -> {
+          if (mdc != null) {
+            MDC.setContextMap(mdc);
+          }
+
+          triggerPipelineImpl(pipeline, triggerSource);
+
+          if (mdc != null) {
+            MDC.clear();
+          }
+        });
   }
 
   private void triggerPipelineImpl(Pipeline pipeline, TriggerSource triggerSource) {
