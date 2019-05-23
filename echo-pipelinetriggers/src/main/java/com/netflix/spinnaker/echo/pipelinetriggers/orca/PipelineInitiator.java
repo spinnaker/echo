@@ -33,13 +33,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -167,23 +167,28 @@ public class PipelineInitiator {
 
   private void triggerPipeline(Pipeline pipeline, TriggerSource triggerSource)
       throws RejectedExecutionException {
-    final Map<String, String> mdc = MDC.getCopyOfContextMap();
+    Callable<Void> triggerWithCapturedContext =
+        AuthenticatedRequest.propagate(() -> triggerPipelineImpl(pipeline, triggerSource));
 
     executorService.submit(
         () -> {
-          if (mdc != null) {
-            MDC.setContextMap(mdc);
-          }
-
-          triggerPipelineImpl(pipeline, triggerSource);
-
-          if (mdc != null) {
-            MDC.clear();
+          try {
+            triggerWithCapturedContext.call();
+          } catch (Exception e) {
+            // This shouldn't happen since all exceptions are handled in triggerPipelineImpl...
+            // but...
+            log.error(
+                "Failed to trigger {}\nerror: {}\npayload: {}",
+                pipeline,
+                e,
+                pipelineAsString(pipeline));
+            logOrcaErrorMetric(
+                e.getClass().getName(), triggerSource.name(), getTriggerType(pipeline));
           }
         });
   }
 
-  private void triggerPipelineImpl(Pipeline pipeline, TriggerSource triggerSource) {
+  private Void triggerPipelineImpl(Pipeline pipeline, TriggerSource triggerSource) {
     try {
       TriggerResponse response;
 
@@ -245,6 +250,8 @@ public class PipelineInitiator {
 
       logOrcaErrorMetric(e.getClass().getName(), triggerSource.name(), getTriggerType(pipeline));
     }
+
+    return null;
   }
 
   private TriggerResponse triggerWithRetries(Pipeline pipeline) {
