@@ -162,13 +162,13 @@ public class PipelineInitiator {
       log.info(
           "Would trigger {} due to {} but triggering is disabled", pipeline, pipeline.getTrigger());
       registry
-        .counter(
-          "orca.trigger.disabled",
-          "triggerSource",
-          triggerSource.name(),
-          "triggerType",
-          getTriggerType(pipeline))
-        .increment();
+          .counter(
+              "orca.trigger.disabled",
+              "triggerSource",
+              triggerSource.name(),
+              "triggerType",
+              getTriggerType(pipeline))
+          .increment();
     }
   }
 
