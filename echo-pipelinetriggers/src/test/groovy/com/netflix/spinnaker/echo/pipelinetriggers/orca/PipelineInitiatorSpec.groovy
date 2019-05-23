@@ -126,7 +126,7 @@ class PipelineInitiatorSpec extends Specification {
     MDC.remove(AuthenticatedRequest.Header.ACCOUNTS.header)
     MDC.remove(AuthenticatedRequest.Header.USER.header)
 
-    // Wait for orce to actually be called (happens on separate thread)
+    // Wait for the trigger to actually be invoked (happens on separate thread)
     executor.shutdown()
     executor.awaitTermination(2, TimeUnit.SECONDS)
 

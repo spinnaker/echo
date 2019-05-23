@@ -170,22 +170,7 @@ public class PipelineInitiator {
     Callable<Void> triggerWithCapturedContext =
         AuthenticatedRequest.propagate(() -> triggerPipelineImpl(pipeline, triggerSource));
 
-    executorService.submit(
-        () -> {
-          try {
-            triggerWithCapturedContext.call();
-          } catch (Exception e) {
-            // This shouldn't happen since all exceptions are handled in triggerPipelineImpl...
-            // but...
-            log.error(
-                "Failed to trigger {}\nerror: {}\npayload: {}",
-                pipeline,
-                e,
-                pipelineAsString(pipeline));
-            logOrcaErrorMetric(
-                e.getClass().getName(), triggerSource.name(), getTriggerType(pipeline));
-          }
-        });
+    executorService.submit(triggerWithCapturedContext);
   }
 
   private Void triggerPipelineImpl(Pipeline pipeline, TriggerSource triggerSource) {
