@@ -19,7 +19,7 @@ You can extend the way in which `echo` events are sent by implementing the `Echo
 
 
 ## Event Types
-Currently, `echo` receives build events from igor and orchestration events from orca.
+Currently, `echo` receives build events from [igor](http://www.github.com/spinnaker/igor) and orchestration events from [orca](http://www.github.com/spinnaker/orca).
 
 ## Incoming Events
 Echo also integrates with [igor](http://www.github.com/spinnaker/igor), [front50](http://www.github.com/spinnaker/front50) and [orca](http://www.github.com/spinnaker/orca) to trigger pipeline executions.
@@ -53,16 +53,16 @@ If/when this single instance goes down, CRON triggers will not fire.
 
 To run in SQL mode you will need to initialize the database and provide a connection string in `echo.yml` (note these instructions assume MySQL).
 1. Create a database.
-2. Initialize the database by running the script (MySQL dialect) provided [here](echo-scheduler/src/main/resources/db/database-mysql.sql)
+2. Initialize the database by running the script (MySQL dialect provided [here](echo-scheduler/src/main/resources/db/database-mysql.sql))
 3. Configure the SQL mode in `echo.yml` (obviously, change the connection strings below):
     ```yaml
     sql:
-    enabled: true
-    connectionPool:
-        jdbcUrl: jdbc:mysql://localhost:3306/echo?useSSL=false&serverTimezone=UTC
+      enabled: true
+      connectionPool:
+        jdbcUrl: jdbc:mysql://localhost:3306/echo?serverTimezone=UTC
         user: echo_service
-    migration:
-        jdbcUrl: jdbc:mysql://localhost:3306/echo?useSSL=false&serverTimezone=UTC
+      migration:
+        jdbcUrl: jdbc:mysql://localhost:3306/echo?serverTimezone=UTC
         user: echo_migrate
     ```
 
@@ -73,35 +73,36 @@ See [Sample deployment topology](#sample-deployment-topology) for additional inf
 * `scheduler.enabled` (default: `false`)  
     when set to `true` this instance will schedule and trigger CRON events
 * `scheduler.pipelineConfigsPoller.enabled` (default: `false`)  
-    when `true`, will poll `front50` for pipeline configurations and sync triggers (you should definitely set this to `true` if you enable `scheduler`)
+    when `true`, will synchronize pipeline triggers (set this to `true` if you enable `scheduler` unless running a missed scheduler configuration)
 * `scheduler.compensationJob.enabled` (default: false)  
     when `true` this instance will poll for missed CRON triggers and attempt to re-trigger them (see [Missed CRON scheduler](#Missed-CRON-scheduler))
 * `orca.pipelineInitiatorRetryCount` (default: `5`)  
     Number of retries on `orca` failures (leave at default)
-* `orca.pipelineInitiatorRetryDelayMillis` (default: 5000ms)
+* `orca.pipelineInitiatorRetryDelayMillis` (default: 5000ms)  
     Number of milliseconds between retries to `orca` (leave at default)
 
 ## Missed CRON scheduler
-The missed CRON scheduler is a feature in `echo` that ensures that CRON triggers are firing reliably.  
-In an event that a CRON trigger fails to fire or it fires but orca fails to start the pipeline the missed CRON scheduler will detect it and attempt to re-trigger the pipeline.  
-The main scenario when missed cron scheduler is 
+The missed CRON scheduler is a feature in `echo` that ensures that CRON triggers are firing reliably. It is enabled by setting `scheduler.compensationJob.enabled` configuration option.  
+In an event that a CRON trigger fails to fire or it fires but, for whatever reason, the execution doesn't start the missed CRON scheduler will detect it and attempt to re-trigger the pipeline.  
+The main scenario when missed cron scheduler is useful is for main scheduler outages either planned (upgrade) or unplanned (hardware failure).    
+Missed scheduler should be run as a separate instance as that will provide the most benefit and the resilience needed. Most situation likely don't necessitate the need for a missed scheduler instance, especially if you elect to run in SQL mode. (With the SQL mode support and pending additional investigation this feature will likely be removed all-together)
 
 ## Sample deployment topology
-Here are examples of what configurations you can deploy `echo`.
+Here are two examples of what configurations you can deploy `echo`.
 
-|                   | Using in-memory           | Using SQL |
-|-------------------|---------------------------|-----------|
-|**Server Group 1** |3x `echo`                  | 3x `echo` with `echo-scheduler`
-|**Server Group 2** |1x `echo-scheduler`*       | 1x `echo-missed-scheduler`*
-|**Server Group 3** |1x `echo-missed-scheduler` | n/a
+|                   | Using in-memory            | Using SQL |
+|-------------------|----------------------------|-----------|
+|**Server Group 1** |3x `echo`                   | 3x `echo` with `echo-scheduler`
+|**Server Group 2** |1x `echo-scheduler`         | 1x `echo-missed-scheduler`*
+|**Server Group 3** |1x `echo-missed-scheduler`* | n/a
 
 \* _optional `echo-missed-scheduler` see [Missed CRON scheduler](#Missed-CRON-scheduler)_
 
 If you opt for using an in-memory execution mode, take care when deploying upgrades to `echo`.
 Since only instance should be running at a time, a rolling-push strategy will need to be used. Furthermore, if using `echo-missed-scheduler`, make sure to upgrade `echo-scheduler` followed by `echo-missed-scheduler` to ensure pipelines (which had a trigger during the deploy period) are re-triggered correctly after deploy.
 
-The following are configuration options for each server group (note that other configurations options will be requires, which halyard will configure):  
-`echo`  
+The following are configuration options for each server group (note that other configurations options will be required, which halyard will configure):  
+`echo` (this instance handles general events)   
 ```yaml
 scheduler:
   enabled: false
@@ -111,7 +112,7 @@ scheduler:
     enabled: false
 ```
 
-`echo-scheduler`  
+`echo-scheduler` (this instance triggers pipelines on a CRON)  
 ```yaml
 scheduler:
   enabled: true
@@ -121,7 +122,7 @@ scheduler:
     enabled: false
 ```
 
-`echo-missed-scheduler`  
+`echo-missed-scheduler` (this instance triggers "missed" pipelines)  
 ```yaml
 scheduler:
   enabled: true
@@ -139,7 +140,7 @@ scheduler:
 ```
 
 ## Monitoring
-`echo` emits numerous metrics that allow for monitoring it's operations.  
+`echo` emits numerous metrics that allow for monitoring its operation.  
 Some of the key metrics are listed below:
 
 * `orca.trigger.success`  
