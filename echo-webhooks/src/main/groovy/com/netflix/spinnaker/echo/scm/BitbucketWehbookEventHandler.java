@@ -68,8 +68,9 @@ public class BitbucketWehbookEventHandler implements GitWebhookHandler {
       handleBitbucketServerEvent(event, postedEvent);
     } else {
       // Could not determine what type of Bitbucket event this was.
-      log.info("Could not determine Bitbucket type {}",
-        kv("event_type", event.content.get("event_type")));
+      log.info(
+          "Could not determine Bitbucket type {}",
+          kv("event_type", event.content.get("event_type")));
       return;
     }
 
@@ -97,15 +98,15 @@ public class BitbucketWehbookEventHandler implements GitWebhookHandler {
           kv("event_type", event.content.get("event_type").toString()),
           kv(
               "hook_id",
-            event.content.containsKey("hook_id") ? event.content.get("hook_id").toString() : ""),
+              event.content.containsKey("hook_id") ? event.content.get("hook_id").toString() : ""),
           kv(
               "request_id",
               event.content.containsKey("request_id")
                   ? event.content.get("request_id").toString()
                   : ""),
-          kv("branch",
-             event.content.containsKey("branch") ? event.content.get("branch").toString() : "")
-      );
+          kv(
+              "branch",
+              event.content.containsKey("branch") ? event.content.get("branch").toString() : ""));
     }
   }
 
