@@ -25,6 +25,7 @@ import com.netflix.spinnaker.echo.model.trigger.ManualEvent.Content;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,8 +73,9 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
 
   private boolean pipelineMatches(String application, String nameOrId, Pipeline pipeline) {
     return !pipeline.isDisabled()
-      && pipeline.getApplication().equals(application)
-      && (pipeline.getName().equals(nameOrId) || pipeline.getId().equals(nameOrId));
+        && Objects.equals(pipeline.getApplication(), application)
+        && (Objects.equals(pipeline.getName(), nameOrId)
+            || Objects.equals(pipeline.getId(), nameOrId));
   }
 
   private Pipeline buildTrigger(Pipeline pipeline, Trigger manualTrigger) {
