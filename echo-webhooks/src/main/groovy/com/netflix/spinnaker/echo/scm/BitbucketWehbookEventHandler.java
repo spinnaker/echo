@@ -64,8 +64,14 @@ public class BitbucketWehbookEventHandler implements GitWebhookHandler {
 
     if (looksLikeBitbucketCloud(event)) {
       handleBitbucketCloudEvent(event, postedEvent);
-    } else if (lookLikeBitbucketServer(event)) {
+    } else if (looksLikeBitbucketServer(event)) {
       handleBitbucketServerEvent(event, postedEvent);
+    } else {
+      // Could not determine what type of Bitbucket event this was.
+      log.info(
+          "Could not determine Bitbucket type {}",
+          kv("event_type", event.content.get("event_type")));
+      return;
     }
 
     String fullRepoName = getFullRepoName(event);
@@ -98,33 +104,23 @@ public class BitbucketWehbookEventHandler implements GitWebhookHandler {
               event.content.containsKey("request_id")
                   ? event.content.get("request_id").toString()
                   : ""),
-          kv("branch", event.content.get("branch").toString()));
+          kv(
+              "branch",
+              event.content.containsKey("branch") ? event.content.get("branch").toString() : ""));
     }
   }
 
   private boolean looksLikeBitbucketCloud(Event event) {
-    if (!event.content.containsKey("event_type")) {
-      return false;
-    }
-
     String eventType = event.content.get("event_type").toString();
-    return (eventType == "repo:push" || eventType == "pullrequest:fulfilled");
+    return (eventType.equals("repo:push") || eventType.equals("pullrequest:fulfilled"));
   }
 
-  private boolean lookLikeBitbucketServer(Event event) {
-    if (!event.content.containsKey("event_type")) {
-      return false;
-    }
-
+  private boolean looksLikeBitbucketServer(Event event) {
     String eventType = event.content.get("event_type").toString();
-    return (eventType == "repo:refs_changed" || eventType == "pr:merged");
+    return (eventType.equals("repo:refs_changed") || eventType.equals("pr:merged"));
   }
 
   private String getFullRepoName(Event event) {
-    if (!event.content.containsKey("event_type")) {
-      return "";
-    }
-
     if (looksLikeBitbucketCloud(event)) {
       return ((Map<String, Object>) event.content.get("repository")).get("full_name").toString();
     }
