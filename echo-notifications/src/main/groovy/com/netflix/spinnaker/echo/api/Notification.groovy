@@ -38,6 +38,7 @@ class Notification {
     EMAIL,
     GITHUB_STATUS,
     GOOGLECHAT,
+    UNUSED, // used to be HIPCHAT, which was removed in commit d175913ab
     JIRA,
     PAGER_DUTY,
     PUBSUB,
