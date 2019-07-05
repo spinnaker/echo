@@ -95,7 +95,7 @@
           </td>
           <td class="title" align="left" valign="middle" style="padding: 16px 0 16px 32px; height: 100%;">
             <h1 style="display: block; font-family: Helvetica, Arial, sans-serif; color: #ffffff; font-size: 28px;">Cleanup Notifications</h1>
-            <h2 style="display: block; font-family: Helvetica, Arial, sans-serif; color: #d8d8d8; font-size: 16px; font-weight: normal;">${notification.additionalContext.resources?size} image(s) not in use scheduled for cleanup</h2>
+            <h2 style="display: block; font-family: Helvetica, Arial, sans-serif; color: #d8d8d8; font-size: 16px; font-weight: normal;">${notification.additionalContext.resources?size} resources(s) not in use scheduled for cleanup</h2>
           </td>
           <td align="center" valign="top" style="padding: 16px 32px 16px 16px; width: 140px;" class="logo">
             <img alt="Spinnaker" src="https://www.spinnaker.io/assets/emails/spinnaker-logo-400.png" width="140" height="140" border="0">
@@ -124,6 +124,7 @@
               <td class="loop__key" align="right" valign="top" style="padding: 4px 16px 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: bold;" width="30%">
                 id
               </td>
+
               <td align="left" style="padding: 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px;">
                 ${resource.resourceId}
               </td>
@@ -138,6 +139,17 @@
               </td>
             </tr>
             </#if>
+            <tr>
+              <td class="loop__key" align="right" valign="top" style="padding: 4px 16px 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: bold;" width="30%">
+                Link
+              </td>
+              <td align="left" style="padding: 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px;">
+                 <#assign accountRegion = resource.namespace?keep_before(":servergroup")?replace(":","/")>
+                <#assign webUrl = notification.additionalContext.spinnakerWebUrl>
+                <#assign resourceWebUrl = webUrl+"/#/applications/"+notification.additionalContext.application+"/clusters/serverGroupDetails/"+accountRegion+"/"+resource.resourceId>
+                <a href="${resourceWebUrl}">View resource in spinnaker</a>
+              </td>
+            </tr>
             <#if resource.createTs??>
             <tr>
               <td class="loop__key" align="right" valign="top" style="padding: 4px 16px 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: bold;" width="30%">
