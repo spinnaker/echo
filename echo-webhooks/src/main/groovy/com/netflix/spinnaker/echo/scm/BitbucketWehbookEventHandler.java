@@ -127,7 +127,7 @@ public class BitbucketWehbookEventHandler implements GitWebhookHandler {
 
     String eventType = event.content.get("event_type").toString();
     switch (eventType) {
-      case "repo:refs_changesd":
+      case "repo:refs_changed":
         return ((Map<String, Object>) event.content.get("repository")).get("name").toString();
       case "pr:merged":
         Map<String, Object> toRef =
@@ -201,7 +201,7 @@ public class BitbucketWehbookEventHandler implements GitWebhookHandler {
     }
 
     String eventType = event.content.get("event_type").toString();
-    if (eventType == "repo:refs_changed") {
+    if (eventType.equals("repo:refs_changed")) {
       BitbucketServerRefsChangedEvent refsChangedEvent =
           objectMapper.convertValue(event.content, BitbucketServerRefsChangedEvent.class);
       if (refsChangedEvent.repository != null) {
@@ -215,7 +215,7 @@ public class BitbucketWehbookEventHandler implements GitWebhookHandler {
           branch = emptyOrDefault(change.ref.id, "").replace("refs/heads/", "");
         }
       }
-    } else if (eventType == "pr:merged") {
+    } else if (eventType.equals("pr:merged")) {
       BitbucketServerPrMergedEvent prMergedEvent =
           objectMapper.convertValue(event.content, BitbucketServerPrMergedEvent.class);
       if (prMergedEvent.pullRequest != null && prMergedEvent.pullRequest.toRef != null) {
