@@ -111,7 +111,8 @@
 
     <!-- CONTENT -->
       <table bgcolor="#ffffff" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 1000px;">
-
+        <!-- To map the resourceType to web ui we need an additional 's' -->
+      <#assign rawResourceType = notification.additionalContext.configuration.resourceType+"s">
       <!-- LOOP -->
         <#foreach resource in notification.additionalContext.resources>
         <tr class="loop" style="border-bottom: 1px solid #cccccc;">
@@ -141,12 +142,10 @@
             </#if>
             <tr>
               <td class="loop__key" align="right" valign="top" style="padding: 4px 16px 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: bold;" width="30%">
-                Link
+                link
               </td>
               <td align="left" style="padding: 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px;">
-                 <#assign accountRegion = resource.namespace?keep_before(":servergroup")?replace(":","/")>
-                <#assign webUrl = notification.additionalContext.spinnakerWebUrl>
-                <#assign resourceWebUrl = webUrl+"/#/applications/"+notification.additionalContext.application+"/clusters/serverGroupDetails/"+accountRegion+"/"+resource.resourceId>
+                <#assign resourceWebUrl = notification.additionalContext.spinnakerWebUrl+resource.resourceId+"&tab="+rawResourceType>
                 <a href="${resourceWebUrl}">View resource in spinnaker</a>
               </td>
             </tr>
