@@ -127,7 +127,8 @@
               </td>
 
               <td align="left" style="padding: 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px;">
-                ${resource.resourceId}
+                <#assign resourceWebUrl = notification.additionalContext.spinnakerLink+resource.resourceId+"&tab="+rawResourceType>
+                <a href="${resourceWebUrl}">${resource.resourceId}</a>
               </td>
             </tr>
             <#if resource.resourceId != resource.name>
@@ -140,15 +141,6 @@
               </td>
             </tr>
             </#if>
-            <tr>
-              <td class="loop__key" align="right" valign="top" style="padding: 4px 16px 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: bold;" width="30%">
-                link
-              </td>
-              <td align="left" style="padding: 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px;">
-                <#assign resourceWebUrl = notification.additionalContext.spinnakerWebUrl+resource.resourceId+"&tab="+rawResourceType>
-                <a href="${resourceWebUrl}">View resource in spinnaker</a>
-              </td>
-            </tr>
             <#if resource.createTs??>
             <tr>
               <td class="loop__key" align="right" valign="top" style="padding: 4px 16px 4px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: bold;" width="30%">
@@ -179,7 +171,7 @@
             </tr>
           </table>
           </td>
-          <td class="loop__btns" valign="middle" style="padding: 16px 32px 16px 16px; width: 112px;">
+          <td class="loop__btns" valign="middle" style="padding: 16px 32px 16px 16px; width: 145px;">
             <a href="${notification.additionalContext.optOutLink}/${resource.namespace}/${resource.resourceId}" target="_blank" style="font-size: 14px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; margin: 8px 0; text-decoration: none; background-color: #149cb5; text-align: center; text-decoration: none; border-radius: 4px; padding: 8px 16px; display: block;" class="mobile-button">More Info</a>
             <a href="${notification.additionalContext.optOutLink}/${resource.namespace}/${resource.resourceId}/optOut" target="_blank" style="font-size: 14px; font-family: Helvetica, Arial, sans-serif; color: #666666; margin: 8px 0; text-decoration: none; background-color: #ffffff; text-align: center; text-decoration: none; border-radius: 4px; padding: 8px 16px; display: block; border: 1px solid #cccccc" class="mobile-button">Opt Out of Delete</a>
           </td>
