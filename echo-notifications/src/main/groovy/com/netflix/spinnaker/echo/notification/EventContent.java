@@ -31,10 +31,19 @@ public class EventContent {
   private String executionId;
   private int stageIndex;
 
-  public EventContent(Event event, String type) throws FieldNotFoundException {
+  public EventContent(Event event, String type, String forced_repo, String forced_sha)
+      throws FieldNotFoundException {
     this.event = event;
-    setRepo();
-    setSha();
+    if (!forced_repo.equals("")) {
+      repo = forced_repo;
+    } else {
+      setRepo();
+    }
+    if (!forced_sha.equals("")) {
+      sha = forced_sha;
+    } else {
+      setSha();
+    }
     setPipeline();
     setExecutionId();
     if (type.equals("stage")) {
@@ -44,25 +53,51 @@ public class EventContent {
   }
 
   private void setRepo() throws FieldNotFoundException {
-    repo =
+    Map trigger =
         Optional.ofNullable(event.getContent())
             .map(content -> (Map) content.get("execution"))
             .map(execution -> (Map) execution.get("trigger"))
-            .map(trigger -> (Map) trigger.get("buildInfo"))
-            .map(buildInfo -> (String) buildInfo.get("name"))
             .orElseThrow(FieldNotFoundException::new);
+    if (trigger.containsKey("type")
+        && trigger.get("type").equals("git")
+        && trigger.get("source").equals("github")) {
+      String repo_project =
+          Optional.ofNullable((String) trigger.get("project"))
+              .orElseThrow(FieldNotFoundException::new);
+      String repo_slug =
+          Optional.ofNullable((String) trigger.get("slug"))
+              .orElseThrow(FieldNotFoundException::new);
+      repo = String.format("%s/%s", repo_project, repo_slug);
+    } else {
+      repo =
+          Optional.ofNullable(trigger)
+              .map(t -> (Map) t.get("buildInfo"))
+              .map(buildInfo -> (String) buildInfo.get("name"))
+              .orElseThrow(FieldNotFoundException::new);
+    }
   }
 
   private void setSha() throws FieldNotFoundException {
-    sha =
+    Map trigger =
         Optional.ofNullable(event.getContent())
             .map(content -> (Map) content.get("execution"))
             .map(execution -> (Map) execution.get("trigger"))
-            .map(trigger -> (Map) trigger.get("buildInfo"))
-            .map(buildInfo -> (List) buildInfo.get("scm"))
-            .map(scm -> (Map) scm.get(0))
-            .map(scm -> (String) scm.get("sha1"))
             .orElseThrow(FieldNotFoundException::new);
+    if (trigger.containsKey("type")
+        && trigger.get("type").equals("git")
+        && trigger.get("source").equals("github")) {
+      sha =
+          Optional.ofNullable((String) trigger.get("hash"))
+              .orElseThrow(FieldNotFoundException::new);
+    } else {
+      sha =
+          Optional.ofNullable(trigger)
+              .map(t -> (Map) t.get("buildInfo"))
+              .map(buildInfo -> (List) buildInfo.get("scm"))
+              .map(scm -> (Map) scm.get(0))
+              .map(scm -> (String) scm.get("sha1"))
+              .orElseThrow(FieldNotFoundException::new);
+    }
   }
 
   private void setPipeline() throws FieldNotFoundException {
