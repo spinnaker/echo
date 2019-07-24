@@ -63,12 +63,15 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
         objectMapper.convertValue(postedEvent, GithubWebhookEvent.class);
 
     event.content.put("hash", githubWebhookEvent.after);
-    if (githubWebhookEvent.ref == null) {
+    // Default to .ref, then to pull_request.head.ref, then to "" (empty string)
+    if (githubWebhookEvent.ref == null && githubWebhookEvent.pull_request.head.ref == null) {
       event.content.put("branch", "");
+    } else if (githubWebhookEvent.ref == null) {
+      event.content.put("branch", githubWebhookEvent.pull_request.head.ref);
     } else {
       event.content.put("branch", githubWebhookEvent.ref.replace("refs/heads/", ""));
     }
-    event.content.put("repoProject", githubWebhookEvent.repository.owner.name);
+    event.content.put("repoProject", githubWebhookEvent.repository.owner.login);
     event.content.put("slug", githubWebhookEvent.repository.name);
   }
 
@@ -77,6 +80,7 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
     String after;
     String ref;
     GithubWebhookRepository repository;
+    GithubWebhookPullRequest pull_request;
   }
 
   @Data
@@ -87,6 +91,16 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
 
   @Data
   private static class GithubOwner {
-    String name;
+    String login;
+  }
+
+  @Data
+  private static class GithubWebhookPullRequest {
+    GithubWebhookPullRequestHead head;
+  }
+
+  @Data
+  private static class GithubWebhookPullRequestHead {
+    String ref;
   }
 }
