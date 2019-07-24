@@ -401,6 +401,46 @@ class WebhooksControllerSpec extends Specification {
     event.content.branch == "simple-tag"
   }
 
+  void 'handles Github PR Webhook Event'() {
+    def event
+
+    given:
+    WebhooksController controller = new WebhooksController(mapper: new ObjectMapper(), scmWebhookHandler: scmWebhookHandler)
+    controller.propagator = Mock(EventPropagator)
+    controller.artifactExtractor = Mock(ArtifactExtractor)
+    controller.artifactExtractor.extractArtifacts(_, _, _) >> []
+
+    when:
+    def response = controller.forwardEvent(
+      "git",
+      "github",
+      """{
+          "pull_request": {
+            "head": {
+              "ref": "simple-tag",
+              "sha": "0000000000000000000000000000000000000000"
+            }
+          },
+          "repository": {
+            "name": "Hello-World",
+            "owner": {
+              "login": "Codertocat"
+            }
+          }
+        }
+        """, new HttpHeaders())
+
+    then:
+    1 * controller.propagator.processEvent(_) >> {
+      event = it[0]
+    }
+
+    event.content.hash == "0000000000000000000000000000000000000000"
+    event.content.repoProject == "Codertocat"
+    event.content.slug == "Hello-World"
+    event.content.branch == "simple-tag"
+  }
+
   void 'handles non-push Github Webhook Event gracefully'() {
     def event
 

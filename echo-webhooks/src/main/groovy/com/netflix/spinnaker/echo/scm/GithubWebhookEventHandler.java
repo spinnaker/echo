@@ -62,16 +62,38 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
     GithubWebhookEvent githubWebhookEvent =
         objectMapper.convertValue(postedEvent, GithubWebhookEvent.class);
 
-    event.content.put("hash", githubWebhookEvent.after);
-    // Default to .ref, then to pull_request.head.ref, then to "" (empty string)
-    if (githubWebhookEvent.ref == null && githubWebhookEvent.pull_request.head.ref == null) {
-      event.content.put("branch", "");
-    } else if (githubWebhookEvent.ref == null) {
-      event.content.put("branch", githubWebhookEvent.pull_request.head.ref);
+    if (githubWebhookEvent.after == null
+        && (githubWebhookEvent.pull_request == null
+            || githubWebhookEvent.pull_request.head == null
+            || githubWebhookEvent.pull_request.head.sha == null)) {
+      event.content.put("hash", "");
+    } else if (githubWebhookEvent.pull_request == null
+        || githubWebhookEvent.pull_request.head == null
+        || githubWebhookEvent.pull_request.head.sha == null) {
+      event.content.put("hash", githubWebhookEvent.after);
     } else {
-      event.content.put("branch", githubWebhookEvent.ref.replace("refs/heads/", ""));
+      event.content.put("hash", githubWebhookEvent.pull_request.head.sha);
     }
-    event.content.put("repoProject", githubWebhookEvent.repository.owner.login);
+
+    if (githubWebhookEvent.ref == null
+        && (githubWebhookEvent.pull_request == null
+            || githubWebhookEvent.pull_request.head == null
+            || githubWebhookEvent.pull_request.head.ref == null)) {
+      event.content.put("branch", "");
+    } else if (githubWebhookEvent.pull_request == null
+        || githubWebhookEvent.pull_request.head == null
+        || githubWebhookEvent.pull_request.head.ref == null) {
+      event.content.put("branch", githubWebhookEvent.ref.replace("refs/heads/", ""));
+    } else {
+      event.content.put("branch", githubWebhookEvent.pull_request.head.ref);
+    }
+
+    if (githubWebhookEvent.repository.owner.name == null) {
+      event.content.put("repoProject", githubWebhookEvent.repository.owner.login);
+    } else {
+      event.content.put("repoProject", githubWebhookEvent.repository.owner.name);
+    }
+
     event.content.put("slug", githubWebhookEvent.repository.name);
   }
 
@@ -91,6 +113,7 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
 
   @Data
   private static class GithubOwner {
+    String name;
     String login;
   }
 
@@ -102,5 +125,6 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
   @Data
   private static class GithubWebhookPullRequestHead {
     String ref;
+    String sha;
   }
 }
