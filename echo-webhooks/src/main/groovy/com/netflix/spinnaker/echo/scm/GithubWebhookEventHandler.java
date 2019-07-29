@@ -80,10 +80,6 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
       githubEvent = "push";
     }
 
-    if (webhookEvent == null) {
-      return;
-    }
-
     String fullRepoName = webhookEvent.getFullRepoName(event, postedEvent);
     Map<String, String> results = new HashMap<>();
     results.put("repoProject", webhookEvent.getRepoProject(event, postedEvent));
