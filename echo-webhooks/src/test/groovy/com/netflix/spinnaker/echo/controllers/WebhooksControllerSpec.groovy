@@ -364,7 +364,7 @@ class WebhooksControllerSpec extends Specification {
     response.eventId == event.eventId
   }
 
-  void 'handles Github Webhook Event'() {
+  void 'handles Github Webhook Push Event'() {
     def event
 
     given:
@@ -386,7 +386,12 @@ class WebhooksControllerSpec extends Specification {
             "owner": {
               "name": "Codertocat"
             }
-          }
+          },
+          "commits": [
+            {
+              "id": "0000000000000000000000000000000000000000"
+            }
+          ]
         }
         """, new HttpHeaders())
 
@@ -471,7 +476,7 @@ class WebhooksControllerSpec extends Specification {
       event = it[0]
     }
 
-    event.content.hash == "0000000000000000000000000000000000000000"
+    event.content.hash == null
     event.content.repoProject == "Codertocat"
     event.content.slug == "Hello-World"
     event.content.branch == ""

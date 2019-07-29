@@ -71,7 +71,7 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
 
     // TODO: Detect based on header rather than body key
     // `x-github-event`: `push` or `pull_request`
-    if (event.content.containsKey("pusher")) {
+    if (event.content.containsKey("commits")) {
       webhookEvent = objectMapper.convertValue(event.content, GithubPushEvent.class);
       eventType = "Github Push";
     } else if (event.content.containsKey("pull_request")) {
