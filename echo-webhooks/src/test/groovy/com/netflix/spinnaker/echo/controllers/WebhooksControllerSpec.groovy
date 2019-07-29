@@ -476,7 +476,7 @@ class WebhooksControllerSpec extends Specification {
       event = it[0]
     }
 
-    event.content.hash == null
+    event.content.hash == 0000000000000000000000000000000000000000
     event.content.repoProject == "Codertocat"
     event.content.slug == "Hello-World"
     event.content.branch == ""

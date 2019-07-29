@@ -67,16 +67,17 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
     }
 
     GithubWebhookEvent webhookEvent = null;
-    String eventType = "";
+    String githubEvent = "";
 
-    // TODO: Detect based on header rather than body key
+    // TODO: Detect based on header rather than body key - depends on Gate properly passing headers
     // `x-github-event`: `push` or `pull_request`
-    if (event.content.containsKey("commits")) {
-      webhookEvent = objectMapper.convertValue(event.content, GithubPushEvent.class);
-      eventType = "Github Push";
-    } else if (event.content.containsKey("pull_request")) {
+    if (event.content.containsKey("pull_request")) {
       webhookEvent = objectMapper.convertValue(event.content, GithubPullRequestEvent.class);
-      eventType = "Github Pull Request";
+      githubEvent = "pull_request";
+    } else {
+      // Default to 'Push'
+      webhookEvent = objectMapper.convertValue(event.content, GithubPushEvent.class);
+      githubEvent = "push";
     }
 
     if (webhookEvent == null) {
@@ -93,7 +94,7 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
 
     log.info(
         "Github Webhook event received: {} {} {} {} {} {}",
-        kv("event_type", eventType),
+        kv("githubEvent", githubEvent),
         kv("repository", fullRepoName),
         kv("project", results.get("repoProject")),
         kv("slug", results.get("slug")),
