@@ -26,7 +26,6 @@ import com.netflix.spinnaker.echo.model.Event;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
@@ -57,12 +56,9 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
       final Event event,
       Map config,
       final String status) {
-    EventContent content = null;
-    String forced_repo =
-        Optional.ofNullable(preference).map(pref -> (String) pref.get("repo")).orElse("");
-    String forced_hash =
-        Optional.ofNullable(preference).map(pref -> (String) pref.get("commit")).orElse("");
-
+    String forced_repo = (String) preference.get("repo");
+    String forced_hash = (String) preference.get("commit");
+    EventContent content;
     try {
       content = new EventContent(event, (String) config.get("type"), forced_repo, forced_hash);
     } catch (FieldNotFoundException e) {
