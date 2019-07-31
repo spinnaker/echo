@@ -51,7 +51,7 @@ class SlackNotificationService implements NotificationService {
   EchoResponse.Void handle(Notification notification) {
     def text = notificationTemplateEngine.build(notification, NotificationTemplateEngine.Type.BODY)
     notification.to.each {
-      Reponse response
+      Response response
       String address = it.startsWith('#') ? it : "#${it}"
       if (sendCompactMessages) {
         response = slack.sendCompactMessage(token, new CompactSlackMessage(text), address, true)
