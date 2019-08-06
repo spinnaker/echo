@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,31 @@
  * limitations under the License.
  */
 
+apply plugin: "java-platform"
+apply plugin: "maven-publish"
+
+javaPlatform {
+  allowDependencies()
+}
+
+
+if (Boolean.valueOf(enablePublishing)) {
+  publishing {
+    publications {
+      nebula(MavenPublication) {
+        from components.javaPlatform
+      }
+    }
+  }
+}
+
 dependencies {
-  implementation project(':echo-artifacts')
-  implementation project(':echo-core')
-  implementation project(':echo-model')
-  implementation project(':echo-pubsub-core')
-  implementation "com.amazonaws:aws-java-sdk-sqs"
-  implementation "com.netflix.spinnaker.kork:kork-core"
-  implementation "com.netflix.spinnaker.kork:kork-aws"
-  implementation "com.netflix.spectator:spectator-api"
-  implementation "javax.validation:validation-api"
+  api(platform("com.netflix.spinnaker.kork:kork-bom:${korkVersion}"))
+
+  constraints {
+    rootProject
+      .subprojects
+      .findAll { it != project }
+      .each { api(project(it.path)) }
+  }
 }
