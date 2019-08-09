@@ -23,7 +23,8 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 
-// this was copied and modified from https://github.com/jhy/jsoup/blob/jsoup-1.8.2/src/main/java/org/jsoup/examples/HtmlToPlainText.java
+// this was copied and modified from
+// https://github.com/jhy/jsoup/blob/jsoup-1.8.2/src/main/java/org/jsoup/examples/HtmlToPlainText.java
 public class HtmlToPlainText {
   public String getPlainText(Element element) {
     FormattingVisitor formatter = new FormattingVisitor();
