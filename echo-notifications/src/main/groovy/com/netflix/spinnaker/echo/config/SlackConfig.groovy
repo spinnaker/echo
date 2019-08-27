@@ -44,10 +44,24 @@ class SlackConfig {
   final static String SLACK_INCOMING_WEBHOOK = 'https://hooks.slack.com'
   final static String SLACK_CHAT_API = 'https://slack.com'
 
+  @Value('${slack.base-url:}')
+  String slackBaseUrl
+
+  @Value('${slack.compatibleAPI:false}')
+  Boolean slackCompatibleAPI
+
   @Bean
   Endpoint slackEndpoint(@Qualifier("useIncomingWebHook") boolean useIncomingWebHook) {
-    log.info("Using Slack incoming webhooks: {}.", useIncomingWebHook)
-    String endpoint = useIncomingWebHook ? SLACK_INCOMING_WEBHOOK : SLACK_CHAT_API;
+    String endpoint;
+
+    if (slackBaseUrl != null && slackBaseUrl != "") {
+      log.info("Using Slack base url: {}.", slackBaseUrl)
+      endpoint = slackBaseUrl
+    } else {
+      log.info("Using Slack incoming webhooks: {}.", useIncomingWebHook)
+      endpoint = useIncomingWebHook ? SLACK_INCOMING_WEBHOOK : SLACK_CHAT_API;
+    }
+
     newFixedEndpoint(endpoint)
   }
 
@@ -73,7 +87,7 @@ class SlackConfig {
 
   @Bean(name="useIncomingWebHook")
   boolean useIncomingWebHook(@Value('${slack.token:}') String token) {
-    return StringUtils.isNotBlank(token) && token.count("/") >= 2
+    return slackCompatibleAPI || (StringUtils.isNotBlank(token) && token.count("/") >= 2)
   }
 
 }
