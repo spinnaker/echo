@@ -10,7 +10,7 @@ The following high level diagram shows how events flow through `echo`:
   
 
 1. `igor` sends events to `echo` when it discovers a delta in a service that it monitors (see [igor readme](https://github.com/spinnaker/igor/#common-polling-architecture) for more details)  
-    e.g. A new build has completed or a new docker image was found in the docker registy
+    e.g. A new build has completed or a new docker image was found in the docker registry
 
 2. `gate` sends events to `echo` as a result of user triggered actions  
     e.g. User manually kicks off a pipeline from the UI (`deck`) or a user submit a pipeline or an orchestration for execution via the API (`gate`)
