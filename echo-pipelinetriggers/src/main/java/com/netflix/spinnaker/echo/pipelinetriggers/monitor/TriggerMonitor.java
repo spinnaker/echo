@@ -74,12 +74,17 @@ public class TriggerMonitor<T extends TriggerEvent> implements EchoEventListener
     try {
       List<Pipeline> matchingPipelines = eventHandler.getMatchingPipelines(event, pipelineCache);
       matchingPipelines.stream()
+          .filter(p -> p.getErrorMessage() == null)
           .map(pipelinePostProcessorHandler::process)
           .forEach(
               p -> {
                 recordMatchingPipeline(p);
                 pipelineInitiator.startPipeline(p, PipelineInitiator.TriggerSource.EVENT);
               });
+
+      matchingPipelines.stream()
+          .filter(p -> p.getErrorMessage() != null)
+          .forEach(pipelineInitiator::recordPipelineFailure);
     } catch (TimeoutException e) {
       log.error("Failed to get pipeline configs", e);
     }
