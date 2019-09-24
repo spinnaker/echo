@@ -25,6 +25,7 @@ import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService;
 import com.netflix.spinnaker.echo.services.Front50Service;
+import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,7 +60,7 @@ public class DryRunNotificationAgent extends AbstractEventNotificationAgent {
     }
     log.info("Received dry run notification for {}", pipelineConfigId);
     Optional<Pipeline> match =
-        front50.getPipelines(application).stream()
+        AuthenticatedRequest.allowAnonymous(() -> front50.getPipelines(application)).stream()
             .filter(pipeline -> pipeline.getId().equals(pipelineConfigId))
             .findFirst();
 

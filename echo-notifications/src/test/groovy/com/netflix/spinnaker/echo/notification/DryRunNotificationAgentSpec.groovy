@@ -20,12 +20,16 @@ import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.model.Pipeline
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService
 import com.netflix.spinnaker.echo.services.Front50Service
+import com.netflix.spinnaker.echo.slack.SlackAttachment
+import com.netflix.spinnaker.security.AuthenticatedRequest
+import org.slf4j.MDC
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 import spock.util.concurrent.BlockingVariable
 
 import static com.netflix.spinnaker.echo.config.DryRunConfig.DryRunProperties
+import static com.netflix.spinnaker.security.AuthenticatedRequest.Header.XSpinnakerAnonymous
 
 class DryRunNotificationAgentSpec extends Specification {
 
@@ -71,7 +75,11 @@ class DryRunNotificationAgentSpec extends Specification {
 
   def "triggers a pipeline run for a pipeline:complete notification"() {
     given:
-    front50.getPipelines(application) >> [pipeline]
+    def authHeader = new BlockingVariable<String>()
+    front50.getPipelines(application) >> {
+      authHeader.set(MDC.get(XSpinnakerAnonymous))
+      [pipeline]
+    }
 
     and:
     def captor = new BlockingVariable<Pipeline>()
@@ -86,6 +94,7 @@ class DryRunNotificationAgentSpec extends Specification {
       trigger.type == "dryrun"
       trigger.lastSuccessfulExecution == event.content.execution
     }
+    authHeader.get() == "anonymous"
 
     where:
     pipelineConfigId = "1"

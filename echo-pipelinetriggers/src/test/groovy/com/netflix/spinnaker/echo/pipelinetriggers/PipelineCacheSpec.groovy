@@ -25,11 +25,15 @@ import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService
 import com.netflix.spinnaker.echo.services.Front50Service
 import com.netflix.spinnaker.echo.test.RetrofitStubs
+import org.slf4j.MDC
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.util.concurrent.BlockingVariable
 
 import java.util.concurrent.ScheduledExecutorService
+
+import static com.netflix.spinnaker.security.AuthenticatedRequest.Header.XSpinnakerAnonymous
 
 class PipelineCacheSpec extends Specification implements RetrofitStubs {
   def front50 = Mock(Front50Service)
@@ -158,6 +162,22 @@ class PipelineCacheSpec extends Specification implements RetrofitStubs {
 
     then:
     triggers.isEmpty()
+  }
+
+  def "pipeline refresh contains authentication header"() {
+    given:
+    def authHeader = new BlockingVariable<String>()
+    front50.getLatestVersion("pipe1") >> {
+      authHeader.set(MDC.get(XSpinnakerAnonymous))
+      []
+    }
+    def pipeline = Pipeline.builder().application('app').name('pipe').id("pipe1").build()
+
+    when:
+    pipelineCache.refresh(pipeline)
+
+    then:
+    authHeader.get() == "anonymous"
   }
 }
 

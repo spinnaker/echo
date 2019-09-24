@@ -184,7 +184,7 @@ public class PipelineCache implements MonitoredPoller {
 
   private List<Map<String, Object>> fetchRawPipelines() {
     List<Map<String, Object>> rawPipelines =
-        AuthenticatedRequest.allowAnonymous(() -> front50.getPipelines());
+        AuthenticatedRequest.allowAnonymous(front50::getPipelines);
     return (rawPipelines == null) ? Collections.emptyList() : rawPipelines;
   }
 
@@ -221,7 +221,8 @@ public class PipelineCache implements MonitoredPoller {
   // if anything fails during the refresh, we fall back to returning the cached version
   public Pipeline refresh(Pipeline cached) {
     try {
-      List<Map<String, Object>> latestVersion = front50.getLatestVersion(cached.getId());
+      List<Map<String, Object>> latestVersion =
+          AuthenticatedRequest.allowAnonymous(() -> front50.getLatestVersion(cached.getId()));
       if (latestVersion.isEmpty()) {
         // if that corresponds to the case where the pipeline has been deleted, maybe we should not
         // return the
