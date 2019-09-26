@@ -73,10 +73,16 @@ class AbstractEventNotificationAgentSpec extends Specification {
 
     // notifications OFF, stage complete
     fakeStageEvent("orca:stage:complete", null)                                               || 0
+    // notifications OFF, stage failed
+    fakeStageEvent("orca:stage:complete", null)                                               || 0
     // notifications ON, stage complete, matching config
     fakeStageEvent("orca:stage:complete", "stage.complete")                                   || 1
     // notifications ON, stage complete, non-matching config
     fakeStageEvent("orca:stage:complete", "stage.failed")                                     || 0
+    // notifications ON, stage failed, matching config
+    fakeStageEvent("orca:stage:failed", "stage.failed")                                       || 1
+    // notifications ON, stage failed, non-matching config
+    fakeStageEvent("orca:stage:failed", "stage.complete")                                     || 0
   }
 
   private def fakePipelineEvent(String type, String status, String notifyWhen, Map extraExecutionProps = [:]) {
