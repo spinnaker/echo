@@ -49,36 +49,47 @@ class AbstractEventNotificationAgentSpec extends Specification {
     where:
     event                                                                                     || expectedNotifications
     // notifications ON, unknown event source
-    fakePipelineEvent("whatever:pipeline:complete", 'SUCCEEDED', "pipeline.complete")         || 0
+    fakePipelineEvent("whatever:pipeline:complete", "SUCCEEDED", "pipeline.complete")         || 0
     // notifications ON, unknown event sub-type
-    fakePipelineEvent("orca:whatever:whatever", 'SUCCEEDED', "pipeline.complete")             || 0
+    fakePipelineEvent("orca:whatever:whatever", "SUCCEEDED", "pipeline.complete")             || 0
     // notifications OFF, succeeded pipeline
-    fakePipelineEvent("orca:pipeline:complete", 'SUCCEEDED', null)                            || 0
+    fakePipelineEvent("orca:pipeline:complete", "SUCCEEDED", null)                            || 0
+    // notifications OFF, failed pipeline
+    fakePipelineEvent("orca:pipeline:failed", "TERMINAL", null)                               || 0
     // notifications ON, succeeded pipeline and matching config
-    fakePipelineEvent("orca:pipeline:complete", 'SUCCEEDED', "pipeline.complete")             || 1
+    fakePipelineEvent("orca:pipeline:complete", "SUCCEEDED", "pipeline.complete")             || 1
     // notifications ON, succeeded pipeline and non-matching config
-    fakePipelineEvent("orca:pipeline:complete", 'SUCCEEDED', "pipeline.failed")               || 0
+    fakePipelineEvent("orca:pipeline:complete", "SUCCEEDED", "pipeline.failed")               || 0
     // notifications ON, failed pipeline and matching config
-    fakePipelineEvent("orca:pipeline:failed", 'TERMINAL', "pipeline.failed")                  || 1
+    fakePipelineEvent("orca:pipeline:failed", "TERMINAL", "pipeline.failed")                  || 1
     // notifications ON, failed pipeline and non-matching config
-    fakePipelineEvent("orca:pipeline:failed", 'TERMINAL', "pipeline.complete")                || 0
+    fakePipelineEvent("orca:pipeline:failed", "TERMINAL", "pipeline.complete")                || 0
     // notifications ON, cancelled pipeline (should skip notifications)
     // note: this case is a bit convoluted as the event type is still set to "failed" by
     // orca for cancelled pipelines
-    fakePipelineEvent("orca:pipeline:failed", 'CANCELED', 'pipeline.failed')                  || 0
+    fakePipelineEvent("orca:pipeline:failed", "CANCELED", "pipeline.failed")                  || 0
     // notifications ON, another check for cancelled pipeline (should skip notifications)
-    fakePipelineEvent("orca:pipeline:failed", 'WHATEVER', "pipeline.failed", [canceled: true]) || 0
+    fakePipelineEvent("orca:pipeline:failed", "WHATEVER", "pipeline.failed", [canceled: true]) || 0
 
-    // TODO(lpollo): add cases for stages and tasksß
+    // notifications OFF, stage complete
+    fakeStageEvent("orca:stage:complete", null)                                               || 0
+    // notifications ON, stage complete, matching config
+    fakeStageEvent("orca:stage:complete", "stage.complete")                                   || 1
+    // notifications ON, stage complete, non-matching config
+    fakeStageEvent("orca:stage:complete", "stage.failed")                                     || 0
   }
 
   private def fakePipelineEvent(String type, String status, String notifyWhen, Map extraExecutionProps = [:]) {
-    def eventProps = [details: [type: type],
-      content: [execution: [
-        id: "1",
-        name: "foo-pipeline",
-        status: status
-      ]]]
+    def eventProps = [
+      details: [type: type],
+      content: [
+        execution: [
+          id: "1",
+          name: "foo-pipeline",
+          status: status
+        ]
+      ]
+    ]
 
     if (notifyWhen) {
       eventProps.content.execution << [notifications: [[type: "fake", when: "${notifyWhen}"]]]
@@ -89,4 +100,24 @@ class AbstractEventNotificationAgentSpec extends Specification {
     return new Event(eventProps)
   }
 
+  private def fakeStageEvent(String type, String notifyWhen, canceled = false, synthetic = false) {
+    def eventProps = [
+      details: [type: type],
+      content: [
+        canceled: canceled,
+        context: [
+          stageDetails: [
+            isSynthetic: synthetic
+          ],
+        ]
+      ]
+    ]
+
+    if (notifyWhen) {
+      eventProps.content.context.sendNotifications = true
+      eventProps.content.context << [notifications: [[type: "fake", when: "${notifyWhen}"]]]
+    }
+
+    return new Event(eventProps)
+  }
 }
