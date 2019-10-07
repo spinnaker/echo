@@ -54,7 +54,7 @@ class SlackConfig {
   Endpoint slackEndpoint(@Qualifier("useIncomingWebHook") boolean useIncomingWebHook) {
     String endpoint;
 
-    if (slackBaseUrl != null && slackBaseUrl != "") {
+    if (StringUtils.isNotBlank(slackBaseUrl)) {
       log.info("Using Slack base url: {}.", slackBaseUrl)
       endpoint = slackBaseUrl
     } else {
