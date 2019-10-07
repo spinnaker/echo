@@ -55,12 +55,12 @@ class SlackConfig {
     String endpoint;
 
     if (StringUtils.isNotBlank(slackBaseUrl)) {
-      log.info("Using Slack base url: {}.", slackBaseUrl)
       endpoint = slackBaseUrl
     } else {
-      log.info("Using Slack incoming webhooks: {}.", useIncomingWebHook)
       endpoint = useIncomingWebHook ? SLACK_INCOMING_WEBHOOK : SLACK_CHAT_API;
     }
+
+    log.info("Using Slack {}: {}.", useIncomingWebHook ? "incoming webhook" : "chat api", endpoint)
 
     newFixedEndpoint(endpoint)
   }
