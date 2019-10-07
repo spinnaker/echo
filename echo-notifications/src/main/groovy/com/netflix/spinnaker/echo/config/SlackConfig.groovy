@@ -47,8 +47,8 @@ class SlackConfig {
   @Value('${slack.base-url:}')
   String slackBaseUrl
 
-  @Value('${slack.compatibleAPI:false}')
-  Boolean slackCompatibleAPI
+  @Value('${slack.force-use-incoming-webhook:false}')
+  Boolean forceUseIncomingWebhook;
 
   @Bean
   Endpoint slackEndpoint(@Qualifier("useIncomingWebHook") boolean useIncomingWebHook) {
@@ -87,7 +87,11 @@ class SlackConfig {
 
   @Bean(name="useIncomingWebHook")
   boolean useIncomingWebHook(@Value('${slack.token:}') String token) {
-    return slackCompatibleAPI || (StringUtils.isNotBlank(token) && token.count("/") >= 2)
+    return forceUseIncomingWebhook || isIncomingWebhookToken(token)
+  }
+
+  def boolean isIncomingWebhookToken(String token) {
+    return (StringUtils.isNotBlank(token) && token.count("/") >= 2)
   }
 
 }

@@ -50,9 +50,9 @@ class SlackConfigSpec extends Specification {
     "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" | null                  | "https://hooks.slack.com" | true
   }
 
-  def 'test slack incoming web hook when slackCompatible API is used'() {
+  def 'test slack incoming web hook when forceUseIncomingWebhook'() {
     given:
-    slackConfig.slackCompatibleAPI = true
+    slackConfig.forceUseIncomingWebhook = true
     slackConfig.slackBaseUrl = 'https://example.com'
 
     when:
