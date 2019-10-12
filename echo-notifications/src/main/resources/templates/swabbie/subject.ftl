@@ -1,1 +1,1 @@
-[Cleanup] ${notification.additionalContext.resourceType} scheduled for deletion
+[Cleanup] ${notification.additionalContext.resourceType}s scheduled for deletion
