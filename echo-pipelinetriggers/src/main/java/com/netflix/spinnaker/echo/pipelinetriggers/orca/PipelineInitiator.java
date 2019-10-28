@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Pipeline;
+import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.pipelinetriggers.QuietPeriodIndicator;
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService.TriggerResponse;
 import com.netflix.spinnaker.fiat.model.Authorization;
@@ -116,6 +117,11 @@ public class PipelineInitiator {
                 System.currentTimeMillis(), pipeline.getTrigger().getType())) {
           log.info(
               "Would trigger {} due to {} but pipeline is set to ignore automatic triggers during quiet periods",
+              pipeline,
+              pipeline.getTrigger());
+        } else if (!this.checkPayloadConstraintsMet(pipeline.getTrigger())) {
+          log.info(
+              "Would trigger {} due to {} but pipeline constraints have not been met",
               pipeline,
               pipeline.getTrigger());
         } else {
@@ -348,6 +354,67 @@ public class PipelineInitiator {
     }
 
     return "N/A";
+  }
+
+  private boolean checkPayloadConstraintsMet(Trigger trigger) {
+    // Only check Jenkins
+    if (!trigger.getType().equals("jenkins") && !trigger.getType().equals("manual")) {
+      return true;
+    }
+
+    Map<String, String> payloadConstraints = trigger.getPayloadConstraints();
+    Map<String, Object> properties = trigger.getProperties();
+    if (payloadConstraints == null || payloadConstraints.isEmpty()) {
+      log.debug("No payload constraints for trigger {}", trigger);
+      return true; // No constraints to check
+    }
+
+    // Constraints, but not properties given
+    if (properties == null || properties.isEmpty()) {
+      log.debug(
+          "Trigger {} has payload constraints {} but no properties were found in the build",
+          trigger,
+          payloadConstraints);
+      return false;
+    }
+
+    // Check all constraints in properties map
+    for (Map.Entry<String, String> entry : payloadConstraints.entrySet()) {
+      String key = entry.getKey();
+      String value = entry.getValue();
+      // Find the corresponding property, make sure it's not null
+      if (!properties.containsKey(key)) {
+        log.debug(
+            "Missing payload constraint {} in properties {} for trigger {}",
+            key,
+            properties,
+            trigger);
+        return false;
+      }
+      Object propertyValue = properties.get(key);
+      if (propertyValue == null) {
+        log.debug(
+            "Null payload constraint {} in properties {} for trigger {}", key, properties, trigger);
+        return false;
+      }
+      // Check values match
+      if (propertyValue.equals(value)) {
+        log.debug(
+            "Payload constraint met for {}, property value {} for trigger {}",
+            key,
+            properties,
+            trigger);
+      } else {
+        log.debug(
+            "Payload constraint NOT met for {}, property value {} for trigger {}",
+            key,
+            properties,
+            trigger);
+        return false;
+      }
+    }
+
+    return true; // All constraints were met
   }
 
   private static boolean isRetryableError(Throwable error) {
