@@ -144,7 +144,7 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
     return Collections.emptyList();
   }
 
-  static User getKorkUser(Trigger trigger) {
+  private User getKorkUser(Trigger trigger) {
     User user = new User();
     if (trigger.getRunAsUser() != null) {
       user.setEmail(trigger.getRunAsUser());
