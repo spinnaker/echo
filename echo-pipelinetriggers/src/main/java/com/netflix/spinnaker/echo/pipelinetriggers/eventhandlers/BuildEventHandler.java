@@ -144,21 +144,7 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
     return Collections.emptyList();
   }
 
-  protected Map getPropertiesFromEvent(BuildEvent event, Trigger trigger) {
-    if (buildInfoService.isPresent()) {
-      try {
-        return AuthenticatedRequest.propagate(
-                () -> buildInfoService.get().getProperties(event, "build_vars"),
-                getKorkUser(trigger))
-            .call();
-      } catch (Exception e) {
-        log.warn("Unable to get artifacts from event {}, trigger {}", event, trigger, e);
-      }
-    }
-    return Collections.emptyMap();
-  }
-
-  private User getKorkUser(Trigger trigger) {
+  static User getKorkUser(Trigger trigger) {
     User user = new User();
     if (trigger.getRunAsUser() != null) {
       user.setEmail(trigger.getRunAsUser());
@@ -175,6 +161,26 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
     Map buildProperties = getPropertiesFromEvent(event, trigger);
     boolean constraintsMet =
         isConstraintInPayload(trigger.getPayloadConstraints(), buildProperties);
+    if (!constraintsMet) {
+      log.info(
+          "Constraints {} not met by build properties {}",
+          trigger.getPayloadConstraints(),
+          buildProperties);
+    }
     return constraintsMet;
+  }
+
+  private Map getPropertiesFromEvent(BuildEvent event, Trigger trigger) {
+    if (buildInfoService.isPresent()) {
+      try {
+        return AuthenticatedRequest.propagate(
+                () -> buildInfoService.get().getProperties(event, "build_vars"),
+                getKorkUser(trigger))
+            .call();
+      } catch (Exception e) {
+        log.warn("Unable to get artifacts from event {}, trigger {}", event, trigger, e);
+      }
+    }
+    return Collections.emptyMap();
   }
 }
