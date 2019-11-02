@@ -160,7 +160,8 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
     // Constraints are present, check they are all met
     Map buildProperties = getPropertiesFromEvent(event, trigger);
     boolean constraintsMet =
-        isConstraintInPayload(trigger.getPayloadConstraints(), buildProperties);
+        buildProperties != null
+            && isConstraintInPayload(trigger.getPayloadConstraints(), buildProperties);
     if (!constraintsMet) {
       log.info(
           "Constraints {} not met by build properties {}",
@@ -174,7 +175,7 @@ public class BuildEventHandler extends BaseTriggerEventHandler<BuildEvent> {
     if (buildInfoService.isPresent()) {
       try {
         return AuthenticatedRequest.propagate(
-                () -> buildInfoService.get().getProperties(event, "build_vars"),
+                () -> buildInfoService.get().getProperties(event, trigger.getPropertyFile()),
                 getKorkUser(trigger))
             .call();
       } catch (Exception e) {

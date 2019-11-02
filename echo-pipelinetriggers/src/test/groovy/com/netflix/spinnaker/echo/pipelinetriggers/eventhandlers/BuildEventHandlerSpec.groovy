@@ -31,7 +31,12 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     abc: 123
   ]
   static Map<String, Object> PROPERTIES = [
-    def: 456
+    def: 456,
+    branch: "feature/my-thing"
+  ]
+  static Map<String, Object> CONSTRAINTS = [
+    def: "^[0-9]*\$", // def must be a positive number,
+    branch: "^(feature)/.*\$" // only trigger on branch name like "feature/***"
   ]
 
   @Subject
@@ -261,6 +266,26 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
     outputTrigger.properties.equals(PROPERTIES)
   }
 
+ def "checks constraints on property file if defined"() {
+    given:
+    def trigger = enabledJenkinsTrigger
+      .withMaster(MASTER_NAME)
+      .withJob(JOB_NAME)
+      .withBuildNumber(BUILD_NUMBER)
+      .withPropertyFile(PROPERTY_FILE)
+      .withPayloadConstraints(CONSTRAINTS)
+
+    def inputPipeline = createPipelineWith(enabledJenkinsTrigger).withTrigger(trigger)
+    def event = getBuildEvent()
+
+    when:
+    def matchTriggerPredicate = eventHandler.matchTriggerFor(event).test(trigger)
+
+    then:
+    1 * igorService.getPropertyFile(BUILD_NUMBER, PROPERTY_FILE, MASTER_NAME, JOB_NAME) >> PROPERTIES
+    matchTriggerPredicate.equals(true)
+  }
+
   def "retries on failure to communicate with igor"() {
     given:
     def trigger = enabledJenkinsTrigger
@@ -270,7 +295,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
       .withPropertyFile(PROPERTY_FILE)
 
     def inputPipeline = createPipelineWith(enabledJenkinsTrigger).withTrigger(trigger)
-    def event = getBuildEvent()
+    def event = getBuildEvent().withProperties()
 
     when:
     def outputTrigger = eventHandler.buildTrigger(event).apply(trigger)
