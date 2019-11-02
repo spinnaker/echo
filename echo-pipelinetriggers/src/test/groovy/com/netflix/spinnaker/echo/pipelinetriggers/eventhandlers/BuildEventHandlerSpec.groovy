@@ -295,7 +295,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
       .withPropertyFile(PROPERTY_FILE)
 
     def inputPipeline = createPipelineWith(enabledJenkinsTrigger).withTrigger(trigger)
-    def event = getBuildEvent().withProperties()
+    def event = getBuildEvent()
 
     when:
     def outputTrigger = eventHandler.buildTrigger(event).apply(trigger)
