@@ -20,16 +20,4 @@ class GithubConfigSpec extends Specification {
     endpoint.url == ownEndpoint
   }
 
-  def 'test github default endpoint is correctly setted'() {
-    given:
-    String defaultEndpoint = "https://api.github.com"
-    githubConfig.endpoint = defaultEndpoint;
-
-    when:
-    Endpoint endpoint = githubConfig.githubEndpoint()
-
-    then:
-    endpoint.url == defaultEndpoint
-  }
-
 }
