@@ -26,10 +26,7 @@ import com.netflix.spinnaker.echo.model.Metadata
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
-
-import javax.print.attribute.standard.Media
 
 @RestController
 @Slf4j
@@ -106,11 +103,7 @@ class WebhooksController {
       WebhookResponse.newInstance(eventProcessed: false);
   }
 
-  @RequestMapping(
-    value = '/webhooks/{type}',
-    method = RequestMethod.POST,
-    consumes = [MediaType.APPLICATION_JSON_VALUE]
-  )
+  @RequestMapping(value = '/webhooks/{type}', method = RequestMethod.POST)
   WebhooksController.WebhookResponse forwardEvent(@PathVariable String type,
                                                   @RequestBody Map postedEvent,
                                                   @RequestHeader HttpHeaders headers) {

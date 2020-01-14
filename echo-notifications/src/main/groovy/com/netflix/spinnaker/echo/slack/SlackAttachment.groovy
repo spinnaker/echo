@@ -72,9 +72,9 @@ class SlackAttachment {
 }
 
 class SlackAction {
-  String type
-  String name
-  String value
+  final String type
+  final String name
+  final String value
 
   SlackAction(String type, String name, String value) {
     this.type = type
@@ -84,7 +84,7 @@ class SlackAction {
 }
 
 class SlackButtonAction extends SlackAction {
-  String text
+  final String text
 
   SlackButtonAction(String name, String text, String value) {
     super("button", name, value)

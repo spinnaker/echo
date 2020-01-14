@@ -52,7 +52,6 @@ class NotificationController {
     consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
     produces = MediaType.APPLICATION_JSON_VALUE
   )
-  // Required due to https://github.com/spring-projects/spring-framework/issues/22734
   Map processCallback(@PathVariable String source,
                       @RequestParam Map content,
                       @RequestHeader HttpHeaders headers) {

@@ -17,11 +17,8 @@
 package com.netflix.spinnaker.echo.slack
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.jakewharton.retrofit.Ok3Client
 import com.netflix.spinnaker.echo.api.Notification
 import com.netflix.spinnaker.echo.api.Notification.InteractiveActionCallback
-import com.netflix.spinnaker.echo.api.Notification.InteractiveActions
-import com.netflix.spinnaker.echo.api.Notification.ButtonAction
 import com.netflix.spinnaker.echo.controller.EchoResponse
 import com.netflix.spinnaker.echo.notification.InteractiveNotificationService
 import com.netflix.spinnaker.echo.notification.NotificationTemplateEngine
@@ -36,25 +33,15 @@ import retrofit.client.Client
 import retrofit.client.Response
 import retrofit.converter.JacksonConverter
 import retrofit.http.Body
-import retrofit.http.Header
 import retrofit.http.POST
 import retrofit.http.Path
-
-import java.util.stream.Collectors
-
 import static retrofit.Endpoints.newFixedEndpoint
 
 @Slf4j
 @Component
 @ConditionalOnProperty('slack.enabled')
-class SlackNotificationService implements InteractiveNotificationService { //}, EchoEventListener {
+class SlackNotificationService implements InteractiveNotificationService {
   private static Notification.Type TYPE = Notification.Type.SLACK
-
-  @Autowired
-  SlackService slack
-
-  @Autowired
-  Client retrofitClient
 
   @Value('${slack.token:}')
   String token
@@ -62,11 +49,22 @@ class SlackNotificationService implements InteractiveNotificationService { //}, 
   @Value('${slack.send-compact-messages:false}')
   Boolean sendCompactMessages
 
-  @Autowired
+  SlackService slack
+  Client retrofitClient
   NotificationTemplateEngine notificationTemplateEngine
-
-  @Autowired
   ObjectMapper objectMapper
+
+  SlackNotificationService(
+    SlackService slack,
+    Client retrofitClient,
+    NotificationTemplateEngine notificationTemplateEngine,
+    ObjectMapper objectMapper
+  ) {
+    this.slack = slack
+    this.retrofitClient = retrofitClient
+    this.notificationTemplateEngine = notificationTemplateEngine
+    this.objectMapper = objectMapper
+  }
 
   @Override
   boolean supportsType(Notification.Type type) {
@@ -140,7 +138,7 @@ class SlackNotificationService implements InteractiveNotificationService { //}, 
     Map payload = parseSlackPayload(content)
     log.debug("Responding to Slack callback via ${payload.response_url}")
 
-    // Example: https://hooks.slack.com/actions/TSJ9N5Z3J/906732166263/3zDfYbq62ei4eNELNJcAaK0C
+    // Example: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
     URI responseUrl = new URI(payload.response_url)
 
     SlackHookService slackHookService = new RestAdapter.Builder()

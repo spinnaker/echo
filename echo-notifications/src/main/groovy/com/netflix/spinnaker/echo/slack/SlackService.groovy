@@ -37,10 +37,6 @@ class SlackService {
       slackClient.sendMessage(token, toJson(message), channel, asUser)
   }
 
-  Response respondToMessage(String responseUrl, Map content) {
-    slackClient.respondToMessage(responseUrl, content)
-  }
-
   def static toJson(message) {
     "[" + new JsonBuilder(message).toPrettyString() + "]"
   }

@@ -20,7 +20,6 @@ dependencies {
   implementation "com.squareup.okhttp:okhttp"
   implementation "com.squareup.okhttp:okhttp-urlconnection"
   implementation "com.squareup.okhttp:okhttp-apache"
-  implementation "com.jakewharton.retrofit:retrofit1-okhttp3-client:1.1.0"
   implementation project(':echo-model')
   implementation project(':echo-api')
 

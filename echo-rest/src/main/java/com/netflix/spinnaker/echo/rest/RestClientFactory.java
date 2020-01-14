@@ -16,10 +16,10 @@
 
 package com.netflix.spinnaker.echo.rest;
 
-import com.jakewharton.retrofit.Ok3Client;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import retrofit.client.Client;
+import retrofit.client.OkClient;
 
 @Component
 public class RestClientFactory {
@@ -36,9 +36,9 @@ public class RestClientFactory {
 
   public Client getClient(Boolean insecure) {
     if (insecure) {
-      return new Ok3Client(httpClientFactory.getInsecureClient());
+      return new OkClient(httpClientFactory.getInsecureClient());
     } else {
-      return new Ok3Client();
+      return new OkClient();
     }
   }
 }
