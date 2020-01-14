@@ -17,12 +17,18 @@
 package com.netflix.spinnaker.echo.controller
 
 import com.netflix.spinnaker.echo.api.Notification
+import com.netflix.spinnaker.echo.notification.InteractiveNotificationCallbackHandler
 import com.netflix.spinnaker.echo.notification.NotificationService
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RequestMapping("/notifications")
@@ -32,8 +38,25 @@ class NotificationController {
   @Autowired(required=false)
   Collection<NotificationService> notificationServices
 
+  @Autowired
+  InteractiveNotificationCallbackHandler callbackHandler
+
   @RequestMapping(method = RequestMethod.POST)
   EchoResponse create(@RequestBody Notification notification) {
     notificationServices?.find { it.supportsType(notification.notificationType) }?.handle(notification)
   }
+
+  @RequestMapping(
+    value = '/callbacks/{source}',
+    method = RequestMethod.POST,
+    consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+    produces = MediaType.APPLICATION_JSON_VALUE
+  )
+  // Required due to https://github.com/spring-projects/spring-framework/issues/22734
+  Map processCallback(@PathVariable String source,
+                      @RequestParam Map content,
+                      @RequestHeader HttpHeaders headers) {
+    return callbackHandler.processCallback(source, content, headers)
+  }
+
 }

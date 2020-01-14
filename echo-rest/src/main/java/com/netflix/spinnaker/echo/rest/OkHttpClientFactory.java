@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.echo.rest;
 
-import com.squareup.okhttp.OkHttpClient;
+import okhttp3.OkHttpClient;
 
 public interface OkHttpClientFactory {
   OkHttpClient getInsecureClient();

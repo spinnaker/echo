@@ -77,7 +77,7 @@ class SlackConfig {
         .setEndpoint(slackEndpoint)
         .setConverter(new JacksonConverter())
         .setClient(retrofitClient)
-        .setLogLevel(retrofitLogLevel)
+        .setLogLevel(RestAdapter.LogLevel.FULL)
         .setLog(new Slf4jRetrofitLogger(SlackClient.class))
         .build()
         .create(SlackClient.class)

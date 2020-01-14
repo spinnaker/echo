@@ -16,10 +16,9 @@
 
 package com.netflix.spinnaker.echo.rest;
 
-import com.squareup.okhttp.OkHttpClient;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -34,8 +33,8 @@ public class OkHttpClientFactoryImpl implements OkHttpClientFactory {
 
     try {
       // Create a trust manager that does not validate certificate chains
-      final TrustManager[] trustAllCerts =
-          new TrustManager[] {
+      final X509TrustManager[] trustAllCerts =
+          new X509TrustManager[] {
             new X509TrustManager() {
               @Override
               public void checkClientTrusted(
@@ -55,8 +54,13 @@ public class OkHttpClientFactoryImpl implements OkHttpClientFactory {
       final SSLContext sslContext = SSLContext.getInstance("SSL");
       sslContext.init(null, trustAllCerts, null);
 
-      okHttpClient.setSslSocketFactory(sslContext.getSocketFactory());
-      okHttpClient.setHostnameVerifier((hostname, session) -> true);
+      //      okHttpClient.setSslSocketFactory(sslContext.getSocketFactory());
+      //      okHttpClient.setHostnameVerifier((hostname, session) -> true);
+
+      return new OkHttpClient.Builder()
+          .sslSocketFactory(sslContext.getSocketFactory(), trustAllCerts[0])
+          .hostnameVerifier((hostname, session) -> true)
+          .build();
     } catch (Exception e) {
       log.error("Error creating insecure trust manager", e);
     }

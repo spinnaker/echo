@@ -18,12 +18,14 @@ dependencies {
     implementation project(':echo-core')
     implementation project(':echo-model')
     implementation project(":echo-pipelinetriggers")
+    implementation project(':echo-rest')
     implementation "org.springframework.boot:spring-boot-starter-web"
     implementation "com.squareup.retrofit:retrofit"
     implementation "com.squareup.retrofit:converter-jackson"
     implementation "com.squareup.okhttp:okhttp"
     implementation "com.squareup.okhttp:okhttp-urlconnection"
     implementation "com.squareup.okhttp:okhttp-apache"
+    implementation "com.jakewharton.retrofit:retrofit1-okhttp3-client:1.1.0"
     implementation "com.netflix.spinnaker.kork:kork-core"
     implementation "com.netflix.spinnaker.kork:kork-artifacts"
     implementation "com.netflix.spinnaker.kork:kork-web"

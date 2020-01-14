@@ -17,9 +17,29 @@
 package com.netflix.spinnaker.echo.notification
 
 import com.netflix.spinnaker.echo.api.Notification
+import com.netflix.spinnaker.echo.api.Notification.InteractiveActionCallback
 import com.netflix.spinnaker.echo.controller.EchoResponse
 
 interface NotificationService {
   boolean supportsType(Notification.Type type)
   EchoResponse handle(Notification notification)
+}
+
+interface InteractiveNotificationService extends NotificationService {
+  /**
+   * Translate the contents received by echo on the generic notification callbacks API into a generic callback
+   * object that can be forwarded to downstream Spinnaker services for actual processing.
+   * @param content
+   * @return
+   */
+  InteractiveActionCallback parseInteractionCallback(Map content)
+
+  /**
+   * Gives an opportunity to the notification service to respond to the original callback in a service-specific
+   * manner (e.g. Slack provides a `response_url` in the payload that can be called to interact with the original
+   * Slack notification message).
+   *
+   * @param content
+   */
+  void respondToCallback(Map content)
 }
