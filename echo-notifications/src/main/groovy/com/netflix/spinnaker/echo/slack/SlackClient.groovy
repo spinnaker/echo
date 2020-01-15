@@ -38,4 +38,12 @@ interface SlackClient {
     @Path(value = "token", encode = false) String token,
     @Body SlackRequest slackRequest)
 
+  /**
+   * Documentation: https://api.slack.com/methods/users.info
+   */
+  @GET('/api/users.info')
+  Map getUserInfo(
+    @Query('token') String token,
+    @Query('user') String userId
+  )
 }

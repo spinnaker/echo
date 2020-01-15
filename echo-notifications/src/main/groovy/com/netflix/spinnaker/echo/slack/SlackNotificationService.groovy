@@ -16,13 +16,16 @@
 
 package com.netflix.spinnaker.echo.slack
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.echo.api.Notification
 import com.netflix.spinnaker.echo.api.Notification.InteractiveActionCallback
 import com.netflix.spinnaker.echo.controller.EchoResponse
 import com.netflix.spinnaker.echo.notification.InteractiveNotificationService
 import com.netflix.spinnaker.echo.notification.NotificationTemplateEngine
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
+import groovy.transform.Canonical
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -117,14 +120,29 @@ class SlackNotificationService implements InteractiveNotificationService {
 
     Map payload = parseSlackPayload(content)
 
+    if (payload.actions.size > 1) {
+      log.warn("Expected a single selected action from Slack, but received ${payload.action.size}")
+    }
+
+    if (payload.actions[0].type != "button") {
+      throw new InvalidRequestException("Spinnaker currently only supports Slack button actions.")
+    }
+
     def (serviceId, callbackId) = payload.callback_id.split(":")
+
     String user = payload.user.name
-    // TODO: get user e-mail from Slack API so it matches what we use in X-SPINNAKER-USER
+    try {
+      Map slackResponse = slack.slackClient.getUserInfo(token, payload.user.id)
+      SlackUserInfo userInfo = objectMapper.convertValue(slackResponse, SlackUserInfo.class)
+      user = userInfo.email
+    } catch (Exception e) {
+      log.error("Error retrieving info for Slack user ${payload.user.name} (${payload.user.id}). Falling back to username.")
+    }
+
     new InteractiveActionCallback(
       serviceId: serviceId,
       messageId: callbackId,
       user: user,
-      // TODO: buttons only for now -- check
       actionPerformed: new Notification.ButtonAction(
         name: payload.actions[0].name,
         label: payload.actions[0].text,
@@ -151,12 +169,11 @@ class SlackNotificationService implements InteractiveNotificationService {
       .create(SlackHookService.class)
 
     def selectedAction = payload.actions[0]
-    def attachment = payload.original_message.attachments[0] // se support a single attachment as per Echo notifications
+    def attachment = payload.original_message.attachments[0] // we support a single attachment as per Echo notifications
     def selectedActionText = attachment.actions.stream().find {
       it.type == selectedAction.type && it.value == selectedAction.value
     }.text
 
-    //String message = attachment.text + "\n\nUser ${payload.user.name} clicked the *${selectedActionText}* action."
     Map message = [:]
     message.putAll(payload.original_message)
     message.attachments[0].remove("actions")
@@ -169,6 +186,26 @@ class SlackNotificationService implements InteractiveNotificationService {
   interface SlackHookService {
     @POST('/{path}')
     Response respondToMessage(@Path(value = "path", encode = false) path, @Body Map content)
+  }
+
+  // Partial view into the response from Slack, but enough for our needs
+  static class SlackUserInfo {
+    String id
+    String name
+    String realName
+    String email
+    boolean deleted
+    boolean has2fa
+
+    @JsonProperty('user')
+    private void unpack(Map user) {
+      this.id = user.id
+      this.name = user.name
+      this.realName = user.real_name
+      this.deleted = user.deleted
+      this.has2fa = user.has_2fa
+      this.email = user.profile.email
+    }
   }
 
 }
