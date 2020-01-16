@@ -52,10 +52,12 @@ class NotificationController {
     consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
     produces = MediaType.APPLICATION_JSON_VALUE
   )
-  Map processCallback(@PathVariable String source,
-                      @RequestParam Map content,
-                      @RequestHeader HttpHeaders headers) {
-    return callbackHandler.processCallback(source, content, headers)
+  Optional<String> processCallback(
+    @PathVariable String source,
+    @RequestHeader HttpHeaders headers,
+    @RequestBody String rawBody,
+    @RequestParam Map parameters) {
+    return callbackHandler.processCallback(source, headers, rawBody, parameters)
   }
 
 }

@@ -24,10 +24,12 @@ import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import retrofit.Endpoints;
 import retrofit.RestAdapter;
@@ -59,11 +61,12 @@ public class InteractiveNotificationCallbackHandler {
    * Processes a callback request from the notification service by relaying it to the downstream
    * Spinnaker service that originated the message referenced in the payload.
    *
-   * @param source The unique name of the source of the callback (e.g. "slack")
-   * @param content The parsed JSON payload of the callback request
+   * @param source The unique name of the source of the callback (e.g. "slack") //@param content The
+   *     parsed JSON payload of the callback request
    * @param headers The headers received with the request
    */
-  public Map processCallback(final String source, Map content, HttpHeaders headers) {
+  public Optional<ResponseEntity<String>> processCallback(
+      final String source, HttpHeaders headers, String body, Map parameters) {
     log.debug("Received interactive notification callback request from " + source);
 
     InteractiveNotificationService notificationService =
@@ -77,7 +80,7 @@ public class InteractiveNotificationCallbackHandler {
     }
 
     final Notification.InteractiveActionCallback callback =
-        notificationService.parseInteractionCallback(content);
+        notificationService.parseInteractionCallback(headers, body, parameters);
     SpinnakerService spinnakerService = getSpinnakerService(callback.getServiceId());
 
     log.debug("Routing notification callback to originating service " + callback.getServiceId());
@@ -94,9 +97,7 @@ public class InteractiveNotificationCallbackHandler {
     //  }
 
     // Allows the notification service implementation to respond to the callback as needed
-    notificationService.respondToCallback(content);
-
-    return null;
+    return notificationService.respondToCallback(body);
   }
 
   private SpinnakerService getSpinnakerService(String serviceId) {

@@ -1,11 +1,11 @@
 /*
- * Copyright 2015 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@
 package com.netflix.spinnaker.echo.slack
 
 import com.netflix.spinnaker.echo.api.Notification
-import com.netflix.spinnaker.echo.api.Notification.InteractiveAction
 import com.netflix.spinnaker.echo.api.Notification.ButtonAction
 import com.netflix.spinnaker.echo.api.Notification.InteractiveActions
 import groovy.transform.Canonical
@@ -69,36 +68,37 @@ class SlackAttachment {
       .collect(Collectors.toList())
     slackActions
   }
-}
 
-class SlackAction {
-  final String type
-  final String name
-  final String value
+  static class SlackAction {
+    final String type
+    final String name
+    final String value
 
-  SlackAction(String type, String name, String value) {
-    this.type = type
-    this.name = name
-    this.value = value
-  }
-}
-
-class SlackButtonAction extends SlackAction {
-  final String text
-
-  SlackButtonAction(String name, String text, String value) {
-    super("button", name, value)
-    if (name == null || text == null || value == null) {
-      throw new IllegalArgumentException("name, text and value are required")
+    SlackAction(String type, String name, String value) {
+      this.type = type
+      this.name = name
+      this.value = value
     }
-    this.text = text
   }
 
-  static SlackButtonAction copy(ButtonAction action) {
-    if (action == null) {
-      throw new IllegalArgumentException("Action cannot be null")
+  static class SlackButtonAction extends SlackAction {
+    final String text
+
+    SlackButtonAction(String name, String text, String value) {
+      super("button", name, value)
+      if (name == null || text == null || value == null) {
+        throw new IllegalArgumentException("name, text and value are required")
+      }
+      this.text = text
     }
 
-    new SlackButtonAction(action.name, action.label, action.value)
+    static SlackButtonAction copy(ButtonAction action) {
+      if (action == null) {
+        throw new IllegalArgumentException("Action cannot be null")
+      }
+
+      new SlackButtonAction(action.name, action.label, action.value)
+    }
   }
 }
+

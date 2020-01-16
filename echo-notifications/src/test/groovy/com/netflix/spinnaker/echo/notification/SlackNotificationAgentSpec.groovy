@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.echo.notification
 
 import com.netflix.spinnaker.echo.slack.SlackAttachment
-import groovy.json.JsonSlurper
 import com.netflix.spinnaker.echo.model.Event
 import com.netflix.spinnaker.echo.slack.SlackService
 import spock.lang.Specification

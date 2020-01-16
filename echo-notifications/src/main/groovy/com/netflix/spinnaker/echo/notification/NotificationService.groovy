@@ -19,6 +19,8 @@ package com.netflix.spinnaker.echo.notification
 import com.netflix.spinnaker.echo.api.Notification
 import com.netflix.spinnaker.echo.api.Notification.InteractiveActionCallback
 import com.netflix.spinnaker.echo.controller.EchoResponse
+import org.springframework.http.HttpHeaders
+import org.springframework.http.ResponseEntity
 
 interface NotificationService {
   boolean supportsType(Notification.Type type)
@@ -32,7 +34,7 @@ interface InteractiveNotificationService extends NotificationService {
    * @param content
    * @return
    */
-  InteractiveActionCallback parseInteractionCallback(Map content)
+  InteractiveActionCallback parseInteractionCallback(HttpHeaders headers, String body, Map parameters)
 
   /**
    * Gives an opportunity to the notification service to respond to the original callback in a service-specific
@@ -41,5 +43,5 @@ interface InteractiveNotificationService extends NotificationService {
    *
    * @param content
    */
-  void respondToCallback(Map content)
+  Optional<ResponseEntity<String>> respondToCallback(String body)
 }

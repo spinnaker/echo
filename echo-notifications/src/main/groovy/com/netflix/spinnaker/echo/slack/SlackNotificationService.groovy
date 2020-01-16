@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.echo.slack
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.echo.api.Notification
 import com.netflix.spinnaker.echo.api.Notification.InteractiveActionCallback
@@ -25,11 +24,10 @@ import com.netflix.spinnaker.echo.notification.InteractiveNotificationService
 import com.netflix.spinnaker.echo.notification.NotificationTemplateEngine
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
-import groovy.transform.Canonical
 import groovy.util.logging.Slf4j
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.http.HttpHeaders
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 import retrofit.RestAdapter
 import retrofit.client.Client
@@ -46,16 +44,10 @@ import static retrofit.Endpoints.newFixedEndpoint
 class SlackNotificationService implements InteractiveNotificationService {
   private static Notification.Type TYPE = Notification.Type.SLACK
 
-  @Value('${slack.token:}')
-  String token
-
-  @Value('${slack.send-compact-messages:false}')
-  Boolean sendCompactMessages
-
-  SlackService slack
-  Client retrofitClient
-  NotificationTemplateEngine notificationTemplateEngine
-  ObjectMapper objectMapper
+  private SlackService slack
+  private Client retrofitClient
+  private NotificationTemplateEngine notificationTemplateEngine
+  private ObjectMapper objectMapper
 
   SlackNotificationService(
     SlackService slack,
@@ -80,10 +72,10 @@ class SlackNotificationService implements InteractiveNotificationService {
     notification.to.each {
       def response
       String address = it.startsWith('#') ? it : "#${it}"
-      if (sendCompactMessages) {
-        response = slack.sendCompactMessage(token, new CompactSlackMessage(text), address, true)
+      if (slack.configProperties.sendCompactMessages) {
+        response = slack.sendCompactMessage(new CompactSlackMessage(text), address, true)
       } else {
-        response = slack.sendMessage(token,
+        response = slack.sendMessage(
           new SlackAttachment("Spinnaker Notification", text, notification.interactiveActions),
           address, true)
       }
@@ -94,34 +86,39 @@ class SlackNotificationService implements InteractiveNotificationService {
     new EchoResponse.Void()
   }
 
-  private Map parseSlackPayload(Map content) {
-    if (!content.payload) {
-      throw new IllegalArgumentException("Missing payload field in Slack callback request.")
+  private Map parseSlackPayload(String body) {
+    if (!body.startsWith("payload=")) {
+      throw new InvalidRequestException("Missing payload field in Slack callback request.")
     }
 
-    Map payload = objectMapper.readValue(content.payload, Map)
+    Map payload = objectMapper.readValue(
+      // Slack requests use application/x-www-form-urlencoded
+      URLDecoder.decode(body.split("payload=")[1], "UTF-8"),
+      Map)
 
     // currently supporting only interactive actions
     if (payload.type != "interactive_message") {
-      throw new IllegalArgumentException("Unsupported Slack callback type: ${payload.type}")
+      throw new InvalidRequestException("Unsupported Slack callback type: ${payload.type}")
     }
 
     if (!payload.callback_id || !payload.user?.name) {
-      throw new IllegalArgumentException("Slack callback_id and user not present. Cannot route the request to originating Spinnaker service.")
+      throw new InvalidRequestException("Slack callback_id and user not present. Cannot route the request to originating Spinnaker service.")
     }
 
     payload
   }
 
   @Override
-  InteractiveActionCallback parseInteractionCallback(Map content) {
-    log.debug("Received callback event from Slack of type ${content.type}")
-    // TODO: validate the X-Slack-Signature header (https://api.slack.com/docs/verifying-requests-from-slack)
+  InteractiveActionCallback parseInteractionCallback(HttpHeaders headers, String body, Map parameters) {
+    // TODO(lfp): This currently doesn't work -- troubleshooting with Slack support.
+    // slack.verifySignature(headers, body)
 
-    Map payload = parseSlackPayload(content)
+    Map payload = parseSlackPayload(body)
+    log.debug("Received callback event from Slack of type ${payload.type}")
+    slack.verifyToken(payload.token)
 
     if (payload.actions.size > 1) {
-      log.warn("Expected a single selected action from Slack, but received ${payload.action.size}")
+      log.warn("Expected a single selected action from Slack, but received ${payload.actions.size}")
     }
 
     if (payload.actions[0].type != "button") {
@@ -132,8 +129,7 @@ class SlackNotificationService implements InteractiveNotificationService {
 
     String user = payload.user.name
     try {
-      Map slackResponse = slack.slackClient.getUserInfo(token, payload.user.id)
-      SlackUserInfo userInfo = objectMapper.convertValue(slackResponse, SlackUserInfo.class)
+      SlackService.SlackUserInfo userInfo = slack.getUserInfo(payload.user.id)
       user = userInfo.email
     } catch (Exception e) {
       log.error("Error retrieving info for Slack user ${payload.user.name} (${payload.user.id}). Falling back to username.")
@@ -152,8 +148,8 @@ class SlackNotificationService implements InteractiveNotificationService {
   }
 
   @Override
-  void respondToCallback(Map content) {
-    Map payload = parseSlackPayload(content)
+  Optional<ResponseEntity<String>> respondToCallback(String body) {
+    Map payload = parseSlackPayload(body)
     log.debug("Responding to Slack callback via ${payload.response_url}")
 
     // Example: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
@@ -181,31 +177,12 @@ class SlackNotificationService implements InteractiveNotificationService {
 
     Response response = slackHookService.respondToMessage(responseUrl.path, message)
     log.debug("Response from Slack: ${response.toString()}")
+
+    return Optional.empty()
   }
 
   interface SlackHookService {
     @POST('/{path}')
     Response respondToMessage(@Path(value = "path", encode = false) path, @Body Map content)
   }
-
-  // Partial view into the response from Slack, but enough for our needs
-  static class SlackUserInfo {
-    String id
-    String name
-    String realName
-    String email
-    boolean deleted
-    boolean has2fa
-
-    @JsonProperty('user')
-    private void unpack(Map user) {
-      this.id = user.id
-      this.name = user.name
-      this.realName = user.real_name
-      this.deleted = user.deleted
-      this.has2fa = user.has_2fa
-      this.email = user.profile.email
-    }
-  }
-
 }

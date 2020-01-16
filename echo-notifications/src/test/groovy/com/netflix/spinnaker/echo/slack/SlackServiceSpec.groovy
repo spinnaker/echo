@@ -2,7 +2,6 @@ package com.netflix.spinnaker.echo.slack
 
 import com.netflix.spinnaker.echo.config.SlackConfig
 import groovy.json.JsonSlurper
-import org.apache.http.HttpEntity
 import org.apache.http.NameValuePair
 import org.apache.http.client.utils.URLEncodedUtils
 import retrofit.client.Client

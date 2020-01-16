@@ -17,6 +17,7 @@
 
 package com.netflix.spinnaker.echo.slack
 
+
 import retrofit.client.Response
 import retrofit.http.*
 
@@ -42,7 +43,7 @@ interface SlackClient {
    * Documentation: https://api.slack.com/methods/users.info
    */
   @GET('/api/users.info')
-  Map getUserInfo(
+  SlackService.SlackUserInfo getUserInfo(
     @Query('token') String token,
     @Query('user') String userId
   )
