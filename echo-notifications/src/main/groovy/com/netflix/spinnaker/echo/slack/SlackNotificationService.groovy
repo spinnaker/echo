@@ -43,8 +43,10 @@ import static retrofit.Endpoints.newFixedEndpoint
 @ConditionalOnProperty('slack.enabled')
 class SlackNotificationService implements InteractiveNotificationService {
   private static Notification.Type TYPE = Notification.Type.SLACK
+  private static final String SLACK_HOOKS_SERVICE_HOST = "hooks.slack.com"
 
   private SlackService slack
+  private SlackHookService slackHookService = null
   private Client retrofitClient
   private NotificationTemplateEngine notificationTemplateEngine
   private ObjectMapper objectMapper
@@ -152,18 +154,6 @@ class SlackNotificationService implements InteractiveNotificationService {
     Map payload = parseSlackPayload(body)
     log.debug("Responding to Slack callback via ${payload.response_url}")
 
-    // Example: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
-    URI responseUrl = new URI(payload.response_url)
-
-    SlackHookService slackHookService = new RestAdapter.Builder()
-      .setEndpoint(newFixedEndpoint("${responseUrl.scheme}://${responseUrl.host}"))
-      .setClient(retrofitClient)
-      .setLogLevel(RestAdapter.LogLevel.FULL)
-      .setLog(new Slf4jRetrofitLogger(SlackHookService.class))
-      .setConverter(new JacksonConverter())
-      .build()
-      .create(SlackHookService.class)
-
     def selectedAction = payload.actions[0]
     def attachment = payload.original_message.attachments[0] // we support a single attachment as per Echo notifications
     def selectedActionText = attachment.actions.stream().find {
@@ -175,10 +165,30 @@ class SlackNotificationService implements InteractiveNotificationService {
     message.attachments[0].remove("actions")
     message.attachments[0].text += "\n\nUser <@${payload.user.id}> clicked the *${selectedActionText}* action."
 
+    // Example: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+    URI responseUrl = new URI(payload.response_url)
+    SlackHookService slackHookService = getSlackHookService(responseUrl)
     Response response = slackHookService.respondToMessage(responseUrl.path, message)
     log.debug("Response from Slack: ${response.toString()}")
 
     return Optional.empty()
+  }
+
+  private SlackHookService getSlackHookService(URI responseUrl) {
+    if (slackHookService == null) {
+      if (responseUrl.host != SLACK_HOOKS_SERVICE_HOST) {
+        throw new InvalidRequestException("Unexpected Slack hooks service host in response_url: ${responseUrl.host}")
+      }
+      slackHookService = new RestAdapter.Builder()
+        .setEndpoint(newFixedEndpoint("${responseUrl.scheme}://${responseUrl.host}"))
+        .setClient(retrofitClient)
+        .setLogLevel(RestAdapter.LogLevel.FULL)
+        .setLog(new Slf4jRetrofitLogger(SlackHookService.class))
+        .setConverter(new JacksonConverter())
+        .build()
+        .create(SlackHookService.class)
+    }
+    slackHookService
   }
 
   interface SlackHookService {
