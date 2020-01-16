@@ -19,24 +19,18 @@ package com.netflix.spinnaker.echo.slack
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.echo.api.Notification
 import com.netflix.spinnaker.echo.api.Notification.InteractiveActionCallback
+import com.netflix.spinnaker.echo.config.SlackConfig.SlackHookService
 import com.netflix.spinnaker.echo.controller.EchoResponse
 import com.netflix.spinnaker.echo.notification.InteractiveNotificationService
 import com.netflix.spinnaker.echo.notification.NotificationTemplateEngine
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
-import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 import groovy.util.logging.Slf4j
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
-import retrofit.RestAdapter
 import retrofit.client.Client
 import retrofit.client.Response
-import retrofit.converter.JacksonConverter
-import retrofit.http.Body
-import retrofit.http.POST
-import retrofit.http.Path
-import static retrofit.Endpoints.newFixedEndpoint
 
 @Slf4j
 @Component
@@ -46,18 +40,20 @@ class SlackNotificationService implements InteractiveNotificationService {
   private static final String SLACK_HOOKS_SERVICE_HOST = "hooks.slack.com"
 
   private SlackService slack
-  private SlackHookService slackHookService = null
+  private SlackHookService slackHookService
   private Client retrofitClient
   private NotificationTemplateEngine notificationTemplateEngine
   private ObjectMapper objectMapper
 
   SlackNotificationService(
     SlackService slack,
+    SlackHookService slackHookService,
     Client retrofitClient,
     NotificationTemplateEngine notificationTemplateEngine,
     ObjectMapper objectMapper
   ) {
     this.slack = slack
+    this.slackHookService = slackHookService
     this.retrofitClient = retrofitClient
     this.notificationTemplateEngine = notificationTemplateEngine
     this.objectMapper = objectMapper
@@ -167,32 +163,9 @@ class SlackNotificationService implements InteractiveNotificationService {
 
     // Example: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
     URI responseUrl = new URI(payload.response_url)
-    SlackHookService slackHookService = getSlackHookService(responseUrl)
     Response response = slackHookService.respondToMessage(responseUrl.path, message)
     log.debug("Response from Slack: ${response.toString()}")
 
     return Optional.empty()
-  }
-
-  private SlackHookService getSlackHookService(URI responseUrl) {
-    if (slackHookService == null) {
-      if (responseUrl.host != SLACK_HOOKS_SERVICE_HOST) {
-        throw new InvalidRequestException("Unexpected Slack hooks service host in response_url: ${responseUrl.host}")
-      }
-      slackHookService = new RestAdapter.Builder()
-        .setEndpoint(newFixedEndpoint("${responseUrl.scheme}://${responseUrl.host}"))
-        .setClient(retrofitClient)
-        .setLogLevel(RestAdapter.LogLevel.FULL)
-        .setLog(new Slf4jRetrofitLogger(SlackHookService.class))
-        .setConverter(new JacksonConverter())
-        .build()
-        .create(SlackHookService.class)
-    }
-    slackHookService
-  }
-
-  interface SlackHookService {
-    @POST('/{path}')
-    Response respondToMessage(@Path(value = "path", encode = false) path, @Body Map content)
   }
 }

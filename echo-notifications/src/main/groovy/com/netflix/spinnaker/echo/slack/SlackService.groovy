@@ -45,7 +45,7 @@ class SlackService {
   }
 
   Response sendMessage(SlackAttachment message, String channel, boolean asUser) {
-    configProperties.useIncomingWebhook() ?
+    configProperties.useIncomingWebhook ?
       slackClient.sendUsingIncomingWebHook(configProperties.token, new SlackRequest([message], channel)) :
       slackClient.sendMessage(configProperties.token, toJson(message), channel, asUser)
   }

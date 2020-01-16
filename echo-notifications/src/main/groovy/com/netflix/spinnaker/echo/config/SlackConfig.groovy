@@ -19,20 +19,24 @@ package com.netflix.spinnaker.echo.config
 
 import com.netflix.spinnaker.echo.slack.SlackClient
 import com.netflix.spinnaker.echo.slack.SlackService
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.apache.commons.lang3.StringUtils
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
 import retrofit.Endpoint
 import retrofit.RestAdapter
 import retrofit.client.Client
+import retrofit.client.Response
 import retrofit.converter.JacksonConverter
+import retrofit.http.Body
+import retrofit.http.POST
+import retrofit.http.Path
 
 import static retrofit.Endpoints.newFixedEndpoint
 
@@ -48,14 +52,14 @@ class SlackConfig {
   @ConfigurationProperties(prefix = "slack")
   @Component
   class SlackProperties {
-    String baseUrl
+    private String _baseUrl
     String token
     String verificationToken
     String signingSecret
     boolean forceUseIncomingWebhook = false
     boolean sendCompactMessages = false
 
-    boolean useIncomingWebhook() {
+    boolean getUseIncomingWebhook() {
       return forceUseIncomingWebhook || isIncomingWebhookToken(token)
     }
 
@@ -63,20 +67,24 @@ class SlackConfig {
       return (StringUtils.isNotBlank(token) && token.count("/") >= 2)
     }
 
-    String resolveBaseUrl() {
-      if (StringUtils.isNotBlank(baseUrl)) {
-        return baseUrl
+    void setBaseUrl(String baseUrl) {
+      this._baseUrl = baseUrl
+    }
+
+    String getBaseUrl() {
+      if (StringUtils.isNotBlank(_baseUrl)) {
+        return _baseUrl
       } else {
-        return useIncomingWebhook() ? SLACK_INCOMING_WEBHOOK : SLACK_CHAT_API;
+        return useIncomingWebhook ? SLACK_INCOMING_WEBHOOK : SLACK_CHAT_API;
       }
     }
   }
 
   @Bean
   Endpoint slackEndpoint(SlackProperties config) {
-    String endpoint = config.resolveBaseUrl()
+    String endpoint = config.baseUrl
 
-    log.info("Using Slack {}: {}.", config.useIncomingWebhook() ? "incoming webhook" : "chat api", endpoint)
+    log.info("Using Slack {}: {}.", config.useIncomingWebhook ? "incoming webhook" : "chat api", endpoint)
 
     newFixedEndpoint(endpoint)
   }
@@ -99,5 +107,23 @@ class SlackConfig {
         .create(SlackClient.class)
 
     new SlackService(slackClient, config)
+  }
+
+  @Bean
+  SlackHookService slackHookService(Client retrofitClient,
+                                    RestAdapter.LogLevel retrofitLogLevel) {
+    new RestAdapter.Builder()
+      .setEndpoint(newFixedEndpoint(SLACK_INCOMING_WEBHOOK))
+      .setClient(retrofitClient)
+      .setLogLevel(retrofitLogLevel)
+      .setLog(new Slf4jRetrofitLogger(SlackHookService.class))
+      .setConverter(new JacksonConverter())
+      .build()
+      .create(SlackHookService.class)
+  }
+
+  interface SlackHookService {
+    @POST('/{path}')
+    Response respondToMessage(@Path(value = "path", encode = false) path, @Body Map content)
   }
 }
