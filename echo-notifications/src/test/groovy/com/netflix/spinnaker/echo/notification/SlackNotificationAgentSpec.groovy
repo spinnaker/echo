@@ -33,7 +33,7 @@ class SlackNotificationAgentSpec extends Specification {
   def "sends correct message for #status status"() {
     given:
     def actualMessage = new BlockingVariable<SlackAttachment>()
-    slack.sendMessage(*_) >> { token, message, channel, asUser ->
+    slack.sendMessage(*_) >> { message, channel, asUser ->
       actualMessage.set(message)
     }
 
@@ -59,7 +59,7 @@ class SlackNotificationAgentSpec extends Specification {
   def "appends custom message to #status message if present"() {
     given:
     def actualMessage = new BlockingVariable<SlackAttachment>()
-    slack.sendMessage(*_) >> { token, message, channel, asUser ->
+    slack.sendMessage(*_) >> { message, channel, asUser ->
       actualMessage.set(message)
     }
 
@@ -88,7 +88,7 @@ class SlackNotificationAgentSpec extends Specification {
   def "sends entirely custom message if customMessage field is present, performing text replacement if needed"() {
     given:
     def actualMessage = new BlockingVariable<SlackAttachment>()
-    slack.sendMessage(*_) >> { token, message, channel, asUser ->
+    slack.sendMessage(*_) >> { message, channel, asUser ->
       actualMessage.set(message)
     }
 

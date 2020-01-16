@@ -63,6 +63,8 @@ class SlackConfig {
       return forceUseIncomingWebhook || isIncomingWebhookToken(token)
     }
 
+    void setUseIncomingWebHook() { }
+
     boolean isIncomingWebhookToken(String token) {
       return (StringUtils.isNotBlank(token) && token.count("/") >= 2)
     }
@@ -81,21 +83,12 @@ class SlackConfig {
   }
 
   @Bean
-  Endpoint slackEndpoint(SlackProperties config) {
-    String endpoint = config.baseUrl
-
-    log.info("Using Slack {}: {}.", config.useIncomingWebhook ? "incoming webhook" : "chat api", endpoint)
-
-    newFixedEndpoint(endpoint)
-  }
-
-  @Bean
   SlackService slackService(SlackProperties config,
-                            Endpoint slackEndpoint,
                             Client retrofitClient,
                             RestAdapter.LogLevel retrofitLogLevel) {
 
-    log.info("Slack service loaded")
+    Endpoint slackEndpoint = newFixedEndpoint(config.baseUrl)
+    log.info("Using Slack {}: {}.", config.useIncomingWebhook ? "incoming webhook" : "chat api", config.baseUrl)
 
     def slackClient = new RestAdapter.Builder()
         .setEndpoint(slackEndpoint)
@@ -106,6 +99,7 @@ class SlackConfig {
         .build()
         .create(SlackClient.class)
 
+    log.info("Slack service loaded")
     new SlackService(slackClient, config)
   }
 

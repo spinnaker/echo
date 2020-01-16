@@ -45,12 +45,12 @@ class NotificationTemplateEngine {
     String build(Notification notification, Type type) {
         if (!notification.templateGroup) {
           if (type == Type.SUBJECT) {
-            return (FORMATTERS.find { it.type == notification.additionalContext.formatter }?: new MarkdownPassThruFormatter())
+            return (FORMATTERS.find { it.type == notification.additionalContext.formatter }?: new MarkdownToHtmlFormatter())
               .convert((notification.additionalContext.customSubject?: notification.additionalContext.subject) as String)
           }
 
           if (type == Type.BODY) {
-            return (FORMATTERS.find { it.type == notification.additionalContext.formatter }?: new MarkdownPassThruFormatter())
+            return (FORMATTERS.find { it.type == notification.additionalContext.formatter }?: new MarkdownToHtmlFormatter())
               .convert((notification.additionalContext.customBody?: notification.additionalContext.body) as String)
           }
         }

@@ -24,6 +24,7 @@ class SlackServiceSpec extends Specification {
   @Subject mockHttpClient
   @Subject BlockingVariable<String> actualUrl
   @Subject BlockingVariable<String> actualPayload
+  SlackConfig.SlackProperties configProperties
 
   def setup() {
     actualUrl = new BlockingVariable<String>()
@@ -36,18 +37,20 @@ class SlackServiceSpec extends Specification {
       actualPayload.set(getString(request.body))
       mockResponse()
     }
+
+    configProperties = new SlackConfig.SlackProperties()
   }
 
   def 'test sending Slack notification using incoming web hook'() {
 
     given: "a SlackService configured to send using a mocked HTTP client and useIncomingHook=true"
-    def useIncomingHook = true
-    def endpoint = newFixedEndpoint(SlackConfig.SLACK_INCOMING_WEBHOOK)
+    configProperties.forceUseIncomingWebhook = true
+    configProperties.token = token
 
-    def slackService = slackConfig.slackService(useIncomingHook, endpoint, mockHttpClient, LogLevel.FULL)
+    def slackService = slackConfig.slackService(configProperties, mockHttpClient, LogLevel.FULL)
 
     when: "sending a notification"
-    slackService.sendMessage(token, new SlackAttachment("Title", "the text"), "#testing", true)
+    slackService.sendMessage(new SlackAttachment("Title", "the text"), "#testing", true)
     def responseJson = new JsonSlurper().parseText(actualPayload.get())
 
     then: "the HTTP URL and payload intercepted are the ones expected"
@@ -68,13 +71,13 @@ class SlackServiceSpec extends Specification {
   def 'test sending Slack notification using chat.postMessage API'() {
 
     given: "a SlackService configured to send using a mocked HTTP client and useIncomingHook=false"
-    def useIncomingHook = false
-    def endpoint = newFixedEndpoint(SlackConfig.SLACK_CHAT_API)
+    configProperties.forceUseIncomingWebhook = false
+    configProperties.token = token
 
-    def slackService = slackConfig.slackService(useIncomingHook, endpoint, mockHttpClient, LogLevel.FULL)
+    def slackService = slackConfig.slackService(configProperties, mockHttpClient, LogLevel.FULL)
 
     when: "sending a notification"
-    slackService.sendMessage(token, new SlackAttachment("Title", "the text"), "#testing", true)
+    slackService.sendMessage(new SlackAttachment("Title", "the text"), "#testing", true)
 
     // Parse URL Encoded Form
     def params = URLEncodedUtils.parse(actualPayload.get(), Charset.forName("UTF-8"))

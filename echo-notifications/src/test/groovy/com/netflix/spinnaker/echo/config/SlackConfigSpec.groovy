@@ -5,18 +5,21 @@ import spock.lang.Subject
 
 class SlackConfigSpec extends Specification {
   @Subject
-  SlackConfig slackConfig = new SlackConfig()
+  SlackConfig.SlackProperties configProperties
+
+  def setup() {
+    configProperties = new SlackConfig.SlackProperties()
+  }
 
   def 'test slack incoming web hook is inferred correctly'() {
     given:
 
     when:
-    def useIncomingHook = slackConfig.useIncomingWebHook(token)
-    def endpoint = slackConfig.slackEndpoint(useIncomingHook)
+    configProperties.token = token
 
     then:
-    useIncomingHook == expectedUseIncomingWebHook
-    endpoint.url == expectedEndpoint
+    configProperties.useIncomingWebhook == expectedUseIncomingWebHook
+    configProperties.baseUrl == expectedEndpoint
 
     where:
     token                                          | expectedEndpoint          | expectedUseIncomingWebHook
@@ -31,14 +34,12 @@ class SlackConfigSpec extends Specification {
     given:
 
     when:
-    slackConfig.setSlackBaseUrl(baseUrl)
-    def useIncomingHook = slackConfig.useIncomingWebHook(token)
-    def endpoint = slackConfig.slackEndpoint(useIncomingHook)
-
+    configProperties.token = token
+    configProperties.baseUrl = baseUrl
 
     then:
-    useIncomingHook == expectedUseIncomingWebHook
-    endpoint.url == expectedEndpoint
+    configProperties.useIncomingWebhook == expectedUseIncomingWebHook
+    configProperties.baseUrl == expectedEndpoint
 
     where:
     token                                          | baseUrl               | expectedEndpoint          | expectedUseIncomingWebHook
@@ -52,16 +53,15 @@ class SlackConfigSpec extends Specification {
 
   def 'test slack incoming web hook when forceUseIncomingWebhook'() {
     given:
-    slackConfig.forceUseIncomingWebhook = true
-    slackConfig.slackBaseUrl = 'https://example.com'
 
     when:
-    def useIncomingHook = slackConfig.useIncomingWebHook(token)
-    def endpoint = slackConfig.slackEndpoint(useIncomingHook)
+    configProperties.token = token
+    configProperties.forceUseIncomingWebhook = true
+    configProperties.baseUrl = 'https://example.com'
 
     then:
-    useIncomingHook == expectedUseIncomingWebHook
-    endpoint.url == expectedEndpoint
+    configProperties.useIncomingWebhook == expectedUseIncomingWebHook
+    configProperties.baseUrl == expectedEndpoint
 
     where:
     token                                          | expectedEndpoint      | expectedUseIncomingWebHook
