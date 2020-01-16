@@ -65,7 +65,7 @@ class NotificationController {
     consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
     produces = MediaType.APPLICATION_JSON_VALUE
   )
-  Optional<ResponseEntity<String>> processCallback(
+  ResponseEntity<String> processCallback(
     @PathVariable String source,
     @RequestHeader HttpHeaders headers,
     @RequestBody String rawBody,

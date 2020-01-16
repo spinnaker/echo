@@ -34,7 +34,11 @@ import org.springframework.ui.freemarker.FreeMarkerTemplateUtils
 @Slf4j
 @Component
 class NotificationTemplateEngine {
-    private static final List<Formatter> FORMATTERS = [new MarkdownToHtmlFormatter(), new HtmlToPlainTextFormatter()]
+    private static final List<Formatter> FORMATTERS = [
+      new MarkdownToHtmlFormatter(),
+      new HtmlToPlainTextFormatter(),
+      new MarkdownPassThruFormatter()
+    ]
 
     @Autowired
     Configuration configuration
@@ -44,14 +48,17 @@ class NotificationTemplateEngine {
 
     String build(Notification notification, Type type) {
         if (!notification.templateGroup) {
+          Formatter formatter = FORMATTERS.find { it.type == notification.additionalContext.formatter } ?:
+            new MarkdownToHtmlFormatter()
+
           if (type == Type.SUBJECT) {
-            return (FORMATTERS.find { it.type == notification.additionalContext.formatter }?: new MarkdownToHtmlFormatter())
-              .convert((notification.additionalContext.customSubject?: notification.additionalContext.subject) as String)
+            return (formatter
+              .convert(notification.additionalContext.customSubject?: notification.additionalContext.subject) as String)
           }
 
           if (type == Type.BODY) {
-            return (FORMATTERS.find { it.type == notification.additionalContext.formatter }?: new MarkdownToHtmlFormatter())
-              .convert((notification.additionalContext.customBody?: notification.additionalContext.body) as String)
+            return (formatter
+              .convert(notification.additionalContext.customBody?: notification.additionalContext.body) as String)
           }
         }
 

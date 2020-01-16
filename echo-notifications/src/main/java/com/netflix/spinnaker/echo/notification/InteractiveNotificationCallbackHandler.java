@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import retrofit.Endpoints;
@@ -65,7 +66,7 @@ public class InteractiveNotificationCallbackHandler {
    *     parsed JSON payload of the callback request
    * @param headers The headers received with the request
    */
-  public Optional<ResponseEntity<String>> processCallback(
+  public ResponseEntity<String> processCallback(
       final String source, HttpHeaders headers, String body, Map parameters) {
     log.debug("Received interactive notification callback request from " + source);
 
@@ -97,7 +98,8 @@ public class InteractiveNotificationCallbackHandler {
     //  }
 
     // Allows the notification service implementation to respond to the callback as needed
-    return notificationService.respondToCallback(body);
+    Optional<ResponseEntity<String>> outwardResponse = notificationService.respondToCallback(body);
+    return outwardResponse.orElse(new ResponseEntity(HttpStatus.OK));
   }
 
   private SpinnakerService getSpinnakerService(String serviceId) {
