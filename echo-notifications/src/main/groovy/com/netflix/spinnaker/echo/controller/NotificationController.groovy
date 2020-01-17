@@ -23,6 +23,7 @@ import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.http.RequestEntity
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
@@ -65,12 +66,8 @@ class NotificationController {
     consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
     produces = MediaType.APPLICATION_JSON_VALUE
   )
-  ResponseEntity<String> processCallback(
-    @PathVariable String source,
-    @RequestHeader HttpHeaders headers,
-    @RequestBody String rawBody,
-    @RequestParam Map parameters) {
-    return callbackHandler.processCallback(source, headers, rawBody, parameters)
+  ResponseEntity<String> processCallback(@PathVariable String source, RequestEntity<String> request) {
+    return callbackHandler.processCallback(source, request)
   }
 
 }

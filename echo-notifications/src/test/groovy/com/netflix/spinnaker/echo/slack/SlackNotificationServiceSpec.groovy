@@ -23,6 +23,8 @@ import com.netflix.spinnaker.echo.config.SlackConfig
 import com.netflix.spinnaker.echo.notification.NotificationTemplateEngine
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
+import org.springframework.http.RequestEntity
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -69,6 +71,9 @@ class SlackNotificationServiceSpec extends Specification {
     String slackRequestBody = "payload=" +
       URLEncoder.encode(getClass().getResource("/slack/callbackRequestBody.txt").text)
 
+    RequestEntity<String> request = new RequestEntity<>(
+      slackRequestBody, new HttpHeaders(), HttpMethod.POST, new URI("/notifications/callbaks"))
+
     slack.verifyToken(*_) >> { }
     slack.getUserInfo(*_) >> new SlackService.SlackUserInfo(email: "john@doe.com")
 
@@ -82,10 +87,8 @@ class SlackNotificationServiceSpec extends Specification {
       user: "john@doe.com"
     )
 
-    HttpHeaders headers = new HttpHeaders()
-
     when:
-    InteractiveActionCallback callbackObject = service.parseInteractionCallback(headers, slackRequestBody, [:])
+    InteractiveActionCallback callbackObject = service.parseInteractionCallback(request)
 
     then:
     callbackObject == expectedCallbackObject
@@ -95,6 +98,9 @@ class SlackNotificationServiceSpec extends Specification {
     given:
     String slackRequestBody = "payload=" +
       URLEncoder.encode(getClass().getResource("/slack/callbackRequestBody.txt").text)
+
+    RequestEntity<String> request = new RequestEntity<>(
+      slackRequestBody, new HttpHeaders(), HttpMethod.POST, new URI("/notifications/callbaks"))
 
     slack.verifyToken(*_) >> { }
     slack.getUserInfo(*_) >> { throw new Exception("oops!") }
@@ -109,10 +115,8 @@ class SlackNotificationServiceSpec extends Specification {
       user: "john.doe"
     )
 
-    HttpHeaders headers = new HttpHeaders()
-
     when:
-    InteractiveActionCallback callbackObject = service.parseInteractionCallback(headers, slackRequestBody, [:])
+    InteractiveActionCallback callbackObject = service.parseInteractionCallback(request)
 
     then:
     callbackObject == expectedCallbackObject
@@ -122,11 +126,11 @@ class SlackNotificationServiceSpec extends Specification {
   def "parsing a malformed interaction callback from Slack throws an exception"() {
     given:
     String slackRequestBody = "content=suspicious"
-
-    HttpHeaders headers = new HttpHeaders()
+    RequestEntity<String> request = new RequestEntity<>(
+      slackRequestBody, new HttpHeaders(), HttpMethod.POST, new URI("/notifications/callbaks"))
 
     when:
-    service.parseInteractionCallback(headers, slackRequestBody, [:])
+    service.parseInteractionCallback(request)
 
     then:
     thrown(InvalidRequestException)
@@ -137,13 +141,14 @@ class SlackNotificationServiceSpec extends Specification {
     String slackRequestBody = "payload=" +
       URLEncoder.encode(getClass().getResource("/slack/callbackRequestBody.txt").text)
 
+    RequestEntity<String> request = new RequestEntity<>(
+      slackRequestBody, new HttpHeaders(), HttpMethod.POST, new URI("/notifications/callbaks"))
+
     slack.verifyToken(*_) >> { throw new InvalidRequestException() }
     slack.getUserInfo(*_) >> { }
 
-    HttpHeaders headers = new HttpHeaders()
-
     when:
-    service.parseInteractionCallback(headers, slackRequestBody, [:])
+    service.parseInteractionCallback(request)
 
     then:
     thrown(InvalidRequestException)
@@ -153,6 +158,9 @@ class SlackNotificationServiceSpec extends Specification {
     given:
     String payload = getClass().getResource("/slack/callbackRequestBody.txt").text
     String slackRequestBody = "payload=" + URLEncoder.encode(payload, "UTF-8")
+
+    RequestEntity<String> request = new RequestEntity<>(
+      slackRequestBody, new HttpHeaders(), HttpMethod.POST, new URI("/notifications/callbaks"))
 
     slack.verifyToken(*_) >> { }
     slack.getUserInfo(*_) >> { }
@@ -164,7 +172,7 @@ class SlackNotificationServiceSpec extends Specification {
     expectedResponse.attachments[0].text += "\n\nUser <@${parsedPayload.user.id}> clicked the *Approve* action."
 
     when:
-    service.respondToCallback(slackRequestBody)
+    service.respondToCallback(request)
 
     then:
     1 * slackHookService.respondToMessage("/actions/T00000000/0123456789/abcdefgh1234567", expectedResponse)

@@ -28,6 +28,7 @@ import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import groovy.util.logging.Slf4j
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpHeaders
+import org.springframework.http.RequestEntity
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 import retrofit.client.Response
@@ -103,11 +104,11 @@ class SlackNotificationService implements InteractiveNotificationService {
   }
 
   @Override
-  InteractiveActionCallback parseInteractionCallback(HttpHeaders headers, String body, Map parameters) {
+  InteractiveActionCallback parseInteractionCallback(RequestEntity<String> request) {
     // TODO(lfp): This currently doesn't work -- troubleshooting with Slack support.
-    // slack.verifySignature(headers, body)
+    //slack.verifySignature(request)
 
-    Map payload = parseSlackPayload(body)
+    Map payload = parseSlackPayload(request.getBody())
     log.debug("Received callback event from Slack of type ${payload.type}")
     slack.verifyToken(payload.token)
 
@@ -142,7 +143,8 @@ class SlackNotificationService implements InteractiveNotificationService {
   }
 
   @Override
-  Optional<ResponseEntity<String>> respondToCallback(String body) {
+  Optional<ResponseEntity<String>> respondToCallback(RequestEntity<String> request) {
+    String body = request.getBody()
     Map payload = parseSlackPayload(body)
     log.debug("Responding to Slack callback via ${payload.response_url}")
 

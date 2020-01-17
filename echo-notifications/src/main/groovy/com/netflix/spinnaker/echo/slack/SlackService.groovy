@@ -25,6 +25,7 @@ import groovy.json.JsonBuilder
 import groovy.transform.Canonical
 import groovy.util.logging.Slf4j
 import org.springframework.http.HttpHeaders
+import org.springframework.http.RequestEntity
 import org.springframework.security.crypto.codec.Hex
 import retrofit.client.Response
 
@@ -58,7 +59,9 @@ class SlackService {
   // FIXME (lfp): this algorithm works as I've validated it against the sample data provided in the Slack documentation,
   //  but it doesn't work with our requests and signing secret for some reason. I've reached out to Slack support but
   //  have not received any definitive answers yet.
-  void verifySignature(HttpHeaders headers, String body) {
+  void verifySignature(RequestEntity<String> request) {
+    HttpHeaders headers = request.getHeaders()
+    String body = request.getBody()
     String timestamp = headers['X-Slack-Request-Timestamp'].first()
     String signature = headers['X-Slack-Signature'].first()
 

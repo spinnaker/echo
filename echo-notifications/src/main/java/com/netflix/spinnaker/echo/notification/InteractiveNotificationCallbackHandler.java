@@ -30,8 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import retrofit.Endpoints;
@@ -74,12 +74,11 @@ public class InteractiveNotificationCallbackHandler {
    * Processes a callback request from the notification service by relaying it to the downstream
    * Spinnaker service that originated the message referenced in the payload.
    *
-   * @param source The unique name of the source of the callback (e.g. "slack") //@param content The
-   *     parsed JSON payload of the callback request
-   * @param headers The headers received with the request
+   * @param source The unique name of the source of the callback (e.g. "slack")
+   * @param request The request received from the notification service
    */
   public ResponseEntity<String> processCallback(
-      final String source, HttpHeaders headers, String body, Map parameters) {
+      final String source, RequestEntity<String> request) {
     log.debug("Received interactive notification callback request from " + source);
 
     InteractiveNotificationService notificationService = getNotificationService(source);
@@ -89,7 +88,7 @@ public class InteractiveNotificationCallbackHandler {
     }
 
     final Notification.InteractiveActionCallback callback =
-        notificationService.parseInteractionCallback(headers, body, parameters);
+        notificationService.parseInteractionCallback(request);
 
     SpinnakerService spinnakerService = getSpinnakerService(callback.getServiceId());
 
@@ -107,7 +106,8 @@ public class InteractiveNotificationCallbackHandler {
     //  }
 
     // Allows the notification service implementation to respond to the callback as needed
-    Optional<ResponseEntity<String>> outwardResponse = notificationService.respondToCallback(body);
+    Optional<ResponseEntity<String>> outwardResponse =
+        notificationService.respondToCallback(request);
     return outwardResponse.orElse(new ResponseEntity(HttpStatus.OK));
   }
 
