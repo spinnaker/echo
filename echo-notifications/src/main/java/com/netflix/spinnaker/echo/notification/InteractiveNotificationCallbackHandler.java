@@ -19,6 +19,7 @@ package com.netflix.spinnaker.echo.notification;
 import com.jakewharton.retrofit.Ok3Client;
 import com.netflix.spinnaker.echo.api.Notification;
 import com.netflix.spinnaker.echo.api.Notification.InteractiveActionCallback;
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -47,8 +49,9 @@ public class InteractiveNotificationCallbackHandler {
   private Ok3Client spinnakerServiceClient;
   private List<InteractiveNotificationService> notificationServices;
   private Environment environment;
-  private static final Map<String, SpinnakerService> spinnakerServices = new HashMap<>();
+  private Map<String, SpinnakerService> spinnakerServices = new HashMap<>();
 
+  @Autowired
   public InteractiveNotificationCallbackHandler(
       Ok3Client spinnakerServiceClient,
       List<InteractiveNotificationService> notificationServices,
@@ -56,6 +59,15 @@ public class InteractiveNotificationCallbackHandler {
     this.spinnakerServiceClient = spinnakerServiceClient;
     this.notificationServices = notificationServices;
     this.environment = environment;
+  }
+
+  public InteractiveNotificationCallbackHandler(
+      Ok3Client spinnakerServiceClient,
+      List<InteractiveNotificationService> notificationServices,
+      Environment environment,
+      Map<String, SpinnakerService> spinnakerServices) {
+    this(spinnakerServiceClient, notificationServices, environment);
+    this.spinnakerServices = spinnakerServices;
   }
 
   /**
@@ -70,11 +82,7 @@ public class InteractiveNotificationCallbackHandler {
       final String source, HttpHeaders headers, String body, Map parameters) {
     log.debug("Received interactive notification callback request from " + source);
 
-    InteractiveNotificationService notificationService =
-        notificationServices.stream()
-            .filter(it -> it.supportsType(Notification.Type.valueOf(source.toUpperCase())))
-            .findAny()
-            .orElse(null);
+    InteractiveNotificationService notificationService = getNotificationService(source);
 
     if (notificationService == null) {
       throw new NotFoundException("NotificationService for " + source + " not registered");
@@ -82,6 +90,7 @@ public class InteractiveNotificationCallbackHandler {
 
     final Notification.InteractiveActionCallback callback =
         notificationService.parseInteractionCallback(headers, body, parameters);
+
     SpinnakerService spinnakerService = getSpinnakerService(callback.getServiceId());
 
     log.debug("Routing notification callback to originating service " + callback.getServiceId());
@@ -102,13 +111,26 @@ public class InteractiveNotificationCallbackHandler {
     return outwardResponse.orElse(new ResponseEntity(HttpStatus.OK));
   }
 
+  private InteractiveNotificationService getNotificationService(String source) {
+    return notificationServices.stream()
+        .filter(it -> it.supportsType(Notification.Type.valueOf(source.toUpperCase())))
+        .findAny()
+        .orElse(null);
+  }
+
   private SpinnakerService getSpinnakerService(String serviceId) {
     if (!spinnakerServices.containsKey(serviceId)) {
+      String baseUrl = environment.getProperty(serviceId + ".baseUrl");
+
+      if (baseUrl == null) {
+        throw new InvalidRequestException(
+            "Base URL for service " + serviceId + " not found in the configuration.");
+      }
+
       spinnakerServices.put(
           serviceId,
           new RestAdapter.Builder()
-              .setEndpoint(
-                  Endpoints.newFixedEndpoint(environment.getProperty(serviceId + ".baseUrl")))
+              .setEndpoint(Endpoints.newFixedEndpoint(baseUrl))
               .setClient(spinnakerServiceClient)
               .setLogLevel(RestAdapter.LogLevel.BASIC)
               .setLog(new Slf4jRetrofitLogger(SpinnakerService.class))
@@ -122,7 +144,7 @@ public class InteractiveNotificationCallbackHandler {
 
   public interface SpinnakerService {
     @POST("/notifications/callback")
-    public abstract Response notificationCallback(
+    Response notificationCallback(
         @Body InteractiveActionCallback callback, @Header("X-SPINNAKER-USER") String user);
   }
 }

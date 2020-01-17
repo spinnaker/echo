@@ -18,6 +18,7 @@ package com.netflix.spinnaker.echo.slack
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.echo.api.Notification
+import com.netflix.spinnaker.echo.api.Notification.InteractiveActions
 import com.netflix.spinnaker.echo.api.Notification.InteractiveActionCallback
 import com.netflix.spinnaker.echo.config.SlackConfig.SlackHookService
 import com.netflix.spinnaker.echo.controller.EchoResponse
@@ -29,7 +30,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
-import retrofit.client.Client
 import retrofit.client.Response
 
 @Slf4j
@@ -37,24 +37,20 @@ import retrofit.client.Response
 @ConditionalOnProperty('slack.enabled')
 class SlackNotificationService implements InteractiveNotificationService {
   private static Notification.Type TYPE = Notification.Type.SLACK
-  private static final String SLACK_HOOKS_SERVICE_HOST = "hooks.slack.com"
 
   private SlackService slack
   private SlackHookService slackHookService
-  private Client retrofitClient
   private NotificationTemplateEngine notificationTemplateEngine
   private ObjectMapper objectMapper
 
   SlackNotificationService(
     SlackService slack,
     SlackHookService slackHookService,
-    Client retrofitClient,
     NotificationTemplateEngine notificationTemplateEngine,
     ObjectMapper objectMapper
   ) {
     this.slack = slack
     this.slackHookService = slackHookService
-    this.retrofitClient = retrofitClient
     this.notificationTemplateEngine = notificationTemplateEngine
     this.objectMapper = objectMapper
   }
@@ -74,7 +70,7 @@ class SlackNotificationService implements InteractiveNotificationService {
         response = slack.sendCompactMessage(new CompactSlackMessage(text), address, true)
       } else {
         response = slack.sendMessage(
-          new SlackAttachment("Spinnaker Notification", text, notification.interactiveActions),
+          new SlackAttachment("Spinnaker Notification", text, (InteractiveActions)notification.interactiveActions),
           address, true)
       }
       log.trace("Received response from Slack: {} {} for message '{}'. {}",

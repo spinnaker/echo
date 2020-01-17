@@ -19,6 +19,7 @@ package com.netflix.spinnaker.echo.api
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import groovy.transform.Canonical
 
 class Notification {
   Type notificationType
@@ -79,11 +80,13 @@ class Notification {
     String value
   }
 
+  @Canonical
   static class ButtonAction extends InteractiveAction {
     String type = "button"
     String label
   }
 
+  @Canonical
   static class InteractiveActionCallback {
     InteractiveAction actionPerformed
     String serviceId
