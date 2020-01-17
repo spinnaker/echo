@@ -94,16 +94,12 @@ public class InteractiveNotificationCallbackHandler {
 
     log.debug("Routing notification callback to originating service " + callback.getServiceId());
 
-    // TODO: error handling (retries?)
-    //    retrySupport.retry(
-    //      () ->
+    // TODO(lfp): error handling (retries?). I'd like to respond to the message in a thread, but
+    // have been unable to
+    //  make that work. Troubleshooting with Slack support.
     final Response response = spinnakerService.notificationCallback(callback, callback.getUser());
     log.debug(
         "Received callback response from downstream Spinnaker service: " + response.toString());
-    //      5,
-    //      2000,
-    //      false);
-    //  }
 
     // Allows the notification service implementation to respond to the callback as needed
     Optional<ResponseEntity<String>> outwardResponse =
