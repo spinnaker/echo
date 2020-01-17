@@ -24,7 +24,7 @@ class SlackConfigSpec extends Specification {
     where:
     token                                          | expectedEndpoint                   | expectedUseIncomingWebHook
     "myOldFashionToken"                            | "https://slack.com"                | false
-    "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" | "https://hooks.slack.com/services" | true
+    "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" | "https://hooks.slack.com"          | true
     "OLD/FASHION"                                  | "https://slack.com"                | false
     ""                                             | "https://slack.com"                | false
     null                                           | "https://slack.com"                | false
@@ -47,8 +47,8 @@ class SlackConfigSpec extends Specification {
     "myOldFashionToken"                            | ""                    | "https://slack.com"                | false
     "myOldFashionToken"                            | null                  | "https://slack.com"                | false
     "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" | "https://example.com" | "https://example.com"              | true
-    "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" | ""                    | "https://hooks.slack.com/services" | true
-    "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" | null                  | "https://hooks.slack.com/services" | true
+    "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" | ""                    | "https://hooks.slack.com"          | true
+    "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" | null                  | "https://hooks.slack.com"          | true
   }
 
   def 'test slack incoming web hook when forceUseIncomingWebhook'() {
