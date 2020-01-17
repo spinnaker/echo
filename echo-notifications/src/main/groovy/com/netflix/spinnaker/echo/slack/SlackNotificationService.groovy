@@ -157,7 +157,7 @@ class SlackNotificationService implements InteractiveNotificationService {
     message.attachments[0].remove("actions")
     message.attachments[0].text += "\n\nUser <@${payload.user.id}> clicked the *${selectedActionText}* action."
 
-    // Example: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+    // Example: https://hooks.slack.com/actions/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
     URI responseUrl = new URI(payload.response_url)
     Response response = slackHookService.respondToMessage(responseUrl.path, message)
     log.debug("Response from Slack: ${response.toString()}")
