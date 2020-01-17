@@ -45,7 +45,7 @@ import static retrofit.Endpoints.newFixedEndpoint
 @Slf4j
 @CompileStatic
 class SlackConfig {
-  final static String SLACK_INCOMING_WEBHOOK = 'https://hooks.slack.com'
+  final static String SLACK_INCOMING_WEBHOOK = 'https://hooks.slack.com/services'
   final static String SLACK_CHAT_API = 'https://slack.com'
 
   @ConfigurationProperties(prefix = "slack")
@@ -106,7 +106,7 @@ class SlackConfig {
   SlackHookService slackHookService(Client retrofitClient,
                                     RestAdapter.LogLevel retrofitLogLevel) {
     new RestAdapter.Builder()
-      .setEndpoint(newFixedEndpoint(SLACK_INCOMING_WEBHOOK))
+      .setEndpoint(newFixedEndpoint(SLACK_INCOMING_WEBHOOK.replace("/services", "")))
       .setClient(retrofitClient)
       .setLogLevel(retrofitLogLevel)
       .setLog(new Slf4jRetrofitLogger(SlackHookService.class))
