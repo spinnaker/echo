@@ -30,7 +30,7 @@ interface NotificationService {
 /**
  * Extension of the {@link NotificationService} interface that defines methods for services supporting interactive
  * notifications by means of callbacks from the corresponding external service into echo
- * (via {@code POST /interactive-notifications/callbacks}).
+ * (via {@code POST /notifications/callbacks}).
  *
  * Processing of those callbacks happens in three steps:
  *
