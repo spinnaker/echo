@@ -2,6 +2,7 @@ package com.netflix.spinnaker.echo.slack
 
 import com.netflix.spinnaker.echo.api.Notification
 import com.netflix.spinnaker.echo.config.SlackConfig
+import com.netflix.spinnaker.echo.config.SlackLegacyProperties
 import groovy.json.JsonSlurper
 import org.apache.http.NameValuePair
 import org.apache.http.client.utils.URLEncodedUtils
@@ -24,7 +25,7 @@ class SlackServiceSpec extends Specification {
   @Subject mockHttpClient
   @Subject BlockingVariable<String> actualUrl
   @Subject BlockingVariable<String> actualPayload
-  SlackConfig.SlackProperties configProperties
+  SlackLegacyProperties configProperties
 
   def setup() {
     actualUrl = new BlockingVariable<String>()
@@ -38,7 +39,7 @@ class SlackServiceSpec extends Specification {
       mockResponse()
     }
 
-    configProperties = new SlackConfig.SlackProperties()
+    configProperties = new SlackLegacyProperties()
   }
 
   def 'test sending Slack notification using incoming web hook'() {

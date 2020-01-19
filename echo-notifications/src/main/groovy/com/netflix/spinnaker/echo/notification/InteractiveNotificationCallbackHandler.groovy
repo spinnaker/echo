@@ -42,8 +42,11 @@ import retrofit.http.Body;
 import retrofit.http.Header;
 import retrofit.http.POST;
 
+/**
+ * Implements the flow of interactive notification processing as described in {@link InteractiveNotificationService}.
+ */
 @Component
-public class InteractiveNotificationCallbackHandler {
+class InteractiveNotificationCallbackHandler {
   private final Logger log = LoggerFactory.getLogger(InteractiveNotificationCallbackHandler.class);
 
   private Ok3Client spinnakerServiceClient;
@@ -52,21 +55,23 @@ public class InteractiveNotificationCallbackHandler {
   private Map<String, SpinnakerService> spinnakerServices = new HashMap<>();
 
   @Autowired
-  public InteractiveNotificationCallbackHandler(
+  InteractiveNotificationCallbackHandler(
       Ok3Client spinnakerServiceClient,
       List<InteractiveNotificationService> notificationServices,
-      Environment environment) {
+      Environment environment
+  ) {
     this.spinnakerServiceClient = spinnakerServiceClient;
     this.notificationServices = notificationServices;
     this.environment = environment;
   }
 
-  public InteractiveNotificationCallbackHandler(
-      Ok3Client spinnakerServiceClient,
+  // For access from tests only
+  InteractiveNotificationCallbackHandler(
       List<InteractiveNotificationService> notificationServices,
-      Environment environment,
-      Map<String, SpinnakerService> spinnakerServices) {
-    this(spinnakerServiceClient, notificationServices, environment);
+      Map<String, SpinnakerService> spinnakerServices,
+      Environment environment
+  ) {
+    this(null, notificationServices, environment);
     this.spinnakerServices = spinnakerServices;
   }
 
@@ -77,8 +82,7 @@ public class InteractiveNotificationCallbackHandler {
    * @param source The unique name of the source of the callback (e.g. "slack")
    * @param request The request received from the notification service
    */
-  public ResponseEntity<String> processCallback(
-      final String source, RequestEntity<String> request) {
+  ResponseEntity<String> processCallback(final String source, RequestEntity<String> request) {
     log.debug("Received interactive notification callback request from " + source);
 
     InteractiveNotificationService notificationService = getNotificationService(source);
@@ -98,20 +102,19 @@ public class InteractiveNotificationCallbackHandler {
     // have been unable to
     //  make that work. Troubleshooting with Slack support.
     final Response response = spinnakerService.notificationCallback(callback, callback.getUser());
-    log.debug(
-        "Received callback response from downstream Spinnaker service: " + response.toString());
+    log.debug("Received callback response from downstream Spinnaker service: " + response.toString());
 
     // Allows the notification service implementation to respond to the callback as needed
     Optional<ResponseEntity<String>> outwardResponse =
         notificationService.respondToCallback(request);
+
     return outwardResponse.orElse(new ResponseEntity(HttpStatus.OK));
   }
 
   private InteractiveNotificationService getNotificationService(String source) {
-    return notificationServices.stream()
-        .filter(it -> it.supportsType(Notification.Type.valueOf(source.toUpperCase())))
-        .findAny()
-        .orElse(null);
+    return notificationServices.find { it ->
+      it.supportsType(Notification.Type.valueOf(source.toUpperCase()))
+    }
   }
 
   private SpinnakerService getSpinnakerService(String serviceId) {
@@ -124,15 +127,16 @@ public class InteractiveNotificationCallbackHandler {
       }
 
       spinnakerServices.put(
-          serviceId,
-          new RestAdapter.Builder()
-              .setEndpoint(Endpoints.newFixedEndpoint(baseUrl))
-              .setClient(spinnakerServiceClient)
-              .setLogLevel(RestAdapter.LogLevel.BASIC)
-              .setLog(new Slf4jRetrofitLogger(SpinnakerService.class))
-              .setConverter(new JacksonConverter())
-              .build()
-              .create(SpinnakerService.class));
+        serviceId,
+        new RestAdapter.Builder()
+            .setEndpoint(Endpoints.newFixedEndpoint(baseUrl))
+            .setClient(spinnakerServiceClient)
+            .setLogLevel(RestAdapter.LogLevel.BASIC)
+            .setLog(new Slf4jRetrofitLogger(SpinnakerService.class))
+            .setConverter(new JacksonConverter())
+            .build()
+            .create(SpinnakerService.class)
+  );
     }
 
     return spinnakerServices.get(serviceId);
