@@ -27,6 +27,27 @@ interface NotificationService {
   EchoResponse handle(Notification notification)
 }
 
+/**
+ * Extension of the {@link NotificationService} interface that defines methods for services supporting interactive
+ * notifications by means of callbacks from the corresponding external service into echo.
+ *
+ * Processing of those callbacks happens in three steps:
+ *
+ * 1. The {@link #parseInteractionCallback} method is called to translate the service-specific payload received in the
+ *    callback request to the generic equivalent defined by echo, defined by the {@link InteractiveActionCallback}
+ *    class.
+ *
+ * 2. Using de identifier of the Spinnaker service which initially originated the notification, and which is parsed
+ *    in step #1 and returned in {@link InteractiveActionCallback#serviceId}, echo relays the callback details, now
+ *    in the generic format, to the corresponding Spinnaker service for processing. This allows the originating service
+ *    to take action based on the user's response to the notification (e.g. if the notification was to request approval
+ *    and the user clicked an "Approve" button, that would be represented in the object passed to the service).
+ *
+ * 3. The {@link #respondToCallback} method is called to allow the implementor of the interface to respond back to
+ *    the external notification service as needed (e.g. Slack includes a {@code response_url} field in the payload
+ *    which allows us to interact again with the original notification message by responding to a thread, replacing
+ *    the contents of the original notification with the user's choice, etc.).
+ */
 interface InteractiveNotificationService extends NotificationService {
   /**
    * Translate the contents received by echo on the generic notification callbacks API into a generic callback
