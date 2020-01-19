@@ -74,10 +74,10 @@ class SlackConfig {
    * This bean is used for new-style Slack apps, which support interactive messages and other features.
    * You can use the same token for both the legacy service above and this one (whose configuration resides
    * in the {@code slack.app} sub-key in the config), if your integration already uses a new app, or a different
-   * token for the legacy service and this one, which might useful for migrations.
+   * token for the legacy service and this one, which might be useful for migrations.
    *
-   * Calls to {@code POST /notifications} rely on the legacy service.
-   * Calls to {@code POST /interactive-notifications} rely on the new app service.
+   * Calls to {@code POST /notifications} for non-interactive notifications rely on the legacy service, and
+   * on the app service for interactive ones. {@see NotificationController#create}
    */
   @Bean
   @Qualifier("slackAppService")
