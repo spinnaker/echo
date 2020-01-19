@@ -22,10 +22,6 @@ import com.netflix.spinnaker.echo.api.Notification.InteractiveActionCallback;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,8 +95,8 @@ class InteractiveNotificationCallbackHandler {
     log.debug("Routing notification callback to originating service " + callback.getServiceId());
 
     // TODO(lfp): error handling (retries?). I'd like to respond to the message in a thread, but
-    // have been unable to
-    //  make that work. Troubleshooting with Slack support.
+    //  have been unable to make that work. Troubleshooting with Slack support.
+    // TODO(lfp): need to retrieve user's acccounts to pass in X-SPINNAKER-ACCOUNTS
     final Response response = spinnakerService.notificationCallback(callback, callback.getUser());
     log.debug("Received callback response from downstream Spinnaker service: " + response.toString());
 

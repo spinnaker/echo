@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.echo.api
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import groovy.transform.Canonical
@@ -30,6 +29,10 @@ class Notification {
   Source source
   Map<String, Object> additionalContext = [:]
   InteractiveActions interactiveActions
+
+  boolean isInteractive() {
+    interactiveActions != null && !interactiveActions.actions.empty
+  }
 
   static class Source {
     String executionType
@@ -64,7 +67,7 @@ class Notification {
     String callbackServiceId
     String callbackMessageId
     String color = '#cccccc'
-    List<InteractiveAction> actions
+    List<InteractiveAction> actions = []
   }
 
   @JsonTypeInfo(
