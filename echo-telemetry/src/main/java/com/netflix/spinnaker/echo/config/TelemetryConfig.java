@@ -21,6 +21,7 @@ import com.netflix.spinnaker.retrofit.RetrofitConfigurationProperties;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import com.squareup.okhttp.OkHttpClient;
 import de.huxhorn.sulky.ulid.ULID;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -69,13 +70,31 @@ public class TelemetryConfig {
   @ConfigurationProperties(prefix = "telemetry")
   public static class TelemetryConfigProps {
 
+    public static final String DEFAULT_DEPLOY_METHOD = "none";
+    public static final String DEFAULT_DEPLOY_VERSION = "none";
     public static final String DEFAULT_TELEMETRY_ENDPOINT = "https://stats.spinnaker.io/log";
 
     boolean enabled = false;
     String endpoint = DEFAULT_TELEMETRY_ENDPOINT;
     String instanceId = new ULID().nextULID();
     String spinnakerVersion = "unknown";
+    DeploymentMethod deploymentMethod =
+        new DeploymentMethod(DEFAULT_DEPLOY_METHOD, DEFAULT_DEPLOY_VERSION);
     int connectionTimeoutMillis = 3000;
     int readTimeoutMillis = 5000;
+
+    @Data
+    public static class DeploymentMethod {
+      private final String type;
+      private final String version;
+
+      public Optional<String> getType() {
+        return Optional.ofNullable(type);
+      }
+
+      public Optional<String> getVersion() {
+        return Optional.ofNullable(version);
+      }
+    }
   }
 }

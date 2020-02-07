@@ -367,6 +367,84 @@ class TelemetryEventListenerSpec extends Specification {
     }
   }
 
+  def "test event has deploy method information happy path"(String deploymentType, String deployVersion) {
+      given:
+      def deployMethod = new TelemetryConfig.TelemetryConfigProps.DeploymentMethod(deploymentType, deployVersion)
+
+      def configProps = new TelemetryConfig.TelemetryConfigProps()
+        .setInstanceId(instanceId)
+        .setSpinnakerVersion(spinnakerVersion)
+        .setDeploymentMethod(deployMethod)
+
+      def deployEnumType = DeploymentMethod.Type.valueOf(deploymentType.toUpperCase())
+
+      @Subject
+      def listener = new TelemetryEventListener(service, configProps, registry)
+
+      when:
+      listener.processEvent(validEvent)
+
+      then:
+      1 * service.log(_) >> { List args ->
+        String body = args[0]?.toString()
+        assert body != null
+
+        // Note the handy Groovy feature of import aliasing Event->EventProto
+        EventProto.Builder eventBuilder = EventProto.newBuilder()
+        JsonFormat.parser().merge(body, eventBuilder)
+
+        EventProto e = eventBuilder.build()
+        assert e != null
+
+        SpinnakerInstance s = e.spinnakerInstance
+        assert s != null
+        assert s.deploymentMethod != null
+        assert s.deploymentMethod.type == deployEnumType
+        assert s.deploymentMethod.version == deployVersion
+      }
+
+      where:
+      deploymentType        | deployVersion
+      "none"                | "1.2.3"
+      "other"               | "3.2.1"
+      "minnaker"            | "3.3.3."
+      "halyard"             | "1.0.0"
+      "armory_halyard"      | "2.1.9"
+      "kubernetes_operator" | "88.88.88"
+  }
+
+  def "test event, with null deploy method info"() {
+    given:
+    def configProps = new TelemetryConfig.TelemetryConfigProps()
+      .setInstanceId(instanceId)
+      .setSpinnakerVersion(spinnakerVersion)
+      .setDeploymentMethod(new TelemetryConfig.TelemetryConfigProps.DeploymentMethod(null, null))
+
+    @Subject
+    def listener = new TelemetryEventListener(service, configProps, registry)
+
+    when:
+    listener.processEvent(validEvent)
+
+    then:
+    1 * service.log(_) >> { List args ->
+      String body = args[0]?.toString()
+      assert body != null
+
+      // Note the handy Groovy feature of import aliasing Event->EventProto
+      EventProto.Builder eventBuilder = EventProto.newBuilder()
+      JsonFormat.parser().merge(body, eventBuilder)
+
+      EventProto e = eventBuilder.build()
+      assert e != null
+
+      SpinnakerInstance s = e.spinnakerInstance
+      assert s != null
+      assert s.deploymentMethod.type == DeploymentMethod.Type.NONE
+      assert s.deploymentMethod.version == "none"
+    }
+  }
+
   // This function more closely mimics Jackson's deserialization of JSON from an
   // incoming HTTP request.
   private static Event mapToEventViaJson(Object o) {

@@ -28,13 +28,8 @@ import com.google.protobuf.util.JsonFormat;
 import com.netflix.spinnaker.echo.config.TelemetryConfig;
 import com.netflix.spinnaker.echo.events.EchoEventListener;
 import com.netflix.spinnaker.echo.model.Event;
-import com.netflix.spinnaker.kork.proto.stats.Application;
-import com.netflix.spinnaker.kork.proto.stats.CloudProvider;
+import com.netflix.spinnaker.kork.proto.stats.*;
 import com.netflix.spinnaker.kork.proto.stats.CloudProvider.ID;
-import com.netflix.spinnaker.kork.proto.stats.Execution;
-import com.netflix.spinnaker.kork.proto.stats.SpinnakerInstance;
-import com.netflix.spinnaker.kork.proto.stats.Stage;
-import com.netflix.spinnaker.kork.proto.stats.Status;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.nio.charset.StandardCharsets;
@@ -160,9 +155,22 @@ public class TelemetryEventListener implements EchoEventListener {
 
     Application application = Application.newBuilder().setId(hashedApplicationId).build();
 
+    DeploymentMethod.Type deployType =
+        DeploymentMethod.Type.valueOf(
+            parseEnum(
+                DeploymentMethod.Type.getDescriptor(),
+                telemetryConfigProps.getDeploymentMethod().getType().orElse("none").toUpperCase()));
+
+    DeploymentMethod deploymentMethod =
+        DeploymentMethod.newBuilder()
+            .setType(deployType)
+            .setVersion(telemetryConfigProps.getDeploymentMethod().getVersion().orElse("none"))
+            .build();
+
     SpinnakerInstance spinnakerInstance =
         SpinnakerInstance.newBuilder()
             .setId(hashedInstanceId)
+            .setDeploymentMethod(deploymentMethod)
             .setVersion(telemetryConfigProps.getSpinnakerVersion())
             .build();
 
