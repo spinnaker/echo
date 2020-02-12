@@ -100,7 +100,7 @@ class SlackInteractiveNotificationService extends SlackNotificationService imple
   @Override
   Notification.InteractiveActionCallback parseInteractionCallback(RequestEntity<String> request) {
     // TODO(lfp): This currently doesn't work -- troubleshooting with Slack support.
-    //slack.verifySignature(request)
+    slackAppService.verifySignature(request)
 
     Map payload = parseSlackPayload(request.getBody())
     log.debug("Received callback event from Slack of type ${payload.type}")
