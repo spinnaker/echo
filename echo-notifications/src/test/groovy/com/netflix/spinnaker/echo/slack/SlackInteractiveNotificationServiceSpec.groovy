@@ -115,7 +115,7 @@ class SlackInteractiveNotificationServiceSpec extends Specification {
     thrown(InvalidRequestException)
   }
 
-  def "failing to verify the token from Slack throws an exception"() {
+  def "failing to verify the signature from Slack throws an exception"() {
     given:
     String slackRequestBody = "payload=" +
       URLEncoder.encode(getClass().getResource("/slack/callbackRequestBody.txt").text)
@@ -123,7 +123,7 @@ class SlackInteractiveNotificationServiceSpec extends Specification {
     RequestEntity<String> request = new RequestEntity<>(
       slackRequestBody, new HttpHeaders(), HttpMethod.POST, new URI("/notifications/callbacks"))
 
-    slackAppService.verifyToken(*_) >> { throw new InvalidRequestException() }
+    slackAppService.verifySignature(*_) >> { throw new InvalidRequestException() }
     slackAppService.getUserInfo(*_) >> { }
 
     when:
