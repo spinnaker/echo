@@ -4,7 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.protobuf.util.JsonFormat
 import com.netflix.spinnaker.echo.config.TelemetryConfig
 import com.netflix.spinnaker.echo.model.Event
-import com.netflix.spinnaker.kork.proto.stats.*
+import com.netflix.spinnaker.kork.proto.stats.Application
+import com.netflix.spinnaker.kork.proto.stats.CloudProvider
+import com.netflix.spinnaker.kork.proto.stats.Execution
+import com.netflix.spinnaker.kork.proto.stats.DeploymentMethod
+import com.netflix.spinnaker.kork.proto.stats.SpinnakerInstance
+import com.netflix.spinnaker.kork.proto.stats.Stage
+import com.netflix.spinnaker.kork.proto.stats.Status
 import com.netflix.spinnaker.kork.proto.stats.Event as EventProto
 import groovy.json.JsonOutput
 import groovy.util.logging.Slf4j
