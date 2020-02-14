@@ -410,7 +410,7 @@ class TelemetryEventListenerSpec extends Specification {
       "minnaker"            | "3.3.3."
       "halyard"             | "1.0.0"
       "armory_halyard"      | "2.1.9"
-      "kubernetes_operator" | "88.88.88"
+      "kubernetes_operator" | "v0.3.0"
   }
 
   def "test event, with null deploy method info"() {
@@ -418,7 +418,7 @@ class TelemetryEventListenerSpec extends Specification {
     def configProps = new TelemetryConfig.TelemetryConfigProps()
       .setInstanceId(instanceId)
       .setSpinnakerVersion(spinnakerVersion)
-      .setDeploymentMethod(new TelemetryConfig.TelemetryConfigProps.DeploymentMethod(null, null))
+      .setDeploymentMethod(new TelemetryConfig.TelemetryConfigProps.DeploymentMethod())
 
     @Subject
     def listener = new TelemetryEventListener(service, configProps, registry)
@@ -441,7 +441,7 @@ class TelemetryEventListenerSpec extends Specification {
       SpinnakerInstance s = e.spinnakerInstance
       assert s != null
       assert s.deploymentMethod.type == DeploymentMethod.Type.NONE
-      assert s.deploymentMethod.version == "none"
+      assert s.deploymentMethod.version == ""
     }
   }
 

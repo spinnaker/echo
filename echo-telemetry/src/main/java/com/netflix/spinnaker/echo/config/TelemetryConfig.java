@@ -23,7 +23,9 @@ import com.squareup.okhttp.OkHttpClient;
 import de.huxhorn.sulky.ulid.ULID;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -70,23 +72,22 @@ public class TelemetryConfig {
   @ConfigurationProperties(prefix = "telemetry")
   public static class TelemetryConfigProps {
 
-    public static final String DEFAULT_DEPLOY_METHOD = "none";
-    public static final String DEFAULT_DEPLOY_VERSION = "none";
     public static final String DEFAULT_TELEMETRY_ENDPOINT = "https://stats.spinnaker.io/log";
 
     boolean enabled = false;
     String endpoint = DEFAULT_TELEMETRY_ENDPOINT;
     String instanceId = new ULID().nextULID();
     String spinnakerVersion = "unknown";
-    DeploymentMethod deploymentMethod =
-        new DeploymentMethod(DEFAULT_DEPLOY_METHOD, DEFAULT_DEPLOY_VERSION);
+    DeploymentMethod deploymentMethod = new DeploymentMethod();
     int connectionTimeoutMillis = 3000;
     int readTimeoutMillis = 5000;
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class DeploymentMethod {
-      private final String type;
-      private final String version;
+      private String type;
+      private String version;
 
       public Optional<String> getType() {
         return Optional.ofNullable(type);

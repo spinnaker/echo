@@ -155,23 +155,11 @@ public class TelemetryEventListener implements EchoEventListener {
 
     Application application = Application.newBuilder().setId(hashedApplicationId).build();
 
-    DeploymentMethod.Type deployType =
-        DeploymentMethod.Type.valueOf(
-            parseEnum(
-                DeploymentMethod.Type.getDescriptor(),
-                telemetryConfigProps.getDeploymentMethod().getType().orElse("none").toUpperCase()));
-
-    DeploymentMethod deploymentMethod =
-        DeploymentMethod.newBuilder()
-            .setType(deployType)
-            .setVersion(telemetryConfigProps.getDeploymentMethod().getVersion().orElse("none"))
-            .build();
-
     SpinnakerInstance spinnakerInstance =
         SpinnakerInstance.newBuilder()
             .setId(hashedInstanceId)
-            .setDeploymentMethod(deploymentMethod)
             .setVersion(telemetryConfigProps.getSpinnakerVersion())
+            .setDeploymentMethod(toDeploymentMethod(telemetryConfigProps.getDeploymentMethod()))
             .build();
 
     com.netflix.spinnaker.kork.proto.stats.Event loggedEvent =
@@ -197,6 +185,24 @@ public class TelemetryEventListener implements EchoEventListener {
     } catch (Exception e) {
       log.debug("Could not send Telemetry event {}", event, e);
     }
+  }
+
+  private DeploymentMethod toDeploymentMethod(
+      TelemetryConfig.TelemetryConfigProps.DeploymentMethod deployment) {
+
+    if (!deployment.getType().isPresent() || !deployment.getVersion().isPresent()) {
+      return DeploymentMethod.getDefaultInstance();
+    }
+
+    DeploymentMethod.Type deployType =
+        DeploymentMethod.Type.valueOf(
+            parseEnum(
+                DeploymentMethod.Type.getDescriptor(), deployment.getType().get().toUpperCase()));
+
+    return DeploymentMethod.newBuilder()
+        .setType(deployType)
+        .setVersion(deployment.getVersion().get())
+        .build();
   }
 
   private Optional<List<Stage>> toStages(Holder.Stage stage) {
