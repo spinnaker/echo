@@ -43,6 +43,14 @@ class TelemetryEventListenerSpec extends Specification {
       application: applicationName,
     ],
     content: [
+      spinnakerInstance : [
+        id              : instanceHash,
+        version         : spinnakerVersion,
+        deploymentMethod: [
+          type   : "kubernetes_operator",
+          version: "v3.0.0"
+        ]
+      ],
       execution: [
         id     : executionId,
         type   : "PIPELINE",
