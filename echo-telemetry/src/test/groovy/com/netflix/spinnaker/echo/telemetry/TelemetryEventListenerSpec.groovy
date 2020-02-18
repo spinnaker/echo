@@ -383,7 +383,9 @@ class TelemetryEventListenerSpec extends Specification {
 
   def "test event has deploy method information happy path"(String deploymentType, String deployVersion) {
       given:
-      def deployMethod = new TelemetryConfig.TelemetryConfigProps.DeploymentMethod(deploymentType, deployVersion)
+      def deployMethod = new TelemetryConfig.TelemetryConfigProps.DeploymentMethod()
+        .setType(deploymentType)
+        .setVersion(deployVersion)
 
       def configProps = new TelemetryConfig.TelemetryConfigProps()
         .setInstanceId(instanceId)
@@ -419,12 +421,10 @@ class TelemetryEventListenerSpec extends Specification {
 
       where:
       deploymentType        | deployVersion
-      "none"                | "1.2.3"
+      "none"                | ""
       "other"               | "3.2.1"
-      "minnaker"            | "3.3.3."
       "halyard"             | "1.0.0"
-      "armory_halyard"      | "2.1.9"
-      "kubernetes_operator" | "v0.3.0"
+      "kubernetes_operator" | "0.3.0"
   }
 
   def "test event, with null deploy method info"() {

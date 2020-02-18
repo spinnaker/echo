@@ -23,9 +23,7 @@ import com.squareup.okhttp.OkHttpClient;
 import de.huxhorn.sulky.ulid.ULID;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -83,8 +81,6 @@ public class TelemetryConfig {
     int readTimeoutMillis = 5000;
 
     @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class DeploymentMethod {
       private String type;
       private String version;
