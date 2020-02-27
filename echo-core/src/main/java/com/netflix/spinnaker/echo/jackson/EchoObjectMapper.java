@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.echo.jackson;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.jackson.mixin.EventMixin;
-
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 public class EchoObjectMapper {
   private EchoObjectMapper() {}
@@ -32,11 +32,11 @@ public class EchoObjectMapper {
 
   public static ObjectMapper newInstance() {
     return new ObjectMapper()
-      .addMixIn(Event.class, EventMixin.class)
-      .registerModule(new Jdk8Module())
-      .registerModule(new JavaTimeModule())
-      .disable(FAIL_ON_UNKNOWN_PROPERTIES)
-      .setSerializationInclusion(NON_NULL);
+        .addMixIn(Event.class, EventMixin.class)
+        .registerModule(new Jdk8Module())
+        .registerModule(new JavaTimeModule())
+        .disable(FAIL_ON_UNKNOWN_PROPERTIES)
+        .setSerializationInclusion(NON_NULL);
   }
 
   /**

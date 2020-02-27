@@ -16,11 +16,10 @@
 
 package com.netflix.spinnaker.echo.jackson.mixin;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
-import java.util.Map;
-
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.Map;
 
 public abstract class EventMixin {
 

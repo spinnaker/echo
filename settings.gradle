@@ -15,7 +15,6 @@
  */
 
 include 'echo-api',
-        'echo-api-jackson',
         'echo-artifacts',
         'echo-bom',
         'echo-core',
@@ -44,4 +43,3 @@ def setBuildFile(project) {
 rootProject.children.each {
     setBuildFile it
 }
-include 'echo-api-jackson'

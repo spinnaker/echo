@@ -19,13 +19,11 @@ package com.netflix.spinnaker.echo.scm;
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.echo.api.events.Event;
+import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import java.util.List;
 import java.util.Map;
-
-import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

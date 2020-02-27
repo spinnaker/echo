@@ -16,13 +16,11 @@
 
 package com.netflix.spinnaker.echo.scm;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.echo.api.events.Event;
+import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import java.util.List;
 import java.util.Map;
-
-import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 

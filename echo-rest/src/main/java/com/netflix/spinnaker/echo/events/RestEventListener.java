@@ -21,10 +21,9 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.api.events.EventListener;
 import com.netflix.spinnaker.echo.config.RestUrls;
+import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

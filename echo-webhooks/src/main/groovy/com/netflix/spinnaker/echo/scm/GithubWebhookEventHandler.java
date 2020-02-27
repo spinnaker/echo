@@ -18,7 +18,6 @@ package com.netflix.spinnaker.echo.scm;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
