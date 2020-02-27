@@ -15,6 +15,7 @@
  */
 
 dependencies {
+  api project (":echo-api")
   implementation "com.netflix.spinnaker.kork:kork-core"
   implementation "com.netflix.spinnaker.kork:kork-artifacts"
   implementation "org.springframework:spring-web"

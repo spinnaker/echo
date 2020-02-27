@@ -3,7 +3,7 @@ package com.netflix.spinnaker.echo.telemetry
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.protobuf.util.JsonFormat
 import com.netflix.spinnaker.echo.config.TelemetryConfig
-import com.netflix.spinnaker.echo.model.Event
+import com.netflix.spinnaker.echo.api.events.Event
 import com.netflix.spinnaker.kork.proto.stats.Application
 import com.netflix.spinnaker.kork.proto.stats.CloudProvider
 import com.netflix.spinnaker.kork.proto.stats.Execution

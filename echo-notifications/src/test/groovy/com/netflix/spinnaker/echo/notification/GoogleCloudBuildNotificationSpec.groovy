@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.echo.notification
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.netflix.spinnaker.echo.model.Event
-import com.netflix.spinnaker.echo.model.Metadata
+import com.netflix.spinnaker.echo.api.events.Event
+import com.netflix.spinnaker.echo.api.events.Metadata
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription
 import com.netflix.spinnaker.echo.services.IgorService
 import com.netflix.spinnaker.kork.core.RetrySupport

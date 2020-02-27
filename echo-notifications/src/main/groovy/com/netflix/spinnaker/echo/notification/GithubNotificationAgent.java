@@ -22,7 +22,7 @@ import com.netflix.spinnaker.echo.exceptions.FieldNotFoundException;
 import com.netflix.spinnaker.echo.github.GithubCommit;
 import com.netflix.spinnaker.echo.github.GithubService;
 import com.netflix.spinnaker.echo.github.GithubStatus;
-import com.netflix.spinnaker.echo.model.Event;
+import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import java.io.IOException;
 import java.util.Map;

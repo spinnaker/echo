@@ -43,3 +43,5 @@ def setBuildFile(project) {
 rootProject.children.each {
     setBuildFile it
 }
+include 'echo-api-jackson'
+

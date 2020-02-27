@@ -22,7 +22,7 @@ import com.netflix.spinnaker.echo.api.Notification.Type;
 import com.netflix.spinnaker.echo.config.GooglePubsubProperties.Content;
 import com.netflix.spinnaker.echo.controller.EchoResponse;
 import com.netflix.spinnaker.echo.controller.EchoResponse.Void;
-import com.netflix.spinnaker.echo.model.Event;
+import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.model.pubsub.PubsubSystem;
 import com.netflix.spinnaker.echo.notification.AbstractEventNotificationAgent;
 import com.netflix.spinnaker.echo.notification.NotificationService;

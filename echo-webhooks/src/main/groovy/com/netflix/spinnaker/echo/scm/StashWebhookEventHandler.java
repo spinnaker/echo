@@ -18,7 +18,7 @@ package com.netflix.spinnaker.echo.scm;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.echo.model.Event;
+import com.netflix.spinnaker.echo.api.events.Event;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;

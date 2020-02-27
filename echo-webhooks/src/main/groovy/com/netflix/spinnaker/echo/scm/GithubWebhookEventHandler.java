@@ -20,7 +20,7 @@ import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.spinnaker.echo.model.Event;
+import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.scm.github.GithubPullRequestEvent;
 import com.netflix.spinnaker.echo.scm.github.GithubPushEvent;
 import com.netflix.spinnaker.echo.scm.github.GithubWebhookEvent;

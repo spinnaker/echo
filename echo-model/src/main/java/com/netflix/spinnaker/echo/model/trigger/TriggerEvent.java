@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.echo.model.trigger;
 
-import com.netflix.spinnaker.echo.model.Metadata;
+import com.netflix.spinnaker.echo.api.events.Metadata;
 import java.util.Map;
 import lombok.Data;
 
