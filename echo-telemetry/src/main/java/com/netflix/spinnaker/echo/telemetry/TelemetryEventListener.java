@@ -25,9 +25,10 @@ import com.google.common.hash.Hashing;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.util.JsonFormat;
-import com.netflix.spinnaker.echo.config.TelemetryConfig;
-import com.netflix.spinnaker.echo.api.events.EventListener;
 import com.netflix.spinnaker.echo.api.events.Event;
+import com.netflix.spinnaker.echo.api.events.EventListener;
+import com.netflix.spinnaker.echo.config.TelemetryConfig;
+import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import com.netflix.spinnaker.kork.proto.stats.Application;
 import com.netflix.spinnaker.kork.proto.stats.CloudProvider;
 import com.netflix.spinnaker.kork.proto.stats.CloudProvider.ID;
@@ -70,8 +71,7 @@ public class TelemetryEventListener implements EventListener {
   private static final JsonFormat.Printer JSON_PRINTER =
       JsonFormat.printer().includingDefaultValueFields();
 
-  private static final ObjectMapper objectMapper =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  private static final ObjectMapper objectMapper = EchoObjectMapper.getInstance();
 
   private final TelemetryService telemetryService;
 

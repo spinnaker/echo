@@ -14,7 +14,16 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.echo.json;
+package com.netflix.spinnaker.echo.jackson.mixin;
 
-public class EchoApiModule {
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.Map;
+
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+
+public abstract class EventMixin {
+
+  @JsonInclude(NON_NULL)
+  public Map<String, Object> payload;
 }

@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.echo.api.events.Event;
 import java.util.List;
 import java.util.Map;
+
+import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
@@ -30,8 +32,7 @@ public class StashWebhookEventHandler implements GitWebhookHandler {
   private ObjectMapper objectMapper;
 
   public StashWebhookEventHandler() {
-    this.objectMapper =
-        new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    this.objectMapper = EchoObjectMapper.getInstance();
   }
 
   public boolean handles(String source) {

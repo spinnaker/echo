@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.echo.notification;
 
-import com.netflix.spinnaker.echo.api.events.EventListener;
 import com.netflix.spinnaker.echo.api.events.Event;
+import com.netflix.spinnaker.echo.api.events.EventListener;
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription;
 import com.netflix.spinnaker.echo.services.IgorService;
 import com.netflix.spinnaker.kork.core.RetrySupport;

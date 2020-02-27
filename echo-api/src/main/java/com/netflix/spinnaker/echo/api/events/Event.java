@@ -16,12 +16,9 @@
 
 package com.netflix.spinnaker.echo.api.events;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Data;
-
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 /** Represents an event */
 @Data
@@ -29,8 +26,6 @@ public class Event {
   public Metadata details;
   public Map<String, Object> content;
   public String rawContent;
-
-  @JsonInclude(NON_NULL)
   public Map<String, Object> payload;
 
   public String eventId = UUID.randomUUID().toString();

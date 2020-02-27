@@ -18,6 +18,8 @@ package com.netflix.spinnaker.echo.events;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
+
+import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -27,7 +29,7 @@ public class SimpleEventTemplateEngine implements RestEventTemplateEngine {
 
   private static final Logger log = LoggerFactory.getLogger(SimpleEventTemplateEngine.class);
 
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private ObjectMapper objectMapper = EchoObjectMapper.getInstance();
 
   public Map render(String templateString, Map eventMap) {
     Map renderedResultMap = null;

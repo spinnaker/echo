@@ -16,8 +16,8 @@
 
 package com.netflix.spinnaker.echo.events;
 
-import com.netflix.spinnaker.echo.api.events.EventListener;
 import com.netflix.spinnaker.echo.api.events.Event;
+import com.netflix.spinnaker.echo.api.events.EventListener;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.util.ArrayList;
 import java.util.List;

@@ -17,8 +17,8 @@
 package com.netflix.spinnaker.echo.config;
 
 import com.netflix.spinnaker.config.PluginsAutoConfiguration;
-import com.netflix.spinnaker.echo.discovery.DiscoveryPollingConfiguration;
 import com.netflix.spinnaker.echo.api.events.EventListener;
+import com.netflix.spinnaker.echo.discovery.DiscoveryPollingConfiguration;
 import com.netflix.spinnaker.echo.events.EventPropagator;
 import com.netflix.spinnaker.kork.PlatformComponents;
 import com.netflix.spinnaker.kork.artifacts.parsing.DefaultJinjavaFactory;

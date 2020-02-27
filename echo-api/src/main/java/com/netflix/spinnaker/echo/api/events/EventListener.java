@@ -18,9 +18,6 @@ package com.netflix.spinnaker.echo.api.events;
 
 import org.pf4j.ExtensionPoint;
 
-/**
- * The
- */
 public interface EventListener extends ExtensionPoint {
   void processEvent(Event event);
 }
