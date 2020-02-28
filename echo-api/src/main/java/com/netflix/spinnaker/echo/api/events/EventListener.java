@@ -18,6 +18,12 @@ package com.netflix.spinnaker.echo.api.events;
 
 import org.pf4j.ExtensionPoint;
 
+/**
+ * This is the main touch point for Echo. Implementations of `EventListener` will, if wired up as a
+ * Spring bean, process all events that are posted into Echo.
+ */
 public interface EventListener extends ExtensionPoint {
+
+  /** Process an Echo {@link Event} */
   void processEvent(Event event);
 }
