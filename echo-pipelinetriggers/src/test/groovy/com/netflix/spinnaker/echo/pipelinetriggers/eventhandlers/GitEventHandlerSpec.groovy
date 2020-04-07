@@ -286,7 +286,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     gitEvent.rawContent = "toBeHashed"
     gitEvent.details.source = "github"
     if (signature) {
-      gitEvent.details.requestHeaders.put("X-Hub-Signature", ["sha1=" + signature])
+      gitEvent.details.requestHeaders.put("x-hub-signature", ["sha1=" + signature])
     }
 
     def trigger = enabledGithubTrigger.atSecret(secret).atBranch("master")
