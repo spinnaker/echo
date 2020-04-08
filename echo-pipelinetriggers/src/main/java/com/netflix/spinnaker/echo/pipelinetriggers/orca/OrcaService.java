@@ -76,6 +76,6 @@ public interface OrcaService {
     private String id;
     private String pipelineConfigId;
     private Long startTime;
-    private OrcaTaskExecutionStatus status;
+    private OrcaExecutionStatus status;
   }
 }

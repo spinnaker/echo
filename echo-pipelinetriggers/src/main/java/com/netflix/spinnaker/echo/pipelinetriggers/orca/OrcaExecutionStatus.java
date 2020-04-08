@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-public enum OrcaTaskExecutionStatus {
+public enum OrcaExecutionStatus {
   /** The task has yet to start. */
   NOT_STARTED(false, false),
 
@@ -70,18 +70,18 @@ public enum OrcaTaskExecutionStatus {
     return halt;
   }
 
-  public static final Collection<OrcaTaskExecutionStatus> COMPLETED =
+  public static final Collection<OrcaExecutionStatus> COMPLETED =
       Collections.unmodifiableList(
           Arrays.asList(CANCELED, SUCCEEDED, STOPPED, SKIPPED, TERMINAL, FAILED_CONTINUE));
 
-  private static final Collection<OrcaTaskExecutionStatus> SUCCESSFUL =
+  private static final Collection<OrcaExecutionStatus> SUCCESSFUL =
       Collections.unmodifiableList(Arrays.asList(SUCCEEDED, STOPPED, SKIPPED));
-  private static final Collection<OrcaTaskExecutionStatus> FAILURE =
+  private static final Collection<OrcaExecutionStatus> FAILURE =
       Collections.unmodifiableList(Arrays.asList(TERMINAL, STOPPED, FAILED_CONTINUE));
   private final boolean complete;
   private final boolean halt;
 
-  OrcaTaskExecutionStatus(boolean complete, boolean halt) {
+  OrcaExecutionStatus(boolean complete, boolean halt) {
     this.complete = complete;
     this.halt = halt;
   }
