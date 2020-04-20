@@ -110,8 +110,7 @@ abstract class AbstractEventNotificationAgent implements EventListener {
 
     // stage level configurations
     if (config.type == 'stage') {
-      boolean isSynthetic = event.content?.isSynthetic?: event.content?.context?.stageDetails?.isSynthetic
-      if (event.content?.context?.sendNotifications && ( !isSynthetic ) ) {
+      if (event.content?.context?.sendNotifications) {
         event.content?.context?.notifications?.each { notification ->
           String key = getNotificationType()
           if (notification.type == key && notification?.when?.contains("${config.type}.$status".toString())) {
