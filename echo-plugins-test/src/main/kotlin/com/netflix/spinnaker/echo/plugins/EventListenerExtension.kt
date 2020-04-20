@@ -1,11 +1,11 @@
 /*
- * Copyright 2019 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,23 +14,13 @@
  * limitations under the License.
  */
 
-apply plugin: "java-platform"
-apply plugin: "maven-publish"
+package com.netflix.spinnaker.echo.plugins
 
-javaPlatform {
-  allowDependencies()
-}
+import com.netflix.spinnaker.echo.api.events.Event
+import com.netflix.spinnaker.echo.api.events.EventListener
+import org.pf4j.Extension
 
-dependencies {
-  api(platform("com.netflix.spinnaker.kork:kork-bom:${korkVersion}"))
-
-  constraints {
-    api("com.netflix.spinnaker.fiat:fiat-api:$fiatVersion")
-    api("com.netflix.spinnaker.fiat:fiat-core:$fiatVersion")
-
-    rootProject
-      .subprojects
-      .findAll { it != project }
-      .each { api(project(it.path)) }
-  }
+@Extension
+class EventListenerExtension : EventListener {
+  override fun processEvent(event: Event) {}
 }
