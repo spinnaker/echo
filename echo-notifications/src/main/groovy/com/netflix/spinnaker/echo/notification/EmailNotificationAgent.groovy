@@ -81,9 +81,19 @@ class EmailNotificationAgent extends AbstractEventNotificationAgent {
 
     String link = "${spinnakerUrl}/#/applications/${application}/${config.type == 'stage' ? 'executions/details' : config.link }/${event.content?.execution?.id}"
 
+    def engine = new groovy.text.SimpleTemplateEngine()
+
+    def expandEmail = { address ->
+       if (address != null && address != "") {
+          return [ engine.createTemplate(address as String).make(event.content) ] as String[]
+       }
+
+       return null
+    }
+
     sendMessage(
-      preference.address ? [preference.address] as String[] : null,
-      preference.cc ? [preference.cc] as String[] : null,
+      expandEmail(preference.address),
+      expandEmail(preference.cc),
       event,
       subject,
       config.type,
