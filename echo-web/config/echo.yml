@@ -32,8 +32,6 @@ webhooks:
 
 scheduler:
   enabled: ${services.echo.cron.enabled:true}
-  cron:
-    timezone: ${global.spinnaker.timezone:America/Los_Angeles}
 
 redis:
   connection: ${services.redis.baseUrl:redis://localhost:6379}
