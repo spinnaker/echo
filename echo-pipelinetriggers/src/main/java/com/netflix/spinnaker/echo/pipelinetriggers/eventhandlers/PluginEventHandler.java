@@ -15,6 +15,8 @@
  */
 package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
+import static java.lang.String.format;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.model.Trigger;
@@ -57,6 +59,8 @@ public class PluginEventHandler extends BaseTriggerEventHandler<PluginEvent> {
             .releaseDate(event.getContent().getReleaseDate())
             .requires(event.getContent().getRequires())
             .binaryUrl(event.getContent().getBinaryUrl())
+            .linkText(
+                format("%s@%s", event.getContent().getPluginId(), event.getContent().getVersion()))
             .build();
   }
 
