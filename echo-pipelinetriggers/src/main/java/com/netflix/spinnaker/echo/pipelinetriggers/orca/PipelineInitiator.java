@@ -27,6 +27,7 @@ import com.netflix.spinnaker.fiat.model.UserPermission;
 import com.netflix.spinnaker.fiat.model.resources.Account;
 import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator;
 import com.netflix.spinnaker.fiat.shared.FiatStatus;
+import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import com.netflix.spinnaker.security.User;
 import java.util.Collections;
@@ -55,13 +56,13 @@ import retrofit.mime.TypedByteArray;
 public class PipelineInitiator {
 
   private final Registry registry;
+  private final DynamicConfigService dynamicConfigService;
   private final OrcaService orca;
   private final FiatPermissionEvaluator fiatPermissionEvaluator;
   private final FiatStatus fiatStatus;
 
   private final ObjectMapper objectMapper;
   private final QuietPeriodIndicator quietPeriodIndicator;
-  private final boolean enabled;
   private final int retryCount;
   private final long retryDelayMillis;
   private final ExecutorService executorService;
@@ -75,7 +76,7 @@ public class PipelineInitiator {
       @NonNull ExecutorService executorService,
       ObjectMapper objectMapper,
       @NonNull QuietPeriodIndicator quietPeriodIndicator,
-      @Value("${orca.enabled:true}") boolean enabled,
+      @NonNull DynamicConfigService dynamicConfigService,
       @Value("${orca.pipeline-initiator-retry-count:5}") int retryCount,
       @Value("${orca.pipeline-initiator-retry-delay-millis:5000}") long retryDelayMillis) {
     this.registry = registry;
@@ -84,7 +85,7 @@ public class PipelineInitiator {
     this.fiatStatus = fiatStatus;
     this.objectMapper = objectMapper;
     this.quietPeriodIndicator = quietPeriodIndicator;
-    this.enabled = enabled;
+    this.dynamicConfigService = dynamicConfigService;
     this.retryCount = retryCount;
     this.retryDelayMillis = retryDelayMillis;
     this.executorService = executorService;
@@ -92,15 +93,20 @@ public class PipelineInitiator {
 
   @PostConstruct
   public void initialize() {
-    if (!enabled) {
+    if (!isEnabled(TriggerSource.EXTERNAL_EVENT)) {
       log.warn("Orca triggering is disabled");
     }
   }
 
   public enum TriggerSource {
-    SCHEDULER,
-    MISSEDSCHEDULER,
-    EVENT
+    /** Triggered by CRON scheduler */
+    CRON_SCHEDULER,
+
+    /** Triggered by compensation job scheduler (aka missed scheduler) */
+    COMPENSATION_SCHEDULER,
+
+    /** Triggered by external event (manual, igor, etc) */
+    EXTERNAL_EVENT
   }
 
   public void recordPipelineFailure(Pipeline pipeline) {
@@ -108,7 +114,7 @@ public class PipelineInitiator {
   }
 
   public void startPipeline(Pipeline pipeline, TriggerSource triggerSource) {
-    if (enabled) {
+    if (isEnabled(triggerSource)) {
       try {
         long now = System.currentTimeMillis();
         boolean inQuietPeriod = quietPeriodIndicator.inQuietPeriod(now);
@@ -376,6 +382,25 @@ public class PipelineInitiator {
     }
 
     return "N/A";
+  }
+
+  /**
+   * Checks if the specified trigger type is enabled
+   *
+   * @param triggerSource trigger type/source
+   * @return true if enabled, false otherwise
+   */
+  private boolean isEnabled(TriggerSource triggerSource) {
+    boolean triggerEnabled = true;
+
+    if (triggerSource == TriggerSource.COMPENSATION_SCHEDULER) {
+      triggerEnabled =
+          !dynamicConfigService.isEnabled("scheduler.compensation-job.suppress-triggers", false);
+    } else if (triggerSource == TriggerSource.CRON_SCHEDULER) {
+      triggerEnabled = !dynamicConfigService.isEnabled("scheduler.suppress-triggers", false);
+    }
+
+    return triggerEnabled && dynamicConfigService.isEnabled("orca", true);
   }
 
   private static boolean isRetryableError(Throwable error) {
