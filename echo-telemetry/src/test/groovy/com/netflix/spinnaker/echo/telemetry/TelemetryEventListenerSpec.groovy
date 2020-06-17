@@ -117,54 +117,6 @@ class TelemetryEventListenerSpec extends Specification {
     circuitBreaker.reset()
   }
 
-  def "test Event validation"() {
-    given:
-    def configProps = new TelemetryConfig.TelemetryConfigProps()
-
-    @Subject
-    def listener = new TelemetryEventListener(service, configProps, registry)
-
-    when: "null details"
-    listener.processEvent(new Event())
-
-    then:
-    0 * service.log(_)
-    noExceptionThrown()
-
-    when: "null content"
-    listener.processEvent(mapToEventViaJson(
-      details: [:]
-    ))
-
-    then:
-    0 * service.log(_)
-    noExceptionThrown()
-
-    when: "irrelevant details type are ignored"
-    listener.processEvent(mapToEventViaJson(
-      details: [
-        type: "foobar1",
-      ],
-      content: [:]
-    ))
-
-    then:
-    0 * service.log(_)
-    noExceptionThrown()
-
-    when: "missing application ID"
-    listener.processEvent(mapToEventViaJson(
-      details: [
-        type: "orca:orchestration:complete",
-      ],
-      content: [:]
-    ))
-
-    then:
-    0 * service.log(_)
-    noExceptionThrown()
-  }
-
   def "send a telemetry event"() {
     given:
     def configProps = new TelemetryConfig.TelemetryConfigProps()
@@ -219,72 +171,6 @@ class TelemetryEventListenerSpec extends Specification {
 
       return new Response("url", 200, "", [], null)
     }
-  }
-
-  def "test stat service in bad state"() {
-    given:
-    def configProps = new TelemetryConfig.TelemetryConfigProps()
-      .setInstanceId(instanceId)
-      .setSpinnakerVersion(spinnakerVersion)
-
-
-    @Subject
-    def listener = new TelemetryEventListener(service, configProps, registry)
-
-    when:
-    listener.processEvent(validEvent)
-
-    then:
-    1 * service.log(_) >> { _ ->
-      throw RetrofitError.networkError("url", new IOException("Uh oh - Network error!"))
-    }
-    noExceptionThrown()
-
-    when:
-    listener.processEvent(validEvent)
-
-    then:
-    1 * service.log(_) >> { _ ->
-      throw RetrofitError.httpError(
-        "url",
-        new Response("url", 500, "Uh oh - HTTP error!", [], null),
-        null,
-        null)
-    }
-    noExceptionThrown()
-
-    when:
-    listener.processEvent(validEvent)
-
-    then:
-    1 * service.log(_) >> { _ ->
-      throw RetrofitError.unexpectedError("url", new Exception("Uh oh - Unexpected error!"))
-    }
-    noExceptionThrown()
-
-  }
-
-  def "test circuit breaker"() {
-    given:
-    def configProps = new TelemetryConfig.TelemetryConfigProps()
-      .setInstanceId(instanceId)
-      .setSpinnakerVersion(spinnakerVersion)
-
-    @Subject
-    def listener = new TelemetryEventListener(service, configProps, registry)
-
-    circuitBreaker.transitionToOpenState()
-    boolean eventSendAttempted = false
-    circuitBreaker.getEventPublisher().onCallNotPermitted { event ->
-      log.debug("Event send attempted, and blocked by open circuit breaker.")
-      eventSendAttempted = true
-    }
-
-    when:
-    listener.processEvent(validEvent)
-
-    then:
-    eventSendAttempted
   }
 
   def "test bogus enums"() {
