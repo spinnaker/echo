@@ -17,22 +17,29 @@
 
 package com.netflix.spinnaker.echo.telemetry
 
+import com.google.protobuf.util.JsonFormat
 import com.netflix.spinnaker.echo.api.events.Event
+import com.netflix.spinnaker.echo.api.events.Event as EchoEvent
 import com.netflix.spinnaker.echo.api.events.Metadata
 import com.netflix.spinnaker.echo.config.TelemetryConfig
+import com.netflix.spinnaker.kork.proto.stats.Event as StatsEvent
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.mockk.Called
+import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.slot
 import io.mockk.verify
 import java.io.IOException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import retrofit.RetrofitError
+import retrofit.mime.TypedInput
 import strikt.api.expectCatching
 import strikt.api.expectThat
+import strikt.assertions.isEqualTo
 import strikt.assertions.isSuccess
 import strikt.assertions.isTrue
 
@@ -45,12 +52,15 @@ class TelemetryEventListenerTest {
   private val registry = CircuitBreakerRegistry.ofDefaults()
   private val circuitBreaker = registry.circuitBreaker(TelemetryEventListener.TELEMETRY_REGISTRY_NAME)
 
+  private lateinit var dataProviders: MutableList<TelemetryEventDataProvider>
+
   private lateinit var telemetryEventListener: TelemetryEventListener
 
   @BeforeEach
   fun setUp() {
+    dataProviders = mutableListOf()
     telemetryEventListener = TelemetryEventListener(
-      telemetryService, TelemetryConfig.TelemetryConfigProps(), registry)
+      telemetryService, TelemetryConfig.TelemetryConfigProps(), registry, dataProviders)
   }
 
   @Test
@@ -168,6 +178,79 @@ class TelemetryEventListenerTest {
     expectThat(circuitBreakerTriggered).isTrue()
   }
 
+  @Test
+  fun `calls all data providers in order`() {
+    val event = createLoggableEvent()
+    dataProviders.add(object : TelemetryEventDataProvider {
+      override fun populateData(echoEvent: EchoEvent, statsEvent: StatsEvent): StatsEvent {
+        // TODO(plumpy): reenable this once the ID setting logic has moved out of TelemetryEventListener
+        // expectThat(statsEvent.spinnakerInstance.id).isEqualTo("")
+        return statsEvent.withSpinnakerInstanceId("first")
+      }
+    })
+    dataProviders.add(object : TelemetryEventDataProvider {
+      override fun populateData(echoEvent: EchoEvent, statsEvent: StatsEvent): StatsEvent {
+        expectThat(statsEvent.spinnakerInstance.id).isEqualTo("first")
+        return statsEvent.withSpinnakerInstanceId("second")
+      }
+    })
+    dataProviders.add(object : TelemetryEventDataProvider {
+      override fun populateData(echoEvent: EchoEvent, statsEvent: StatsEvent): StatsEvent {
+        expectThat(statsEvent.spinnakerInstance.id).isEqualTo("second")
+        return statsEvent.withSpinnakerInstanceId("third")
+      }
+    })
+    dataProviders.add(object : TelemetryEventDataProvider {
+      override fun populateData(echoEvent: EchoEvent, statsEvent: StatsEvent): StatsEvent {
+        expectThat(statsEvent.spinnakerInstance.id).isEqualTo("third")
+        return statsEvent.withSpinnakerInstanceId("fourth")
+      }
+    })
+
+    telemetryEventListener.processEvent(event)
+
+    val body = slot<TypedInput>()
+
+    verify {
+      telemetryService.log(capture(body))
+    }
+
+    val statsEvent = body.readStatsEvent()
+
+    expectThat(statsEvent.spinnakerInstance.id).isEqualTo("fourth")
+  }
+
+  @Test
+  fun `data provider exceptions are ignored`() {
+    val event = createLoggableEvent()
+    dataProviders.add(object : TelemetryEventDataProvider {
+      override fun populateData(echoEvent: EchoEvent, statsEvent: StatsEvent): StatsEvent {
+        throw IllegalStateException("bad state")
+      }
+    })
+    dataProviders.add(object : TelemetryEventDataProvider {
+      override fun populateData(echoEvent: EchoEvent, statsEvent: StatsEvent): StatsEvent {
+        throw IOException("bad io")
+      }
+    })
+    dataProviders.add(object : TelemetryEventDataProvider {
+      override fun populateData(echoEvent: EchoEvent, statsEvent: StatsEvent): StatsEvent {
+        return statsEvent.withSpinnakerInstanceId("my instance id")
+      }
+    })
+
+    telemetryEventListener.processEvent(event)
+
+    val body = slot<TypedInput>()
+
+    verify {
+      telemetryService.log(capture(body))
+    }
+
+    val statsEvent = body.readStatsEvent()
+    expectThat(statsEvent.spinnakerInstance.id).isEqualTo("my instance id")
+  }
+
   private fun createLoggableEvent(): Event {
     return Event().apply {
       details = Metadata().apply {
@@ -176,5 +259,17 @@ class TelemetryEventListenerTest {
       }
       content = mapOf()
     }
+  }
+
+  private fun StatsEvent.withSpinnakerInstanceId(id: String): StatsEvent {
+    val builder = toBuilder()
+    builder.setSpinnakerInstance(spinnakerInstance.toBuilder().setId(id))
+    return builder.build()
+  }
+
+  private fun CapturingSlot<TypedInput>.readStatsEvent(): StatsEvent {
+    val statsEventBuilder = StatsEvent.newBuilder()
+    JsonFormat.parser().merge(captured.toString(), statsEventBuilder)
+    return statsEventBuilder.build()
   }
 }

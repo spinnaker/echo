@@ -1,22 +1,14 @@
 package com.netflix.spinnaker.echo.telemetry
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.protobuf.util.JsonFormat
-import com.netflix.spinnaker.echo.config.TelemetryConfig
 import com.netflix.spinnaker.echo.api.events.Event
+import com.netflix.spinnaker.echo.config.TelemetryConfig
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper
-import com.netflix.spinnaker.kork.proto.stats.Application
-import com.netflix.spinnaker.kork.proto.stats.CloudProvider
-import com.netflix.spinnaker.kork.proto.stats.Execution
-import com.netflix.spinnaker.kork.proto.stats.DeploymentMethod
-import com.netflix.spinnaker.kork.proto.stats.SpinnakerInstance
-import com.netflix.spinnaker.kork.proto.stats.Stage
-import com.netflix.spinnaker.kork.proto.stats.Status
+import com.netflix.spinnaker.kork.proto.stats.*
 import com.netflix.spinnaker.kork.proto.stats.Event as EventProto
 import groovy.json.JsonOutput
 import groovy.util.logging.Slf4j
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
-import retrofit.RetrofitError
 import retrofit.client.Response
 import spock.lang.Specification
 import spock.lang.Subject
@@ -124,7 +116,7 @@ class TelemetryEventListenerSpec extends Specification {
       .setSpinnakerVersion(spinnakerVersion)
 
     @Subject
-    def listener = new TelemetryEventListener(service, configProps, registry)
+    def listener = new TelemetryEventListener(service, configProps, registry, [])
 
     when:
     listener.processEvent(validEvent)
@@ -180,7 +172,7 @@ class TelemetryEventListenerSpec extends Specification {
       .setSpinnakerVersion(spinnakerVersion)
 
     @Subject
-    def listener = new TelemetryEventListener(service, configProps, registry)
+    def listener = new TelemetryEventListener(service, configProps, registry, [])
 
     when: "bogus enums"
     listener.processEvent(mapToEventViaJson(
@@ -236,7 +228,7 @@ class TelemetryEventListenerSpec extends Specification {
       .setSpinnakerVersion(spinnakerVersion)
 
     @Subject
-    def listener = new TelemetryEventListener(service, configProps, registry)
+    def listener = new TelemetryEventListener(service, configProps, registry, [])
 
     when:
     listener.processEvent(appCreatedEvent)
@@ -282,7 +274,7 @@ class TelemetryEventListenerSpec extends Specification {
       def deployEnumType = DeploymentMethod.Type.valueOf(deploymentType.toUpperCase())
 
       @Subject
-      def listener = new TelemetryEventListener(service, configProps, registry)
+      def listener = new TelemetryEventListener(service, configProps, registry, [])
 
       when:
       listener.processEvent(validEvent)
@@ -322,7 +314,7 @@ class TelemetryEventListenerSpec extends Specification {
       .setDeploymentMethod(new TelemetryConfig.TelemetryConfigProps.DeploymentMethod())
 
     @Subject
-    def listener = new TelemetryEventListener(service, configProps, registry)
+    def listener = new TelemetryEventListener(service, configProps, registry, [])
 
     when:
     listener.processEvent(validEvent)

@@ -78,18 +78,25 @@ public class TelemetryEventListener implements EventListener {
 
   private final CircuitBreakerRegistry registry;
 
+  private final List<TelemetryEventDataProvider> dataProviders;
+
   @Autowired
   public TelemetryEventListener(
       TelemetryService telemetryService,
       TelemetryConfig.TelemetryConfigProps telemetryConfigProps,
-      CircuitBreakerRegistry registry) {
+      CircuitBreakerRegistry registry,
+      List<TelemetryEventDataProvider> dataProviders) {
     this.telemetryService = telemetryService;
     this.telemetryConfigProps = telemetryConfigProps;
     this.registry = registry;
+    this.dataProviders = dataProviders;
   }
 
   @Override
   public void processEvent(Event event) {
+
+    // These preconditions are also guaranteed to TelemetryEventDataProvider, so don't change them
+    // without checking the implementations.
     if (event.getDetails() == null || event.getContent() == null) {
       log.debug("Telemetry not sent: Details or content not found in event");
       return;
@@ -173,6 +180,14 @@ public class TelemetryEventListener implements EventListener {
             .setApplication(application)
             .setExecution(executionProto)
             .build();
+
+    for (TelemetryEventDataProvider dataProvider : dataProviders) {
+      try {
+        loggedEvent = dataProvider.populateData(event, loggedEvent);
+      } catch (Exception e) {
+        log.warn("Exception running {}", dataProvider.getClass().getSimpleName(), e);
+      }
+    }
 
     try {
       String jsonContent = JSON_PRINTER.print(loggedEvent);
