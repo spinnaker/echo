@@ -210,18 +210,18 @@ public class TelemetryEventListener implements EventListener {
   private DeploymentMethod toDeploymentMethod(
       TelemetryConfig.TelemetryConfigProps.DeploymentMethod deployment) {
 
-    if (!deployment.getType().isPresent() || !deployment.getVersion().isPresent()) {
+    if (deployment.getType() == null || deployment.getVersion() == null) {
       return DeploymentMethod.getDefaultInstance();
     }
 
     DeploymentMethod.Type deployType =
         DeploymentMethod.Type.valueOf(
             parseEnum(
-                DeploymentMethod.Type.getDescriptor(), deployment.getType().get().toUpperCase()));
+                DeploymentMethod.Type.getDescriptor(), deployment.getType().toUpperCase()));
 
     return DeploymentMethod.newBuilder()
         .setType(deployType)
-        .setVersion(deployment.getVersion().get())
+        .setVersion(deployment.getVersion())
         .build();
   }
 

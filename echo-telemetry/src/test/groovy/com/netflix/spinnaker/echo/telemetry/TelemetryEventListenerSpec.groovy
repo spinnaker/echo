@@ -111,9 +111,11 @@ class TelemetryEventListenerSpec extends Specification {
 
   def "send a telemetry event"() {
     given:
-    def configProps = new TelemetryConfig.TelemetryConfigProps()
-      .setInstanceId(instanceId)
-      .setSpinnakerVersion(spinnakerVersion)
+    def configProps = new TelemetryConfig.TelemetryConfigProps().with {
+      instanceId = this.instanceId
+      spinnakerVersion = this.spinnakerVersion
+      return it
+    }
 
     @Subject
     def listener = new TelemetryEventListener(service, configProps, registry, [])
@@ -167,9 +169,11 @@ class TelemetryEventListenerSpec extends Specification {
 
   def "test bogus enums"() {
     given:
-    def configProps = new TelemetryConfig.TelemetryConfigProps()
-      .setInstanceId(instanceId)
-      .setSpinnakerVersion(spinnakerVersion)
+    def configProps = new TelemetryConfig.TelemetryConfigProps().with {
+      instanceId = this.instanceId
+      spinnakerVersion = this.spinnakerVersion
+      return it
+    }
 
     @Subject
     def listener = new TelemetryEventListener(service, configProps, registry, [])
@@ -223,9 +227,11 @@ class TelemetryEventListenerSpec extends Specification {
 
   def "test create app cloud provider detection"() {
     given:
-    def configProps = new TelemetryConfig.TelemetryConfigProps()
-      .setInstanceId(instanceId)
-      .setSpinnakerVersion(spinnakerVersion)
+    def configProps = new TelemetryConfig.TelemetryConfigProps().with {
+      instanceId = this.instanceId
+      spinnakerVersion = this.spinnakerVersion
+      return it
+    }
 
     @Subject
     def listener = new TelemetryEventListener(service, configProps, registry, [])
@@ -262,14 +268,18 @@ class TelemetryEventListenerSpec extends Specification {
 
   def "test event has deploy method information happy path"(String deploymentType, String deployVersion) {
       given:
-      def deployMethod = new TelemetryConfig.TelemetryConfigProps.DeploymentMethod()
-        .setType(deploymentType)
-        .setVersion(deployVersion)
+      def deployMethod = new TelemetryConfig.TelemetryConfigProps.DeploymentMethod().with {
+        type = deploymentType
+        version = deployVersion
+        return it
+      }
 
-      def configProps = new TelemetryConfig.TelemetryConfigProps()
-        .setInstanceId(instanceId)
-        .setSpinnakerVersion(spinnakerVersion)
-        .setDeploymentMethod(deployMethod)
+      def configProps = new TelemetryConfig.TelemetryConfigProps().with {
+        instanceId = this.instanceId
+        spinnakerVersion = this.spinnakerVersion
+        deploymentMethod = deployMethod
+        return it
+      }
 
       def deployEnumType = DeploymentMethod.Type.valueOf(deploymentType.toUpperCase())
 
@@ -308,10 +318,12 @@ class TelemetryEventListenerSpec extends Specification {
 
   def "test event, with null deploy method info"() {
     given:
-    def configProps = new TelemetryConfig.TelemetryConfigProps()
-      .setInstanceId(instanceId)
-      .setSpinnakerVersion(spinnakerVersion)
-      .setDeploymentMethod(new TelemetryConfig.TelemetryConfigProps.DeploymentMethod())
+    def configProps = new TelemetryConfig.TelemetryConfigProps().with {
+      instanceId = this.instanceId
+      spinnakerVersion = this.spinnakerVersion
+      deploymentMethod = new TelemetryConfig.TelemetryConfigProps.DeploymentMethod()
+      return it
+    }
 
     @Subject
     def listener = new TelemetryEventListener(service, configProps, registry, [])
