@@ -68,7 +68,7 @@ open class TelemetryConfig {
   class TelemetryConfigProps {
 
     companion object {
-      const val DEFAULT_TELEMETRY_ENDPOINT = "https://stats.spinnaker.io/log"
+      const val DEFAULT_TELEMETRY_ENDPOINT = "https://stats.spinnaker.io"
     }
 
     var enabled = false
