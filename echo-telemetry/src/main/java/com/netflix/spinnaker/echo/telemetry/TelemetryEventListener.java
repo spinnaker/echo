@@ -76,7 +76,7 @@ public class TelemetryEventListener implements EventListener {
 
     String eventType = event.getDetails().getType();
     if (!LOGGABLE_DETAIL_TYPES.contains(eventType)) {
-      log.debug("Telemetry not sent: type '{}' not whitelisted ", eventType);
+      log.debug("Telemetry not sent: type '{}' not configured ", eventType);
       return;
     }
 
