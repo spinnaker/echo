@@ -21,7 +21,6 @@ import com.google.protobuf.util.JsonFormat
 import com.netflix.spinnaker.echo.api.events.Event
 import com.netflix.spinnaker.echo.api.events.Event as EchoEvent
 import com.netflix.spinnaker.echo.api.events.Metadata
-import com.netflix.spinnaker.echo.config.TelemetryConfig
 import com.netflix.spinnaker.kork.proto.stats.Event as StatsEvent
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.mockk.Called
@@ -59,8 +58,7 @@ class TelemetryEventListenerTest {
   @BeforeEach
   fun setUp() {
     dataProviders = mutableListOf()
-    telemetryEventListener = TelemetryEventListener(
-      telemetryService, TelemetryConfig.TelemetryConfigProps(), registry, dataProviders)
+    telemetryEventListener = TelemetryEventListener(telemetryService, registry, dataProviders)
   }
 
   @Test
@@ -183,8 +181,7 @@ class TelemetryEventListenerTest {
     val event = createLoggableEvent()
     dataProviders.add(object : TelemetryEventDataProvider {
       override fun populateData(echoEvent: EchoEvent, statsEvent: StatsEvent): StatsEvent {
-        // TODO(plumpy): reenable this once the ID setting logic has moved out of TelemetryEventListener
-        // expectThat(statsEvent.spinnakerInstance.id).isEqualTo("")
+        expectThat(statsEvent.spinnakerInstance.id).isEqualTo("")
         return statsEvent.withSpinnakerInstanceId("first")
       }
     })
