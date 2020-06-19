@@ -84,10 +84,7 @@ class InstanceIdSupplierTest {
 
   private fun getBadRedis(): RedisClientSelector {
     val jedis = mockk<Jedis>()
-    every {
-      jedis.setnx(any<String>(), any<String>())
-      jedis.setnx(any<String>(), any<String>())
-    } throws JedisException("An error occurred")
+    every { jedis.setnx(any<String>(), any<String>()) } throws JedisException("An error occurred")
 
     val pool = mockk<Pool<Jedis>>()
     every { pool.resource } returns jedis
