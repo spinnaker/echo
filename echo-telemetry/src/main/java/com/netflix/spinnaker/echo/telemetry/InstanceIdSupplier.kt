@@ -19,7 +19,6 @@ package com.netflix.spinnaker.echo.telemetry
 import com.netflix.spinnaker.echo.config.TelemetryConfig
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
 import com.netflix.spinnaker.kork.jedis.exception.RedisClientNotFound
-import java.lang.RuntimeException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -36,7 +35,7 @@ class InstanceIdSupplier(
 ) {
   private val log: Logger = LoggerFactory.getLogger(this.javaClass)
   private val redis = try { redisSelector?.primary("default") } catch (e: RedisClientNotFound) { null }
-  val uniqueId = getOrSetId(config.instanceId)
+  val uniqueId by lazy { getOrSetId(config.instanceId) }
 
   /**
    * Returns the current instance id for this Spinnaker instance. If no id is currently set,
@@ -48,7 +47,7 @@ class InstanceIdSupplier(
         c.setnx(UNIQUE_ID_KEY, newId)
         c.get(UNIQUE_ID_KEY)
       }
-    } catch (e: RuntimeException) {
+    } catch (e: Exception) {
       log.warn("Error synchronizing unique instance id with redis", e)
       null
     } ?: newId

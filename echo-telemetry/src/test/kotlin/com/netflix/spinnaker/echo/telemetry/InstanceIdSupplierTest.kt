@@ -20,7 +20,12 @@ import com.netflix.spinnaker.echo.config.TelemetryConfig.TelemetryConfigProps
 import com.netflix.spinnaker.kork.jedis.EmbeddedRedis
 import com.netflix.spinnaker.kork.jedis.JedisClientDelegate
 import com.netflix.spinnaker.kork.jedis.RedisClientSelector
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.jupiter.api.Test
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.exceptions.JedisException
+import redis.clients.jedis.util.Pool
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
 
@@ -55,6 +60,12 @@ class InstanceIdSupplierTest {
     expectThat(instanceIdSupplier.uniqueId).isEqualTo("my-id")
   }
 
+  @Test
+  fun `returns the configured value if a redis exception occurs`() {
+    val instanceIdSupplier = InstanceIdSupplier(withInstanceId("my-id"), getBadRedis())
+    expectThat(instanceIdSupplier.uniqueId).isEqualTo("my-id")
+  }
+
   private fun withInstanceId(id: String): TelemetryConfigProps {
     val result = TelemetryConfigProps()
     result.instanceId = id
@@ -69,5 +80,20 @@ class InstanceIdSupplierTest {
 
   private fun getMissingRedis(): RedisClientSelector {
     return RedisClientSelector(listOf())
+  }
+
+  private fun getBadRedis(): RedisClientSelector {
+    val jedis = mockk<Jedis>()
+    every {
+      jedis.setnx(any<String>(), any<String>())
+      jedis.setnx(any<String>(), any<String>())
+    } throws JedisException("An error occurred")
+
+    val pool = mockk<Pool<Jedis>>()
+    every { pool.resource } returns jedis
+
+    val delegate = JedisClientDelegate("primaryDefault", pool)
+
+    return RedisClientSelector(listOf(delegate))
   }
 }
