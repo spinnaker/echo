@@ -101,9 +101,9 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
                 || trigger.getBranch().equals("")
                 || matchesPattern(branch, trigger.getBranch()))
             && passesGithubAuthenticationCheck(gitEvent, trigger)
-            && (trigger.getActions() == null
-                || trigger.getActions().size() == 0
-                || trigger.getActions().stream().anyMatch(a -> a.equals(action)));
+            && (trigger.getEvents() == null
+                || trigger.getEvents().size() == 0
+                || trigger.getEvents().stream().anyMatch(a -> a.equals(action)));
   }
 
   @Override

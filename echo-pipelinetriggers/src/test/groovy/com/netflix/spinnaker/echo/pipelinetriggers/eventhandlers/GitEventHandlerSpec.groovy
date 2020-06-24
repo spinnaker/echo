@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers
 
-import com.fasterxml.jackson.databind.ObjectMapper
+
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper
 import com.netflix.spinnaker.echo.model.Pipeline
@@ -314,7 +314,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     given:
     def gitEvent = createGitEvent("github")
     gitEvent.content.action = eventAction
-    def trigger = enabledGithubTrigger.atBranch("master").withActions(triggerActions)
+    def trigger = enabledGithubTrigger.atBranch("master").withEvents(triggerEvents)
     def pipeline = createPipelineWith(trigger)
     def pipelines = handlerSupport.pipelineCache(pipeline)
 
@@ -326,7 +326,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     matchingPipelines.size() == 0
 
     where:
-    eventAction             | triggerActions
+    eventAction             | triggerEvents
     'pull_request:reopened' | ['pull_request:opened']
     'push:push'             | ['pull_request:closed']
   }
@@ -337,7 +337,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     given:
     def gitEvent = createGitEvent("github")
     gitEvent.content.action = eventAction
-    def trigger = enabledGithubTrigger.atBranch("master").withActions(triggerActions)
+    def trigger = enabledGithubTrigger.atBranch("master").withEvents(triggerEvents)
     def pipeline = createPipelineWith(trigger)
     def pipelines = handlerSupport.pipelineCache(pipeline)
 
@@ -348,10 +348,10 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
     println matchingPipelines
     matchingPipelines.size() == 1
 
-    matchingPipelines[0].triggers[0].actions.contains(eventAction) || matchingPipelines[0].triggers[0].actions.empty
+    matchingPipelines[0].triggers[0].events.contains(eventAction) || matchingPipelines[0].triggers[0].events.empty
 
     where:
-    eventAction             | triggerActions
+    eventAction             | triggerEvents
     'pull_request:reopened' | ['pull_request:opened', 'pull_request:closed', 'pull_request:reopened']
     'pull_request:reopened' | []
   }
