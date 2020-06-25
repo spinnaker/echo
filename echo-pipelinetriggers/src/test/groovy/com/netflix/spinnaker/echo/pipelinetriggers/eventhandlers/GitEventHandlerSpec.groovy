@@ -333,7 +333,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
 
 
   @Unroll
-  def "does triggers events on action on match or empty action"() {
+  def "does triggers events on when it's not a github action"() {
     given:
     def gitEvent = createGitEvent("github")
     gitEvent.content.action = eventAction
