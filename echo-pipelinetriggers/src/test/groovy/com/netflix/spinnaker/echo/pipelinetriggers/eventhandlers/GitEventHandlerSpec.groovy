@@ -310,7 +310,7 @@ class GitEventHandlerSpec extends Specification implements RetrofitStubs {
   }
 
   @Unroll
-  def "does not triggers events on action on mistmatch action"() {
+  def "do not match on github action events as a 'GITHUB_TRIGGER_TYPE'"() {
     given:
     def gitEvent = createGitEvent("github")
     gitEvent.content.action = eventAction
