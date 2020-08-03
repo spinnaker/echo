@@ -19,14 +19,17 @@ package com.netflix.spinnaker.echo.scheduler.actions.pipeline
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
+import com.netflix.spinnaker.kork.exceptions.ConfigurationException
 import groovy.util.logging.Slf4j
 import org.quartz.CronTrigger
 import org.quartz.DisallowConcurrentExecution
 import org.quartz.Job
 import org.quartz.JobExecutionContext
 import org.quartz.Scheduler
+import org.quartz.SchedulerException
 import org.quartz.TriggerKey
 import org.quartz.impl.matchers.GroupMatcher
+import org.quartz.spi.OperableTrigger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -79,7 +82,7 @@ class PipelineConfigsPollingJob implements Job {
       registry.counter("echo.triggers.sync.error").increment()
     } finally {
       long elapsedMillis = System.currentTimeMillis() - start
-      log.info("Done polling for pipeline configs in ${elapsedMillis/1000}s")
+      log.info("Done polling for pipeline configs in ${elapsedMillis / 1000}s")
       registry.timer("echo.triggers.sync.executionTimeMillis").record(elapsedMillis, TimeUnit.MILLISECONDS)
     }
   }
@@ -138,20 +141,25 @@ class PipelineConfigsPollingJob implements Job {
           TriggerKey.triggerKey(pipelineTrigger.id, PIPELINE_TRIGGER_GROUP_PREFIX + pipelineTrigger.parent.id)
         ) as CronTrigger
 
-        if (!trigger) {
-          if (registerNewTrigger(pipelineTrigger)) {
-            addCount++
-          } else {
+        if (trigger == null) {
+          try {
+            if (storeTrigger(pipelineTrigger)) {
+              addCount++
+            }
+          } catch (Exception e) {
+            log.error("Failed to create a new trigger: id: ${pipelineTrigger.id} for pipeline: ${pipelineTrigger.parent.id} " +
+              "with CRON expression '${pipelineTrigger.cronExpression}'", e)
             failCount++
           }
         } else {
           if (!TriggerConverter.isInSync(trigger, pipelineTrigger, timeZoneId)) {
             try {
-              def newTrigger = TriggerConverter.toQuartzTrigger(pipelineTrigger, timeZoneId)
-              scheduler.rescheduleJob(trigger.key, newTrigger)
-              updateCount++
+              if (storeTrigger(pipelineTrigger, trigger.getKey())) {
+                updateCount++
+              }
             } catch (Exception e) {
-              log.error("Failed to update existing trigger: id: ${pipelineTrigger.id} for pipeline: ${pipelineTrigger.parent.id}", e)
+              log.error("Failed to update an existing trigger: id: ${pipelineTrigger.id} for pipeline: ${pipelineTrigger.parent.id} " +
+                "with CRON expression '${pipelineTrigger.cronExpression}'", e)
               failCount++
             }
           }
@@ -169,24 +177,69 @@ class PipelineConfigsPollingJob implements Job {
     registry.gauge("echo.triggers.sync.addCount").set(addCount)
   }
 
+  boolean storeTrigger(Trigger pipelineTrigger) {
+    return storeTrigger(pipelineTrigger, null)
+  }
+
   /**
-   * Register a new scheduler trigger given a pipeline trigger
+   * Register a new (or re-register existing) scheduler trigger given a pipeline trigger
    * @param pipelineTrigger
    */
-  boolean registerNewTrigger(Trigger pipelineTrigger) {
-    boolean isSuccess = false
+  boolean storeTrigger(Trigger pipelineTrigger, TriggerKey triggerKey) {
+    org.quartz.Trigger trigger
 
     try {
-      scheduler.scheduleJob(TriggerConverter.toQuartzTrigger(pipelineTrigger, timeZoneId))
-      isSuccess = true
+      trigger = TriggerConverter.toQuartzTrigger(pipelineTrigger, timeZoneId)
     } catch (InvalidCronExpressionException e) {
-      log.error("Failed to create a new trigger: id: ${pipelineTrigger.id} for pipeline: ${pipelineTrigger.parent.application}:${pipelineTrigger.parent.name} (${pipelineTrigger.parent.id}). " +
-        "The CRON expression '${pipelineTrigger.cronExpression}' is not valid")
-    } catch (Exception e) {
-      log.error("Failed to create a new trigger: id: ${pipelineTrigger.id} for pipeline: ${pipelineTrigger.parent.id}. " +
-        "The CRON expression '${pipelineTrigger.cronExpression}'", e)
+      log.warn("Failed to create a new trigger: id: ${pipelineTrigger.id} for pipeline: ${pipelineTrigger.parent.application}:${pipelineTrigger.parent.name} (${pipelineTrigger.parent.id}). " +
+        "The CRON expression '${pipelineTrigger.cronExpression}' is not valid", e)
+
+      return false
     }
 
-    return isSuccess
+    // It's possible the user has created a trigger that will never fire (e.g. a trigger in the past)
+    // That's ok, just don't even bother creating it
+    try {
+      boolean willTriggerFire = willTriggerFire(trigger)
+
+      if (!willTriggerFire) {
+        throw new ConfigurationException("Trigger is in the past")
+      }
+    } catch (SchedulerException e) {
+      log.warn("Failed to create a new trigger: id: ${pipelineTrigger.id} for pipeline: ${pipelineTrigger.parent.application}:${pipelineTrigger.parent.name} (${pipelineTrigger.parent.id}). " +
+        "The CRON expression '${pipelineTrigger.cronExpression}' will never fire", e)
+      return false
+    }
+
+    // Any exceptions in this call should trickle up as they represent a serious issue
+    if (triggerKey != null) {
+      scheduler.rescheduleJob(triggerKey, trigger)
+    } else {
+      scheduler.scheduleJob(trigger)
+    }
+    return true
+  }
+
+  /**
+   * Check if the trigger is valid/will successfully fire
+   * (quartz just throws a bunch of generic {@link SchedulerException} so we can't tell if there was a legitimate failure,
+   * or the trigger is just somehow invalid (user error).
+   *
+   * This method does the same validation that quartz does internally so we can detect bad triggers
+   * @param trigger trigger to check
+   * @return true if the trigger will fire (according to quartz)
+   * @throws SchedulerException
+   */
+  static boolean willTriggerFire(org.quartz.Trigger trigger) throws SchedulerException {
+    OperableTrigger operableTrigger = (OperableTrigger) trigger
+
+    operableTrigger.validate()
+    operableTrigger.computeFirstFireTime(null)
+
+    if (operableTrigger.getNextFireTime() == null) {
+      return false
+    }
+
+    return true
   }
 }
