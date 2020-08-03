@@ -19,7 +19,6 @@ package com.netflix.spinnaker.echo.scheduler.actions.pipeline
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
-import com.netflix.spinnaker.kork.exceptions.ConfigurationException
 import groovy.util.logging.Slf4j
 import org.quartz.CronTrigger
 import org.quartz.DisallowConcurrentExecution
@@ -203,7 +202,7 @@ class PipelineConfigsPollingJob implements Job {
       boolean willTriggerFire = willTriggerFire(trigger)
 
       if (!willTriggerFire) {
-        throw new ConfigurationException("Trigger is in the past")
+        throw new SchedulerException("Trigger is in the past")
       }
     } catch (SchedulerException e) {
       log.warn("Failed to create a new trigger: id: ${pipelineTrigger.id} for pipeline: ${pipelineTrigger.parent.application}:${pipelineTrigger.parent.name} (${pipelineTrigger.parent.id}). " +
