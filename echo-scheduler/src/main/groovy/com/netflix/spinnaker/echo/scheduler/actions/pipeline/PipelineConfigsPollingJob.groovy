@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.echo.scheduler.actions.pipeline
 
-import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.echo.pipelinetriggers.PipelineCache
 import groovy.util.logging.Slf4j
@@ -32,8 +31,6 @@ import org.quartz.spi.OperableTrigger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
-import java.util.concurrent.TimeUnit
-
 /**
  * Syncs triggers from pipelines with the triggers in the scheduler
  */
@@ -45,13 +42,13 @@ class PipelineConfigsPollingJob implements Job {
 
   private TimeZone timeZoneId
   private Scheduler scheduler
-  private Registry registry
+  private PipelineConfigPollingMetrics metrics
   private PipelineCache pipelineCache
 
   @Autowired
-  PipelineConfigsPollingJob(Registry registry, PipelineCache pipelineCache) {
+  PipelineConfigsPollingJob(PipelineConfigPollingMetrics metrics, PipelineCache pipelineCache) {
     this.pipelineCache = pipelineCache
-    this.registry = registry
+    this.metrics = metrics
   }
 
   void execute(JobExecutionContext context) {
@@ -75,14 +72,14 @@ class PipelineConfigsPollingJob implements Job {
       removeStaleTriggers(pipelineTriggers)
       updateChangedTriggers(pipelineTriggers)
 
-      registry.gauge("echo.triggers.count").set(pipelineTriggers.triggers().size())
+      metrics.triggerCount(pipelineTriggers.triggers().size())
     } catch (Exception e) {
       log.error("Failed to synchronize pipeline triggers", e)
-      registry.counter("echo.triggers.sync.error").increment()
+      metrics.incrementTriggerSyncError();
     } finally {
       long elapsedMillis = System.currentTimeMillis() - start
       log.info("Done polling for pipeline configs in ${elapsedMillis / 1000}s")
-      registry.timer("echo.triggers.sync.executionTimeMillis").record(elapsedMillis, TimeUnit.MILLISECONDS)
+      metrics.recordSyncTime(elapsedMillis)
     }
   }
 
@@ -119,8 +116,8 @@ class PipelineConfigsPollingJob implements Job {
       log.debug("Removed $removeCount stale triggers successfully, $failCount removals failed")
     }
 
-    registry.gauge("echo.triggers.sync.removeCount").set(removeCount)
-    registry.gauge("echo.triggers.sync.removeFailCount").set(failCount)
+    metrics.removeCount(removeCount)
+    metrics.failedRemoveCount(failCount)
   }
 
   /**
@@ -155,12 +152,14 @@ class PipelineConfigsPollingJob implements Job {
             try {
               if (storeTrigger(pipelineTrigger, trigger.getKey())) {
                 updateCount++
+              } else {
+                scheduler.unscheduleJob(trigger.getKey())
               }
             } catch (Exception e) {
               log.error("Failed to update an existing trigger: id: ${pipelineTrigger.id} for pipeline: ${pipelineTrigger.parent.id} " +
                 "with CRON expression '${pipelineTrigger.cronExpression}'", e)
               failCount++
-            }
+              }
           }
         }
       }
@@ -172,8 +171,8 @@ class PipelineConfigsPollingJob implements Job {
       log.debug("Added $addCount new triggers, updated $updateCount existing triggers, $failCount failed")
     }
 
-    registry.gauge("echo.triggers.sync.failedUpdateCount").set(failCount)
-    registry.gauge("echo.triggers.sync.addCount").set(addCount)
+    metrics.failedUpdateCount(failCount)
+    metrics.addCount(addCount)
   }
 
   boolean storeTrigger(Trigger pipelineTrigger) {
