@@ -3,7 +3,7 @@ FROM openjdk:11
 LABEL maintainer="sig-platform@spinnaker.io"
 COPY echo-web/build/install/echo /opt/echo
 
-RUN adduser --disabled-login --system spinnaker
+RUN adduser --system --uid 10111 --group spinnaker
 RUN mkdir -p /opt/echo/plugins && chown -R spinnaker:nogroup /opt/echo/plugins
 USER spinnaker
 CMD ["/opt/echo/bin/echo"]
