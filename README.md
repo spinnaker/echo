@@ -24,8 +24,7 @@ The following high level diagram shows how events flow through `echo`:
 5. `orca` sends events to `echo` when:
     - a stage is starting/completed so `echo` can send notifications if any are defined on the stage
     - a pipeline (or orchestration) is starting/completed so `echo` can send notification as above
-    - a manual judgement stage is reached - a notifcation from 
-    - the user has clicked the page button on the application page
+    - a manual judgement stage is reached - a notifcation from the user has clicked the page button on the application page
 
 6. `echo` uses external services (e.g. email/slack) to send notifications.  
     Notifications can either be a result of an event received by `echo` (e.g. stage completed which has a notification on completion), or a specific notification request from another service (e.g. orca will send a notifcation for Manual Judgement stage)
@@ -46,7 +45,7 @@ The following high level diagram shows how events flow through `echo`:
 
 `Echo` is also able to send events within Spinnaker to a predefined url, which is configurable under the `echo-rest` module.
 
-You can extend the way in which `echo` events are sent by implementing the `EchoEventListener` interface.
+You can extend the way in which `echo` events are sent by implementing the `EventListener` interface.
 
 
 ## Event Types
@@ -112,6 +111,20 @@ See [Sample deployment topology](#sample-deployment-topology) for additional inf
 * `orca.pipelineInitiatorRetryDelayMillis` (default: 5000ms)  
     Number of milliseconds between retries to `orca` (leave at default)
 
+#### Trigger suppression
+There are several ways to suppress triggers in `echo` (note, all of the below are backed by `DynamicConfigService` and therefore can be modified at runtime)
+* `orca.enabled` (default: `true`)  
+    top level knob that disables communication with `orca` and thus ALL triggers
+* `scheduler.triggers.enabled` (default: `true`)  
+    allows suppressing triggering of events from the CRON scheduler only
+* `scheduler.compensationJob.triggers.enabled` (default: `true`)  
+    allows suppressing triggering of events from the compensation job (aka missed CRON scheduler) only
+
+There are two settings for each trigger, e.g. `scheduler.enabled` and `scheduler.triggers.enabled`. 
+The reason for this complexity is to allow scenarios where there are two `echo` clusters that are running the scheduler for redundancy reasons (e.g. in two regions).  
+In order to correctly switch which cluster (region) is generating triggers they both need to be "up-to-speed" hence you'd run the scheduler in both clusters but only one would trigger.
+That way, when you switch which cluster does the triggering it will trigger the correct events without duplicates.
+ 
 ## Missed CRON scheduler
 The missed CRON scheduler is a feature in `echo` that ensures that CRON triggers are firing reliably. It is enabled by setting `scheduler.compensationJob.enabled` configuration option.  
 In an event that a CRON trigger fails to fire or it fires but, for whatever reason, the execution doesn't start the missed CRON scheduler will detect it and attempt to re-trigger the pipeline.  

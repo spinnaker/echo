@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
   private static final String GIT_TRIGGER_TYPE = "git";
-  private static final String GITHUB_SECURE_SIGNATURE_HEADER = "X-Hub-Signature";
+  private static final String GITHUB_SECURE_SIGNATURE_HEADER = "x-hub-signature";
   private static final List<String> supportedTriggerTypes =
       Collections.singletonList(GIT_TRIGGER_TYPE);
 
@@ -90,6 +90,7 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
     String project = gitEvent.getContent().getRepoProject();
     String slug = gitEvent.getContent().getSlug();
     String branch = gitEvent.getContent().getBranch();
+    String action = gitEvent.getContent().getAction();
 
     return trigger ->
         trigger.getType().equals(GIT_TRIGGER_TYPE)
@@ -99,7 +100,10 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
             && (trigger.getBranch() == null
                 || trigger.getBranch().equals("")
                 || matchesPattern(branch, trigger.getBranch()))
-            && passesGithubAuthenticationCheck(gitEvent, trigger);
+            && passesGithubAuthenticationCheck(gitEvent, trigger)
+            && (trigger.getEvents() == null
+                || trigger.getEvents().size() == 0
+                || trigger.getEvents().stream().anyMatch(a -> a.equals(action)));
   }
 
   @Override
@@ -154,7 +158,7 @@ public class GitEventHandler extends BaseTriggerEventHandler<GitEvent> {
 
   private boolean hasValidGitHubSecureSignature(GitEvent gitEvent, Trigger trigger) {
     String header =
-        gitEvent.getDetails().getRequestHeaders().getFirst(GITHUB_SECURE_SIGNATURE_HEADER);
+        gitEvent.getDetails().getRequestHeaders().get(GITHUB_SECURE_SIGNATURE_HEADER).get(0);
     log.debug("GitHub Signature detected. " + GITHUB_SECURE_SIGNATURE_HEADER + ": " + header);
     String signature = StringUtils.removeStart(header, "sha1=");
 

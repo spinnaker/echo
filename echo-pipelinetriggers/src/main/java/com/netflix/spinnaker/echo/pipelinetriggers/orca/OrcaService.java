@@ -18,9 +18,12 @@ package com.netflix.spinnaker.echo.pipelinetriggers.orca;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.netflix.spinnaker.echo.model.Pipeline;
-import com.netflix.spinnaker.security.AuthenticatedRequest;
+import com.netflix.spinnaker.echo.model.Trigger;
+import com.netflix.spinnaker.kork.common.Header;
 import java.util.Collection;
 import java.util.Map;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import retrofit.client.Response;
 import retrofit.http.Body;
 import retrofit.http.GET;
@@ -51,7 +54,7 @@ public interface OrcaService {
 
     static {
       // TODO(cf): if this actually fails you will all thank me I swear
-      if (!X_SPINNAKER_USER.equals(AuthenticatedRequest.Header.USER.getHeader())) {
+      if (!X_SPINNAKER_USER.equals(Header.USER.getHeader())) {
         throw new IllegalStateException("The header changed. Why did the header change. Whyyy");
       }
     }
@@ -67,26 +70,14 @@ public interface OrcaService {
     }
   }
 
+  @Getter
+  @NoArgsConstructor
   @JsonIgnoreProperties(ignoreUnknown = true)
   class PipelineResponse {
     private String id;
     private String pipelineConfigId;
     private Long startTime;
-
-    public PipelineResponse() {
-      // do nothing
-    }
-
-    public String getId() {
-      return id;
-    }
-
-    public String getPipelineConfigId() {
-      return pipelineConfigId;
-    }
-
-    public Long getStartTime() {
-      return startTime;
-    }
+    private OrcaExecutionStatus status;
+    private Trigger trigger;
   }
 }

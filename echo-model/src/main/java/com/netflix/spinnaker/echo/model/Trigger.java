@@ -82,7 +82,8 @@ public class Trigger {
     WEBHOOK("webhook"),
     PUBSUB("pubsub"),
     DRYRUN("dryrun"),
-    PIPELINE("pipeline");
+    PIPELINE("pipeline"),
+    PLUGIN("plugin");
 
     private final String type;
 
@@ -116,6 +117,7 @@ public class Trigger {
   String slug;
   String source;
   String branch;
+  List<String> events;
 
   // Configuration for Jenkins, Travis, Concourse triggers
   String master;
@@ -156,6 +158,19 @@ public class Trigger {
 
   // Artifact constraints
   List<String> expectedArtifactIds;
+
+  // Configuration for plugin triggers
+  String pluginEventType;
+  String pluginId;
+  String description;
+  String provider;
+  String version;
+  String releaseDate;
+  String requires;
+  List<Map<String, String>> parsedRequires;
+  String binaryUrl;
+  String sha512sum;
+  boolean preferred;
 
   /** Field to use for custom triggers involving artifacts */
   String artifactName;

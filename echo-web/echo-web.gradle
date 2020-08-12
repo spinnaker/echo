@@ -15,11 +15,11 @@
  */
 
 ext {
-  springConfigLocation = System.getProperty('spring.config.additional-location', "${System.getProperty('user.home')}/.spinnaker/")
+  springConfigLocation = System.getProperty('spring.config.additional-location', "${System.getProperty('user.home')}/.spinnaker/".toString())
   springProfiles = System.getProperty('spring.profiles.active', "test,local")
 }
 
-apply plugin: 'spinnaker.application'
+apply plugin: 'io.spinnaker.package'
 
 mainClassName = 'com.netflix.spinnaker.echo.Application'
 
@@ -40,11 +40,9 @@ dependencies {
     implementation "com.netflix.spinnaker.fiat:fiat-core:$fiatVersion"
     implementation "org.springframework.boot:spring-boot-starter-web"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation "com.netflix.spinnaker.kork:kork-artifacts"
     implementation "com.netflix.spinnaker.kork:kork-core"
     implementation "com.netflix.spinnaker.kork:kork-config"
-    implementation "com.netflix.spinnaker.kork:kork-secrets-aws"
-    implementation "com.netflix.spinnaker.kork:kork-secrets-gcp"
-    implementation "com.netflix.spinnaker.kork:kork-stackdriver"
     implementation "com.netflix.spinnaker.kork:kork-web"
     implementation "com.squareup.retrofit:retrofit"
     implementation "com.squareup.retrofit:converter-jackson"
@@ -57,6 +55,9 @@ dependencies {
     implementation("org.quartz-scheduler:quartz") {
       exclude group: 'com.zaxxer', module: 'HikariCP-java7'
     }
+
+    runtimeOnly "com.netflix.spinnaker.kork:kork-runtime"
+
     testImplementation "org.springframework.boot:spring-boot-starter-test"
     testImplementation "org.spockframework:spock-spring"
     testImplementation "org.junit.jupiter:junit-jupiter-api"
@@ -66,4 +67,21 @@ dependencies {
 run {
   systemProperty('spring.config.additional-location', project.springConfigLocation)
   systemProperty('spring.profiles.active', project.springProfiles)
+}
+
+test {
+  //The Implementation-Version is set in the MANIFEST.MF for the JAR produced via testing so that
+  //assertions can be made against the version (see echo-plugins-test, for example).
+  jar {
+    manifest {
+      String implementationVersion = getAttributes()["Implementation-Version"]
+      if (implementationVersion == null
+        || implementationVersion.isEmpty()
+        || implementationVersion == "undefined") {
+        attributes(
+          'Implementation-Version': '1.0.0'
+        )
+      }
+    }
+  }
 }

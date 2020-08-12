@@ -17,6 +17,9 @@
 package com.netflix.spinnaker.echo.notification
 
 import com.netflix.spinnaker.echo.api.Notification
+import com.netflix.spinnaker.echo.api.events.Event
+import com.netflix.spinnaker.echo.api.events.NotificationAgent
+import com.netflix.spinnaker.echo.api.events.NotificationParameter
 import com.netflix.spinnaker.echo.controller.NotificationController
 import com.netflix.spinnaker.echo.notification.InteractiveNotificationCallbackHandler.SpinnakerService
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
@@ -53,17 +56,18 @@ class NotificationControllerSpec extends Specification {
       Mock(Environment)
     )
     notificationController = new NotificationController(
-      notificationServices: [ notificationService, interactiveNotificationService ],
-      interactiveNotificationCallbackHandler: interactiveNotificationCallbackHandler
+      [interactiveNotificationService, notificationService],
+      interactiveNotificationCallbackHandler,
+      Optional.of([new MyNotificationAgent()]),
     )
   }
 
   void 'creating a notification delegates to the appropriate service'() {
     given:
     Notification notification = new Notification()
-    notification.notificationType = Notification.Type.SLACK
+    notification.notificationType = "SLACK"
 
-    notificationService.supportsType(Notification.Type.SLACK) >> true
+    notificationService.supportsType("SLACK") >> true
 
     when:
     notificationController.create(notification)
@@ -75,7 +79,7 @@ class NotificationControllerSpec extends Specification {
   void 'interactive notifications are only delegated to interactive notification services'() {
     given:
     Notification notification = new Notification()
-    notification.notificationType = Notification.Type.SLACK
+    notification.notificationType = "SLACK"
     notification.interactiveActions = new Notification.InteractiveActions(
       callbackServiceId: "test",
       callbackMessageId: "test",
@@ -87,8 +91,8 @@ class NotificationControllerSpec extends Specification {
       ]
     )
 
-    notificationService.supportsType(Notification.Type.SLACK) >> true
-    interactiveNotificationService.supportsType(Notification.Type.SLACK) >> true
+    notificationService.supportsType("SLACK") >> true
+    interactiveNotificationService.supportsType("SLACK") >> true
 
     when:
     notificationController.create(notification)
@@ -96,6 +100,22 @@ class NotificationControllerSpec extends Specification {
     then:
     0 * notificationService.handle(notification)
     1 * interactiveNotificationService.handle(notification)
+  }
+
+  void 'only interactive notifications are delegated to interactive notification services'() {
+    given:
+    Notification nonInteractiveNotification = new Notification()
+    nonInteractiveNotification.notificationType = "PAGER_DUTY"
+
+    notificationService.supportsType("PAGER_DUTY") >> true
+    interactiveNotificationService.supportsType("SLACK") >> true
+
+    when:
+    notificationController.create(nonInteractiveNotification)
+
+    then:
+    1 * notificationService.handle(nonInteractiveNotification)
+    0 * interactiveNotificationService.handle(nonInteractiveNotification)
   }
 
   void 'an incoming callback from the notification service delegates to the appropriate service class'() {
@@ -107,7 +127,7 @@ class NotificationControllerSpec extends Specification {
     callbackObject.serviceId = "test"
     callbackObject.user = "john.doe"
 
-    interactiveNotificationService.supportsType(Notification.Type.SLACK) >> true
+    interactiveNotificationService.supportsType("SLACK") >> true
     spinnakerService.notificationCallback(*_) >> { mockResponse() }
 
     when:
@@ -127,7 +147,7 @@ class NotificationControllerSpec extends Specification {
     callbackObject.serviceId = "unknown"
     callbackObject.user = "john.doe"
 
-    interactiveNotificationService.supportsType(Notification.Type.SLACK) >> true
+    interactiveNotificationService.supportsType("SLACK") >> true
     interactiveNotificationService.parseInteractionCallback(request) >> callbackObject
 
     when:
@@ -148,7 +168,7 @@ class NotificationControllerSpec extends Specification {
     callbackObject.serviceId = "test"
     callbackObject.user = "john.doe"
 
-    interactiveNotificationService.supportsType(Notification.Type.SLACK) >> true
+    interactiveNotificationService.supportsType("SLACK") >> true
     spinnakerService.notificationCallback(*_) >> { mockResponse() }
 
     when:
@@ -160,7 +180,40 @@ class NotificationControllerSpec extends Specification {
     response == expectedResponse
   }
 
+  void 'serves notification agent metadata'() {
+    when:
+    def response = notificationController.getNotificationTypeMetadata()
+
+    then:
+    response.size() == 1
+    response[0] instanceof MyNotificationAgent
+  }
+
   static Response mockResponse() {
     new Response("url", 200, "nothing", emptyList(), new TypedByteArray("application/json", "response".bytes))
+  }
+
+  static class MyNotificationAgent implements NotificationAgent {
+    @Override
+    List<NotificationParameter> getParameters() {
+      return [[
+                type        : "string",
+                name        : "my-parameter",
+                description : "This is an extension notification parameter",
+                label       : "My Parameter",
+                defaultValue: "wow!"
+              ] as NotificationParameter]
+    }
+
+    @Override
+    String getNotificationType() {
+      return "my-notification-agent"
+    }
+
+    @Override
+    void sendNotifications(Map<String, Object> notificationConfig,
+                           String application,
+                           Event event,
+                           String status) {}
   }
 }

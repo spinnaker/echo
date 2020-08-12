@@ -15,7 +15,7 @@
  */
 
 package com.netflix.spinnaker.echo.notification
-import com.netflix.spinnaker.echo.model.Event
+import com.netflix.spinnaker.echo.api.events.Event
 import com.netflix.spinnaker.echo.slack.SlackAttachment
 import com.netflix.spinnaker.echo.slack.CompactSlackMessage
 import com.netflix.spinnaker.echo.slack.SlackService
@@ -99,11 +99,11 @@ class SlackNotificationAgent extends AbstractEventNotificationAgent {
         .replace("{{link}}", link ?: "")
     }
 
-    String address = preference.address.startsWith('#') ? preference.address : "#${preference.address}"
+    String address = preference.address
 
     Response response
     if (sendCompactMessages) {
-      response = slackService.sendCompactMessage(token, new CompactSlackMessage(body, color), address, true)
+      response = slackService.sendCompactMessage(new CompactSlackMessage(body, color), address, true)
     } else {
       String title = getNotificationTitle(config.type, application, status)
       response = slackService.sendMessage(new SlackAttachment(title, body, color), address, true)

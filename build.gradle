@@ -14,29 +14,14 @@
  * limitations under the License.
  */
 
-buildscript {
-    repositories {
-        jcenter()
-        maven { url 'https://spinnaker.bintray.com/gradle/' }
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-    dependencies {
-        classpath "com.netflix.spinnaker.gradle:spinnaker-dev-plugin:$spinnakerGradleVersion"
-        if (Boolean.valueOf(enablePublishing)) {
-            classpath "com.netflix.spinnaker.gradle:spinnaker-gradle-project:$spinnakerGradleVersion"
-// TODO: nebula-publishing-plugin version override should be removed as soon as spinnaker-gradle-project is updated
-// this override is needed to omit compileOnly dependencies from generated pom.xml
-          classpath "com.netflix.nebula:nebula-publishing-plugin:12.0.1"
-        }
-    }
+plugins {
+  id 'io.spinnaker.project' version "$spinnakerGradleVersion" apply false
+  id "nebula.kotlin" version "$kotlinVersion" apply false
 }
 
-allprojects {
+subprojects {
   group = "com.netflix.spinnaker.echo"
-  apply plugin: "spinnaker.base-project"
-  if (Boolean.valueOf(enablePublishing)) {
-    apply plugin: "spinnaker.project"
-  }
+  apply plugin: "io.spinnaker.project"
 
   if ([korkVersion, fiatVersion].find { it.endsWith("-SNAPSHOT") }) {
     repositories {
@@ -50,7 +35,6 @@ allprojects {
     apply plugin: "groovy"
     apply plugin: 'jacoco'
 
-
     test {
       testLogging {
         exceptionFormat = 'full'
@@ -63,10 +47,8 @@ allprojects {
       }
     }
   }
-}
 
-subprojects {
-  if (name != "echo-bom") {
+  if (name != "echo-bom" && name != "echo-api") {
     jacoco {
       toolVersion = '0.8.3'
     }
@@ -74,6 +56,7 @@ subprojects {
     dependencies {
       implementation platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion")
       annotationProcessor platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion")
+      annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
       testAnnotationProcessor platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion")
       compileOnly "org.projectlombok:lombok"
       annotationProcessor "org.projectlombok:lombok"

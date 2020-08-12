@@ -19,19 +19,17 @@ package com.netflix.spinnaker.echo.events
 import com.netflix.spectator.api.NoopRegistry
 import com.netflix.spinnaker.echo.config.RestProperties
 import com.netflix.spinnaker.echo.config.RestUrls
-import com.netflix.spinnaker.echo.model.Event
-import com.netflix.spinnaker.echo.extension.rest.RestEventParser
+import com.netflix.spinnaker.echo.api.events.Event
 import com.netflix.spinnaker.echo.rest.RestService
+import com.netflix.spinnaker.kork.core.RetrySupport
 import spock.lang.Specification
 import spock.lang.Subject
 
 
 class RestEventListenerSpec extends Specification {
 
-  Optional<RestEventParser> restEventParser = Optional.empty()
-
   @Subject
-  RestEventListener listener = new RestEventListener(null, null, restEventParser, new NoopRegistry())
+  RestEventListener listener = new RestEventListener(null, null, new NoopRegistry(), new RetrySupport())
   Event event = new Event(content: ['uno': 'dos'])
   RestService restService
 
@@ -170,6 +168,7 @@ class RestEventListenerSpec extends Specification {
 
     RestProperties.RestEndpointConfiguration config = new RestProperties.RestEndpointConfiguration()
     config.setWrap(false)
+    config.setRetryCount(3)
 
     RestUrls.Service service1 = RestUrls.Service.builder()
       .client(restService)
@@ -187,7 +186,7 @@ class RestEventListenerSpec extends Specification {
     listener.processEvent(event)
 
     then:
-    1 * restService.recordEvent(_) >> { throw new Exception() }
+    config.retryCount * restService.recordEvent(_) >> { throw new Exception() }
     1 * restService2.recordEvent({
       it == listener.mapper.convertValue(event, Map)
     })

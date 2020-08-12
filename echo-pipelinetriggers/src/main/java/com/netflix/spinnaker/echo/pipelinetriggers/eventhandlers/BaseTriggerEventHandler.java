@@ -18,7 +18,7 @@ package com.netflix.spinnaker.echo.pipelinetriggers.eventhandlers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
-import com.netflix.spinnaker.echo.model.Event;
+import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
@@ -52,7 +52,7 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent>
   private final FiatPermissionEvaluator fiatPermissionEvaluator;
   protected final ObjectMapper objectMapper;
 
-  BaseTriggerEventHandler(
+  public BaseTriggerEventHandler(
       Registry registry,
       ObjectMapper objectMapper,
       FiatPermissionEvaluator fiatPermissionEvaluator) {
@@ -72,7 +72,8 @@ public abstract class BaseTriggerEventHandler<T extends TriggerEvent>
     return supportedTriggerTypes().stream()
         .flatMap(
             triggerType ->
-                Optional.ofNullable(triggers.get(triggerType)).orElse(Collections.emptyList())
+                Optional.ofNullable(triggers.get(triggerType))
+                    .orElse(Collections.emptyList())
                     .stream())
         .filter(this::isValidTrigger)
         .filter(matchTriggerFor(event))

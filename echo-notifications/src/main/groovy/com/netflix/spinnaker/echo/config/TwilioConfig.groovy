@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.echo.config
 
+import com.netflix.spinnaker.echo.jackson.EchoObjectMapper
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger
 
 import static retrofit.Endpoints.newFixedEndpoint
@@ -42,7 +43,7 @@ import retrofit.converter.JacksonConverter
 class TwilioConfig {
 
     @Bean
-    Endpoint twilioEndpoint(@Value('${twilio.base-url}') String twilioBaseUrl) {
+    Endpoint twilioEndpoint(@Value('${twilio.base-url:https://api.twilio.com/}') String twilioBaseUrl) {
         newFixedEndpoint(twilioBaseUrl)
     }
 
@@ -64,7 +65,7 @@ class TwilioConfig {
             }
         }
 
-        JacksonConverter converter = new JacksonConverter(new ObjectMapper())
+        JacksonConverter converter = new JacksonConverter(EchoObjectMapper.getInstance())
 
         new RestAdapter.Builder()
                 .setEndpoint(twilioEndpoint)

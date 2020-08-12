@@ -20,7 +20,7 @@ import com.netflix.spinnaker.echo.notification.NotificationTemplateEngine.HtmlTo
 import com.netflix.spinnaker.echo.notification.NotificationTemplateEngine.MarkdownToHtmlFormatter
 import groovy.util.logging.Slf4j
 import com.netflix.spinnaker.echo.email.EmailNotificationService
-import com.netflix.spinnaker.echo.model.Event
+import com.netflix.spinnaker.echo.api.events.Event
 import freemarker.template.Configuration
 import freemarker.template.Template
 import org.springframework.beans.factory.annotation.Autowired
@@ -79,6 +79,8 @@ class EmailNotificationAgent extends AbstractEventNotificationAgent {
 
     log.info('Sending email {} for {} {} {} {}', kv('address', preference.address), kv('application', application), kv('type', config.type), kv('status', status), kv('executionId', event.content?.execution?.id))
 
+    String link = "${spinnakerUrl}/#/applications/${application}/${config.type == 'stage' ? 'executions/details' : config.link }/${event.content?.execution?.id}"
+
     sendMessage(
       preference.address ? [preference.address] as String[] : null,
       preference.cc ? [preference.cc] as String[] : null,
@@ -86,7 +88,7 @@ class EmailNotificationAgent extends AbstractEventNotificationAgent {
       subject,
       config.type,
       status,
-      config.link,
+      link,
       preference.message?."$config.type.$status"?.text,
       preference.customBody ?: context.customBody
     )
@@ -105,7 +107,7 @@ class EmailNotificationAgent extends AbstractEventNotificationAgent {
         .replace("{{link}}", link ?: "")
       body = new MarkdownToHtmlFormatter().convert(interpolated)
     } else {
-      Template template = configuration.getTemplate(type == 'stage' ? 'stage.ftl' : 'pipeline.ftl', "UTF-8")
+      Template template = configuration.getTemplate("email-template.ftl", "UTF-8")
       body = FreeMarkerTemplateUtils.processTemplateIntoString(
         template,
         [

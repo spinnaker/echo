@@ -15,7 +15,10 @@
  */
 
 dependencies {
+    api project(":echo-api")
     implementation project(":echo-model")
+
+    api "com.netflix.spinnaker.kork:kork-plugins"
 
     implementation "com.squareup.retrofit:retrofit"
     implementation "com.squareup.retrofit:converter-jackson"
@@ -32,7 +35,6 @@ dependencies {
 
     implementation "org.springframework.boot:spring-boot-starter-web"
     implementation "org.apache.commons:commons-lang3"
-    implementation "com.netflix.eureka:eureka-client"
 
     implementation "com.hubspot.jinjava:jinjava"
     implementation "io.reactivex:rxjava"
