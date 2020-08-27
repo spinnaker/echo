@@ -51,13 +51,6 @@ public class MicrosoftTeamsSection {
   }
 
   @JsonIgnore
-  public void setBuildNumber(String buildNumber) {
-    if (!StringUtils.isEmpty(buildNumber)) {
-      facts.add(new MicrosoftTeamsFact("Build Number", buildNumber));
-    }
-  }
-
-  @JsonIgnore
   public void setCustomMessage(String message) {
     if (!StringUtils.isEmpty(message)) {
       facts.add(new MicrosoftTeamsFact("Custom Message", message));

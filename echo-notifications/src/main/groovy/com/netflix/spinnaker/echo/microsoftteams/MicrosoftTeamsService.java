@@ -17,9 +17,11 @@
 package com.netflix.spinnaker.echo.microsoftteams;
 
 import groovy.transform.Canonical;
+import lombok.extern.slf4j.Slf4j;
 import retrofit.client.Response;
 
 @Canonical
+@Slf4j
 public class MicrosoftTeamsService {
   MicrosoftTeamsClient microsoftTeamsClient;
 
@@ -27,7 +29,7 @@ public class MicrosoftTeamsService {
     this.microsoftTeamsClient = microsoftTeamsClient;
   }
 
-  Response sendMessage(String webhookUrl, MicrosoftTeamsMessage message) {
+  public Response sendMessage(String webhookUrl, MicrosoftTeamsMessage message) {
     return microsoftTeamsClient.sendMessage(webhookUrl, message);
   }
 }
