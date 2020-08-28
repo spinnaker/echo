@@ -35,7 +35,12 @@ import retrofit.mime.TypedByteArray;
 @Service
 public class MicrosoftTeamsNotificationAgent extends AbstractEventNotificationAgent {
 
-  @Autowired private MicrosoftTeamsService teamsService;
+  private final MicrosoftTeamsService teamsService;
+
+  @Autowired
+  public MicrosoftTeamsNotificationAgent(MicrosoftTeamsService teamsService) {
+    this.teamsService = teamsService;
+  }
 
   @Override
   public String getNotificationType() {

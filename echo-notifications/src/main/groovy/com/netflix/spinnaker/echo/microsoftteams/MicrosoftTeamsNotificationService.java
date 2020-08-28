@@ -27,17 +27,23 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @ConditionalOnProperty("microsoftteams.enabled")
+@Slf4j
 class MicrosoftTeamsNotificationService implements NotificationService {
 
-  @Autowired MicrosoftTeamsService teamsService;
-
-  @Autowired NotificationTemplateEngine notificationTemplateEngine;
+  private final MicrosoftTeamsService teamsService;
+  private final NotificationTemplateEngine notificationTemplateEngine;
 
   @Value("${spinnaker.base-url}")
-  String spinnakerUrl;
+  private String spinnakerUrl;
+
+  @Autowired
+  public MicrosoftTeamsNotificationService(
+      MicrosoftTeamsService service, NotificationTemplateEngine engine) {
+    this.teamsService = service;
+    this.notificationTemplateEngine = engine;
+  }
 
   @Override
   public boolean supportsType(String type) {
@@ -48,7 +54,13 @@ class MicrosoftTeamsNotificationService implements NotificationService {
   public EchoResponse.Void handle(Notification notification) {
     log.info("Building Microsoft Teams event notification");
 
-    String link;
+    String link =
+        spinnakerUrl
+            + "/#/applications/"
+            + notification.getSource().getApplication()
+            + "/executions/details/"
+            + notification.getSource().getExecutionId();
+
     String message =
         notificationTemplateEngine.build(notification, NotificationTemplateEngine.Type.SUBJECT);
     String summary =
@@ -61,40 +73,17 @@ class MicrosoftTeamsNotificationService implements NotificationService {
     section.setSummary(summary);
 
     if (notification.getAdditionalContext().get("stageId") != null) {
+      link += "?refId=" + notification.getAdditionalContext().get("stageId");
+
       if (notification.getAdditionalContext().get("restrictExecutionDuringTimeWindow") != null) {
-        link =
-            spinnakerUrl
-                + "/#/applications/"
-                + notification.getSource().getApplication()
-                + "/executions/details/"
-                + notification.getSource().getExecutionId()
-                + "?refId="
-                + notification.getAdditionalContext().get("stageId")
-                + "&step=1";
-      } else {
-        link =
-            spinnakerUrl
-                + "/#/applications/"
-                + notification.getSource().getApplication()
-                + "/executions/details/"
-                + notification.getSource().getExecutionId()
-                + "?refId="
-                + notification.getAdditionalContext().get("stageId");
+        link += "&step=1";
       }
-    } else {
-      link =
-          spinnakerUrl
-              + "/#/applications/"
-              + notification.getSource().getApplication()
-              + "/executions/details/"
-              + notification.getSource().getExecutionId();
     }
 
     if (notification.isInteractive()) {
       log.info("Notification is interactive");
       section.setPotentialAction(null, notification.getInteractiveActions());
     } else {
-
       section.setPotentialAction(link, null);
     }
 

@@ -16,14 +16,12 @@
 
 package com.netflix.spinnaker.echo.microsoftteams;
 
-import groovy.transform.Canonical;
 import lombok.extern.slf4j.Slf4j;
 import retrofit.client.Response;
 
-@Canonical
 @Slf4j
 public class MicrosoftTeamsService {
-  MicrosoftTeamsClient microsoftTeamsClient;
+  private final MicrosoftTeamsClient microsoftTeamsClient;
 
   public MicrosoftTeamsService(MicrosoftTeamsClient microsoftTeamsClient) {
     this.microsoftTeamsClient = microsoftTeamsClient;
