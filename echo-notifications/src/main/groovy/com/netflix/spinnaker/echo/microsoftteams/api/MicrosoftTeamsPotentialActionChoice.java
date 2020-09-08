@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2020 Cerner Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,22 @@
  * limitations under the License.
  */
 
-apply plugin: "kotlin"
+package com.netflix.spinnaker.echo.microsoftteams.api;
 
-compileKotlin {
-  kotlinOptions {
-    languageVersion = "1.4"
-    jvmTarget = "1.8"
-  }
-}
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-compileTestKotlin {
-  kotlinOptions {
-    languageVersion = "1.4"
-    jvmTarget = "1.8"
-  }
-}
+public class MicrosoftTeamsPotentialActionChoice {
+  private static String ACTION_CARD_TYPE = "HttpPOST";
 
-configurations.all {
-  resolutionStrategy {
-    eachDependency { details ->
-      if (details.requested.group == "org.jetbrains.kotlin") {
-        details.useVersion kotlinVersion
-      }
-    }
+  @JsonProperty("@type")
+  public String type;
+
+  public String name;
+  public String target;
+
+  public MicrosoftTeamsPotentialActionChoice(String name, String target) {
+    this.type = ACTION_CARD_TYPE;
+    this.name = name;
+    this.target = target;
   }
 }
