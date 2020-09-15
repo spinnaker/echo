@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2020 Cerner Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,16 @@
  * limitations under the License.
  */
 
-apply plugin: "kotlin"
+package com.netflix.spinnaker.echo.microsoftteams;
 
-compileKotlin {
-  kotlinOptions {
-    languageVersion = "1.4"
-    jvmTarget = "1.8"
-  }
-}
+import retrofit.client.Response;
+import retrofit.http.Body;
+import retrofit.http.POST;
+import retrofit.http.Path;
 
-compileTestKotlin {
-  kotlinOptions {
-    languageVersion = "1.4"
-    jvmTarget = "1.8"
-  }
-}
-
-configurations.all {
-  resolutionStrategy {
-    eachDependency { details ->
-      if (details.requested.group == "org.jetbrains.kotlin") {
-        details.useVersion kotlinVersion
-      }
-    }
-  }
+public interface MicrosoftTeamsClient {
+  @POST("/{webhookUrl}")
+  Response sendMessage(
+      @Path(value = "webhookUrl", encode = false) String webhook,
+      @Body MicrosoftTeamsMessage message);
 }
