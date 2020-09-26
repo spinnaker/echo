@@ -18,6 +18,9 @@ package com.netflix.spinnaker.echo.pubsub.aws;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,7 +57,6 @@ public class SQSSubscriberProvider {
   private static final Logger log = LoggerFactory.getLogger(SQSSubscriberProvider.class);
 
   private final ObjectMapper objectMapper;
-  private final AWSCredentialsProvider awsCredentialsProvider;
   private final AmazonPubsubProperties properties;
   private final PubsubSubscribers pubsubSubscribers;
   private final PubsubMessageHandler.Factory pubsubMessageHandlerFactory;
@@ -75,7 +77,6 @@ public class SQSSubscriberProvider {
       DynamicConfigService dynamicConfigService,
       DiscoveryStatusListener discoveryStatusListener) {
     this.objectMapper = objectMapper;
-    this.awsCredentialsProvider = awsCredentialsProvider;
     this.properties = properties;
     this.pubsubSubscribers = pubsubSubscribers;
     this.pubsubMessageHandlerFactory = pubsubMessageHandlerFactory;
@@ -83,6 +84,28 @@ public class SQSSubscriberProvider {
     this.messageArtifactTranslatorFactory = messageArtifactTranslatorFactory;
     this.dynamicConfigService = dynamicConfigService;
     this.discoveryStatusListener = discoveryStatusListener;
+  }
+
+  AWSCredentialsProvider getAwsCredentialsProvider(AmazonPubsubProperties amazonPubsubProperties) {
+    AWSCredentialsProvider credentialsProvider = DefaultAWSCredentialsProviderChain.getInstance();
+    String accessKeyId = amazonPubsubProperties.getAccessKeyId();
+    String secretAccessKey = amazonPubsubProperties.getSecretAccessKey();
+
+    if (accessKeyId != null
+        && !accessKeyId.isEmpty()
+        && secretAccessKey != null
+        && !secretAccessKey.isEmpty()) {
+
+      log.info(
+          "Using AWS the accessKeyId/secretAccessKey credentials specified at pubsub.amazon in echo config");
+      credentialsProvider =
+          new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKeyId, secretAccessKey));
+    } else {
+
+      log.info("Using default AWS credentials");
+    }
+
+    return credentialsProvider;
   }
 
   @PostConstruct
@@ -94,6 +117,7 @@ public class SQSSubscriberProvider {
         Executors.newFixedThreadPool(properties.getSubscriptions().size());
 
     List<PubsubSubscriber> subscribers = new ArrayList<>();
+    AWSCredentialsProvider awsCredentialsProvider = getAwsCredentialsProvider(properties);
 
     properties
         .getSubscriptions()

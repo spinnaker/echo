@@ -30,6 +30,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "pubsub.amazon")
 public class AmazonPubsubProperties {
 
+  private String accessKeyId;
+  private String secretAccessKey;
+
   @Valid private List<AmazonPubsubSubscription> subscriptions;
 
   @Data
@@ -76,6 +79,7 @@ public class AmazonPubsubProperties {
       this.queueARN = queueARN;
       this.templatePath = templatePath;
       this.messageFormat = messageFormat;
+
       this.alternateIdInMessageAttributes = alternateIdInMessageAttributes;
       if (dedupeRetentionSeconds != null && dedupeRetentionSeconds >= 0) {
         this.dedupeRetentionSeconds = dedupeRetentionSeconds;
