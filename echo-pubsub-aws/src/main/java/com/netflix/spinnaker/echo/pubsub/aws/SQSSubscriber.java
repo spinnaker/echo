@@ -161,6 +161,9 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
 
       receiveMessageResult.getMessages().forEach(this::handleMessage);
     }
+
+    // If isEnabled is false, let's not busy spin
+    Thread.sleep(500);
   }
 
   private void handleMessage(Message message) {
