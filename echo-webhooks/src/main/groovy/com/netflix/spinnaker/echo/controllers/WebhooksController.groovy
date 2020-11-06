@@ -50,7 +50,6 @@ class WebhooksController {
                                                   @RequestBody String rawPayload,
                                                   @RequestHeader HttpHeaders headers) {
     Event event = new Event()
-    boolean sendEvent = true
     event.details = new Metadata()
     event.details.source = source
     event.details.type = type
@@ -94,13 +93,9 @@ class WebhooksController {
 
     log.info("Webhook ${type}:${source}:${event.content}")
 
-    if (sendEvent) {
-      propagator.processEvent(event)
-    }
+    propagator.processEvent(event)
 
-    return sendEvent ?
-      WebhookResponse.newInstance(eventProcessed: true, eventId: event.eventId) :
-      WebhookResponse.newInstance(eventProcessed: false);
+    return WebhookResponse.newInstance(eventProcessed: true, eventId: event.eventId)
   }
 
   @RequestMapping(value = '/webhooks/{type}', method = RequestMethod.POST)
