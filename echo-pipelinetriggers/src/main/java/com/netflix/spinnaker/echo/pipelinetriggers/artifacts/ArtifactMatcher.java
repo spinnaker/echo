@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.echo.pipelinetriggers.artifacts;
 
+import com.google.gson.Gson;
+import com.jayway.jsonpath.*;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.artifacts.model.ExpectedArtifact;
@@ -27,6 +29,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ArtifactMatcher {
+
+  private static final Gson gson = new Gson();
+  private static final Configuration conf =
+      Configuration.defaultConfiguration().setOptions(Option.SUPPRESS_EXCEPTIONS);
+
   public static boolean anyArtifactsMatchExpected(
       List<Artifact> messageArtifacts,
       Trigger trigger,
@@ -75,6 +82,55 @@ public class ArtifactMatcher {
   public static boolean isConstraintInPayload(final Map constraints, final Map payload) {
     for (Object key : constraints.keySet()) {
       if (!payload.containsKey(key) || payload.get(key) == null) {
+        return false;
+      }
+
+      if (constraints.get(key) != null
+          && !matches(constraints.get(key).toString(), payload.get(key).toString())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Check that there is a key in the payload for each constraint declared in a Trigger. Also check
+   * that if there is a value for a given key, that the value matches the value in the payload.
+   *
+   * <p>The constraint key may accept a JsonPath expression for deeper json search, the evaluation
+   * value should be a String or a List<String>.
+   *
+   * @param constraints A map of constraints configured in the Trigger (eg, created in Deck). A
+   *     constraint is a [key, java regex value] pair or a [JsonPathExp, java regex value].
+   * @param payload A map of the payload contents POST'd in the triggering event.
+   * @return Whether every key or expression (and value if applicable) in the constraints map is
+   *     represented in the payload.
+   */
+  public static boolean isJsonPathConstraintInPayload(final Map constraints, final Map payload) {
+    String json = gson.toJson(payload);
+    DocumentContext documentContext = JsonPath.using(conf).parse(json);
+
+    for (Object key : constraints.keySet()) {
+      if (!payload.containsKey(key) || payload.get(key) == null) {
+        String value;
+        try {
+          value = documentContext.read(key.toString(), String.class);
+        } catch (InvalidPathException e) {
+          return false;
+        }
+        if (value != null) {
+          return matches(constraints.get(key).toString(), value);
+        } else {
+          List<String> values;
+          try {
+            values = documentContext.read(key.toString());
+          } catch (ClassCastException e) {
+            return false;
+          }
+          if (values != null) {
+            return values.stream().anyMatch(v -> matches(constraints.get(key).toString(), v));
+          }
+        }
         return false;
       }
 
