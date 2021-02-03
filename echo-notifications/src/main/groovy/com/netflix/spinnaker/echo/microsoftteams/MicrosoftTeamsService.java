@@ -16,18 +16,72 @@
 
 package com.netflix.spinnaker.echo.microsoftteams;
 
+import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import retrofit.RestAdapter;
+import retrofit.client.Client;
 import retrofit.client.Response;
+import retrofit.converter.JacksonConverter;
 
 @Slf4j
 public class MicrosoftTeamsService {
-  private final MicrosoftTeamsClient microsoftTeamsClient;
+  private static final String BASE_URL_REGEX_PATTERN = "^(http|https)://.+?/";
 
-  public MicrosoftTeamsService(MicrosoftTeamsClient microsoftTeamsClient) {
-    this.microsoftTeamsClient = microsoftTeamsClient;
+  private Client retrofitClient;
+  private RestAdapter.LogLevel retrofitLogLevel;
+
+  public MicrosoftTeamsService(Client retrofitClient, RestAdapter.LogLevel retrofitLogLevel) {
+    this.retrofitClient = retrofitClient;
+    this.retrofitLogLevel = retrofitLogLevel;
   }
 
   public Response sendMessage(String webhookUrl, MicrosoftTeamsMessage message) {
-    return microsoftTeamsClient.sendMessage(webhookUrl, message);
+    // As of Jan 2021, Microsoft has migrated to a new webhook URL where the hostname can be
+    // dynamic.
+    //
+    // In order to support both old and new URLs, and since retrofit 1.x does not support dynamic
+    // URLs,
+    // the endpoint and relative path must be derived from the full webhook URL.
+    // The RestAdapter does not provide any methods to change the endpoint URL once it's created,
+    // so this object must be instantiated with a new endpoint URL for each message.
+    MicrosoftTeamsClient microsoftTeamsClient =
+        new RestAdapter.Builder()
+            .setConverter(new JacksonConverter())
+            .setClient(retrofitClient)
+            .setEndpoint(getEndpointUrl(webhookUrl))
+            .setLogLevel(retrofitLogLevel)
+            .setLog(new Slf4jRetrofitLogger(MicrosoftTeamsClient.class))
+            .build()
+            .create(MicrosoftTeamsClient.class);
+
+    return microsoftTeamsClient.sendMessage(getRelativePath(webhookUrl), message);
+  }
+
+  private String getEndpointUrl(String webhookUrl) {
+    String baseUrl = "";
+    Pattern pattern = Pattern.compile(BASE_URL_REGEX_PATTERN, Pattern.CASE_INSENSITIVE);
+    Matcher matcher = pattern.matcher(webhookUrl);
+
+    if (matcher.find()) {
+      baseUrl = matcher.group(0);
+    } else {
+      log.error("Webhook URL does not match base URL format. URL: " + webhookUrl);
+    }
+
+    return baseUrl;
+  }
+
+  private String getRelativePath(String webhookUrl) {
+    String baseUrl = getEndpointUrl(webhookUrl);
+    String relativePath = webhookUrl.substring(baseUrl.length());
+
+    // Remove slash from beginning of path as the client will prefix the string with a slash
+    if (relativePath.charAt(0) == '/') {
+      relativePath = relativePath.substring(1, relativePath.length());
+    }
+
+    return relativePath;
   }
 }
