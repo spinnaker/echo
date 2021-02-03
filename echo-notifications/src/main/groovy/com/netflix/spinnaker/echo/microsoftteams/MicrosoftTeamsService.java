@@ -38,14 +38,6 @@ public class MicrosoftTeamsService {
   }
 
   public Response sendMessage(String webhookUrl, MicrosoftTeamsMessage message) {
-    // As of Jan 2021, Microsoft has migrated to a new webhook URL where the hostname can be
-    // dynamic.
-    //
-    // In order to support both old and new URLs, and since retrofit 1.x does not support dynamic
-    // URLs,
-    // the endpoint and relative path must be derived from the full webhook URL.
-    // The RestAdapter does not provide any methods to change the endpoint URL once it's created,
-    // so this object must be instantiated with a new endpoint URL for each message.
     MicrosoftTeamsClient microsoftTeamsClient =
         new RestAdapter.Builder()
             .setConverter(new JacksonConverter())
