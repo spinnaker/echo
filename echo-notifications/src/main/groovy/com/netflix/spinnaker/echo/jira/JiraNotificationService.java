@@ -22,13 +22,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.echo.api.Notification;
 import com.netflix.spinnaker.echo.controller.EchoResponse;
-import com.netflix.spinnaker.echo.jira.JiraService.CreateJiraIssueRequest;
-import com.netflix.spinnaker.echo.jira.JiraService.CreateJiraIssueResponse;
+import com.netflix.spinnaker.echo.jira.JiraService.CreateIssueRequest;
+import com.netflix.spinnaker.echo.jira.JiraService.CreateIssueResponse;
+import com.netflix.spinnaker.echo.jira.JiraService.IssueTransitions;
+import com.netflix.spinnaker.echo.jira.JiraService.TransitionIssueRequest;
 import com.netflix.spinnaker.echo.notification.NotificationService;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,36 +40,85 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import retrofit.RetrofitError;
+import retrofit.client.Response;
 
 @Component
 @ConditionalOnProperty("jira.enabled")
 public class JiraNotificationService implements NotificationService {
   private static final Logger LOGGER = LoggerFactory.getLogger(JiraNotificationService.class);
   private static final int MAX_RETRY = 3;
-  private static final long RETRY_BACKOFF = 3;
+  private static final long RETRY_BACKOFF = 100;
 
   private final JiraService jiraService;
   private final RetrySupport retrySupport;
   private final ObjectMapper mapper;
 
   @Autowired
-  public JiraNotificationService(JiraService jiraService, ObjectMapper objectMapper) {
+  public JiraNotificationService(
+      JiraService jiraService, RetrySupport retrySupport, ObjectMapper objectMapper) {
     this.jiraService = jiraService;
-    this.retrySupport = new RetrySupport();
+    this.retrySupport = retrySupport;
     this.mapper = objectMapper;
   }
 
   @Override
   public boolean supportsType(String type) {
-    return "JIRA".equals(type.toUpperCase());
+    return "JIRA".equalsIgnoreCase(type);
   }
 
   @Override
-  public EchoResponse<CreateJiraIssueResponse> handle(Notification notification) {
+  public EchoResponse handle(Notification notification) {
+    return isTransition(notification) ? transitionIssue(notification) : create(notification);
+  }
+
+  private boolean isTransition(Notification notification) {
+    return notification.getAdditionalContext().get("transitionContext") != null;
+  }
+
+  private EchoResponse.Void transitionIssue(Notification notification) {
+    Map<String, Object> transitionContext =
+        (Map<String, Object>) notification.getAdditionalContext().get("transitionContext");
+    String jiraIssue = (String) notification.getAdditionalContext().get("jiraIssue");
+
+    try {
+      // transitionContext is the full Jira transition API payload - except the transition ID is
+      // probably unknown.  So, we get the transition ID from the transition name.
+      Map<String, String> transition = (Map<String, String>) transitionContext.get("transition");
+      String transitionName = transition.get("name");
+      IssueTransitions issueTransitions =
+          retrySupport.retry(getIssueTransitions(jiraIssue), MAX_RETRY, RETRY_BACKOFF, false);
+
+      issueTransitions.getTransitions().stream()
+          .filter(it -> it.getName().equals(transitionName))
+          .findFirst()
+          .ifPresentOrElse(
+              t -> transition.put("id", t.getId()),
+              () -> {
+                throw new IllegalArgumentException(
+                    ImmutableMap.of(
+                            "issue", jiraIssue,
+                            "transitionName", transitionName,
+                            "validTransitionNames",
+                                issueTransitions.getTransitions().stream()
+                                    .map(IssueTransitions.Transition::getName)
+                                    .collect(Collectors.toList()))
+                        .toString());
+              });
+
+      retrySupport.retry(
+          transitionIssue(jiraIssue, transitionContext), MAX_RETRY, RETRY_BACKOFF, false);
+      return new EchoResponse.Void();
+    } catch (Exception e) {
+      throw new TransitionJiraIssueException(
+          String.format("Failed to transition Jira issue %s: %s", jiraIssue, errors(e)), e);
+    }
+  }
+
+  private EchoResponse<CreateIssueResponse> create(Notification notification) {
     Map<String, Object> issueRequestBody = issueRequestBody(notification);
     try {
-      CreateJiraIssueResponse response =
-          retrySupport.retry(createJiraIssue(issueRequestBody), MAX_RETRY, RETRY_BACKOFF, false);
+      CreateIssueResponse response =
+          retrySupport.retry(createIssue(issueRequestBody), MAX_RETRY, RETRY_BACKOFF, false);
 
       return new EchoResponse<>(response);
     } catch (Exception e) {
@@ -78,8 +130,18 @@ public class JiraNotificationService implements NotificationService {
     }
   }
 
-  private Supplier<CreateJiraIssueResponse> createJiraIssue(Map<String, Object> issueRequestBody) {
-    return () -> jiraService.createJiraIssue(new CreateJiraIssueRequest(issueRequestBody));
+  private Supplier<IssueTransitions> getIssueTransitions(String issueIdOrKey) {
+    return () -> jiraService.getIssueTransitions(issueIdOrKey);
+  }
+
+  private Supplier<Response> transitionIssue(
+      String issueIdOrKey, Map<String, Object> issueRequestBody) {
+    return () ->
+        jiraService.transitionIssue(issueIdOrKey, new TransitionIssueRequest(issueRequestBody));
+  }
+
+  private Supplier<CreateIssueResponse> createIssue(Map<String, Object> issueRequestBody) {
+    return () -> jiraService.createIssue(new CreateIssueRequest(issueRequestBody));
   }
 
   private Map<String, Object> issueRequestBody(Notification notification) {
@@ -110,6 +172,13 @@ public class JiraNotificationService implements NotificationService {
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
   static class CreateJiraIssueException extends RuntimeException {
     public CreateJiraIssueException(String message, Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  static class TransitionJiraIssueException extends RuntimeException {
+    public TransitionJiraIssueException(String message, Throwable cause) {
       super(message, cause);
     }
   }
