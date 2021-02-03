@@ -18,16 +18,19 @@ package com.netflix.spinnaker.echo.jira;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.echo.api.Notification;
 import com.netflix.spinnaker.echo.controller.EchoResponse;
+import com.netflix.spinnaker.echo.jira.JiraService.CommentIssueRequest;
 import com.netflix.spinnaker.echo.jira.JiraService.CreateIssueRequest;
 import com.netflix.spinnaker.echo.jira.JiraService.CreateIssueResponse;
 import com.netflix.spinnaker.echo.jira.JiraService.IssueTransitions;
 import com.netflix.spinnaker.echo.jira.JiraService.TransitionIssueRequest;
 import com.netflix.spinnaker.echo.notification.NotificationService;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -76,15 +79,20 @@ public class JiraNotificationService implements NotificationService {
   }
 
   private EchoResponse.Void transitionIssue(Notification notification) {
-    Map<String, Object> transitionContext =
-        (Map<String, Object>) notification.getAdditionalContext().get("transitionContext");
-    String jiraIssue = (String) notification.getAdditionalContext().get("jiraIssue");
+    TransitionJiraNotification transitionNotification =
+        mapper.convertValue(notification.getAdditionalContext(), TransitionJiraNotification.class);
+    String jiraIssue = transitionNotification.getJiraIssue();
 
     try {
-      // transitionContext is the full Jira transition API payload - except the transition ID is
-      // probably unknown.  So, we get the transition ID from the transition name.
-      Map<String, String> transition = (Map<String, String>) transitionContext.get("transition");
+      // transitionContext is the full Jira transition API payload (which is stored in
+      // transitionDetails) - except the transition ID is probably unknown.  So, we get the
+      // transition ID from the transition name.
+      Map<String, String> transition =
+          transitionNotification.getTransitionContext().getTransition();
+      Map<String, Object> transitionDetails =
+          transitionNotification.getTransitionContext().getTransitionDetails();
       String transitionName = transition.get("name");
+
       IssueTransitions issueTransitions =
           retrySupport.retry(getIssueTransitions(jiraIssue), MAX_RETRY, RETRY_BACKOFF, false);
 
@@ -92,7 +100,10 @@ public class JiraNotificationService implements NotificationService {
           .filter(it -> it.getName().equals(transitionName))
           .findFirst()
           .ifPresentOrElse(
-              t -> transition.put("id", t.getId()),
+              t -> {
+                transition.put("id", t.getId());
+                transitionDetails.put("transition", transition);
+              },
               () -> {
                 throw new IllegalArgumentException(
                     ImmutableMap.of(
@@ -106,7 +117,16 @@ public class JiraNotificationService implements NotificationService {
               });
 
       retrySupport.retry(
-          transitionIssue(jiraIssue, transitionContext), MAX_RETRY, RETRY_BACKOFF, false);
+          transitionIssue(jiraIssue, transitionDetails), MAX_RETRY, RETRY_BACKOFF, false);
+
+      if (transitionNotification.getComment() != null) {
+        retrySupport.retry(
+            addComment(jiraIssue, transitionNotification.getComment()),
+            MAX_RETRY,
+            RETRY_BACKOFF,
+            false);
+      }
+
       return new EchoResponse.Void();
     } catch (Exception e) {
       throw new TransitionJiraIssueException(
@@ -135,9 +155,13 @@ public class JiraNotificationService implements NotificationService {
   }
 
   private Supplier<Response> transitionIssue(
-      String issueIdOrKey, Map<String, Object> issueRequestBody) {
+      String issueIdOrKey, Map<String, Object> transitionDetails) {
     return () ->
-        jiraService.transitionIssue(issueIdOrKey, new TransitionIssueRequest(issueRequestBody));
+        jiraService.transitionIssue(issueIdOrKey, new TransitionIssueRequest(transitionDetails));
+  }
+
+  private Supplier<Response> addComment(String issueIdOrKey, String comment) {
+    return () -> jiraService.addComment(issueIdOrKey, new CommentIssueRequest(comment));
   }
 
   private Supplier<CreateIssueResponse> createIssue(Map<String, Object> issueRequestBody) {
@@ -180,6 +204,60 @@ public class JiraNotificationService implements NotificationService {
   static class TransitionJiraIssueException extends RuntimeException {
     public TransitionJiraIssueException(String message, Throwable cause) {
       super(message, cause);
+    }
+  }
+
+  static class TransitionJiraNotification {
+    private String jiraIssue;
+    private String comment;
+    private TransitionContext transitionContext;
+
+    public String getJiraIssue() {
+      return jiraIssue;
+    }
+
+    public void setJiraIssue(String jiraIssue) {
+      this.jiraIssue = jiraIssue;
+    }
+
+    public String getComment() {
+      return comment;
+    }
+
+    public void setComment(String comment) {
+      this.comment = comment;
+    }
+
+    public TransitionContext getTransitionContext() {
+      return transitionContext;
+    }
+
+    public void setTransitionContext(TransitionContext transitionContext) {
+      this.transitionContext = transitionContext;
+    }
+
+    static class TransitionContext {
+      private Map<String, String> transition;
+
+      // placeholder for all the other remaining transition context payload
+      private Map<String, Object> transitionDetails = new HashMap<>();
+
+      public Map<String, String> getTransition() {
+        return transition;
+      }
+
+      public void setTransition(Map<String, String> transition) {
+        this.transition = transition;
+      }
+
+      public Map<String, Object> getTransitionDetails() {
+        return transitionDetails;
+      }
+
+      @JsonAnySetter
+      public void setTransitionDetails(String name, Object value) {
+        this.transitionDetails.put(name, value);
+      }
     }
   }
 }

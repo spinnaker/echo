@@ -38,6 +38,10 @@ public interface JiraService {
       @Path("issueIdOrKey") String issueIdOrKey,
       @Body TransitionIssueRequest transitionIssueRequest);
 
+  @POST("/rest/api/2/issue/{issueIdOrKey}/comment")
+  Response addComment(
+      @Path("issueIdOrKey") String issueIdOrKey, @Body CommentIssueRequest commentIssueRequest);
+
   class CreateIssueRequest extends HashMap<String, Object> {
     CreateIssueRequest(Map<String, Object> body) {
       super(body);
@@ -47,6 +51,22 @@ public interface JiraService {
   class TransitionIssueRequest extends HashMap<String, Object> {
     TransitionIssueRequest(Map<String, Object> body) {
       super(body);
+    }
+  }
+
+  class CommentIssueRequest {
+    private String body;
+
+    CommentIssueRequest(String body) {
+      this.body = body;
+    }
+
+    public String getBody() {
+      return body;
+    }
+
+    public void setBody(String body) {
+      this.body = body;
     }
   }
 
