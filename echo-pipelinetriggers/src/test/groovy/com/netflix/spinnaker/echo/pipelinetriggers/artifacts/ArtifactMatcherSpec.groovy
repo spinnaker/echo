@@ -138,81 +138,130 @@ class ArtifactMatcherSpec extends Specification {
 
   def "matches when constraint is partial word"() {
     when:
-    boolean resultOld = ArtifactMatcher.isConstraintInPayload(shortConstraint, matchPayload)
-    boolean resultNew = ArtifactMatcher.isJsonPathConstraintInPayload(shortConstraint, matchPayload)
+    boolean result = ArtifactMatcher.isConstraintInPayload(shortConstraint, matchPayload)
 
     then:
-    resultOld && resultNew
+    result
   }
 
   def "matches exact string"() {
     when:
-    boolean resultOld = ArtifactMatcher.isConstraintInPayload(contstraints, matchPayload)
-    boolean resultNew = ArtifactMatcher.isJsonPathConstraintInPayload(contstraints, matchPayload)
-
+    boolean result = ArtifactMatcher.isConstraintInPayload(contstraints, matchPayload)
 
     then:
-    resultOld && resultNew
+    result
   }
 
   def "no match when constraint word not present"() {
     when:
-    boolean resultOld = ArtifactMatcher.isConstraintInPayload(contstraints, noMatchPayload)
-    boolean resultNew = ArtifactMatcher.isJsonPathConstraintInPayload(contstraints, noMatchPayload)
-
+    boolean result = ArtifactMatcher.isConstraintInPayload(contstraints, noMatchPayload)
 
     then:
-    !resultOld && !resultNew
+    !result
   }
 
   def "matches when payload value is in a list of constraint strings"() {
     when:
-    boolean resultOld = ArtifactMatcher.isConstraintInPayload(constraintsOR, matchPayload)
-    boolean resultNew = ArtifactMatcher.isJsonPathConstraintInPayload(constraintsOR, matchPayload)
-
+    boolean result = ArtifactMatcher.isConstraintInPayload(constraintsOR, matchPayload)
 
     then:
-    resultOld && resultNew
+    result
   }
 
   def "no match when val not present in list of constraint strings"() {
     when:
-    boolean resultOld = ArtifactMatcher.isConstraintInPayload(constraintsOR, noMatchPayload)
-    boolean resultNew = ArtifactMatcher.isJsonPathConstraintInPayload(constraintsOR, noMatchPayload)
-
+    boolean result = ArtifactMatcher.isConstraintInPayload(constraintsOR, noMatchPayload)
 
     then:
-    !resultOld && !resultNew
+    !result
   }
 
   def "matches when val is in stringified list of constraints"() {
     when:
-    boolean resultOld = ArtifactMatcher.isConstraintInPayload(stringifiedListConstraints, matchPayload)
-    boolean resultNew = ArtifactMatcher.isJsonPathConstraintInPayload(stringifiedListConstraints, matchPayload)
-
+    boolean result = ArtifactMatcher.isConstraintInPayload(stringifiedListConstraints, matchPayload)
 
     then:
-    resultOld && resultNew
+    result
   }
 
   def "matches when payload contains list and constraint is a stringified list"() {
     when:
-    boolean resultOld = ArtifactMatcher.isConstraintInPayload(stringifiedListConstraints, payloadWithList)
-    boolean resultNew = ArtifactMatcher.isJsonPathConstraintInPayload(stringifiedListConstraints, payloadWithList)
-
+    boolean result = ArtifactMatcher.isConstraintInPayload(stringifiedListConstraints, payloadWithList)
 
     then:
-    resultOld && resultNew
+    result
   }
 
   def "matches when payload is a list list and constraints are a list"() {
     when:
-    boolean resultOld = ArtifactMatcher.isConstraintInPayload(constraintsOR, payloadWithList)
-    boolean resultNew = ArtifactMatcher.isJsonPathConstraintInPayload(constraintsOR, payloadWithList)
-
+    boolean result = ArtifactMatcher.isConstraintInPayload(constraintsOR, payloadWithList)
 
     then:
-    resultOld && resultNew
+    result
+  }
+
+  def "matches when constraint is partial word using Jsonpath"() {
+    when:
+    boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(shortConstraint, matchPayload)
+
+    then:
+    result
+  }
+
+  def "matches exact string using Jsonpath"() {
+    when:
+    boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(contstraints, matchPayload)
+
+    then:
+    result
+  }
+
+  def "no match when constraint word not present using Jsonpath"() {
+    when:
+    boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(contstraints, noMatchPayload)
+
+    then:
+    !result
+  }
+
+  def "matches when payload value is in a list of constraint strings using Jsonpath"() {
+    when:
+    boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(constraintsOR, matchPayload)
+
+    then:
+    result
+  }
+
+  def "no match when val not present in list of constraint strings using Jsonpath"() {
+    when:
+    boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(constraintsOR, noMatchPayload)
+
+    then:
+    !result
+  }
+
+  def "matches when val is in stringified list of constraints using Jsonpath"() {
+    when:
+    boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(stringifiedListConstraints, matchPayload)
+
+    then:
+    result
+  }
+
+  def "matches when payload contains list and constraint is a stringified list using Jsonpath"() {
+    when:
+    boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(stringifiedListConstraints, payloadWithList)
+
+    then:
+    result
+  }
+
+  def "matches when payload is a list list and constraints are a list using Jsonpath"() {
+    when:
+    boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(constraintsOR, payloadWithList)
+
+    then:
+    result
   }
 
   def "matches when val is a string using JSONPath constraint with multi-level json"() {

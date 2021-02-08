@@ -112,7 +112,7 @@ public class ArtifactMatcher {
 
     for (Object key : constraints.keySet()) {
       if (!payload.containsKey(key) || payload.get(key) == null) {
-        log.info("key not present in payload, needs to check with jsonpath");
+        log.debug("key not present in payload, needs to check with jsonpath");
         List<String> values = getValueUsingJsonPath(documentContext, key.toString());
         if (values != null && anyMatch(constraints.get(key).toString(), values)) {
           continue;
