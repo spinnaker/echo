@@ -91,6 +91,11 @@ class ArtifactMatcherSpec extends Specification {
     "\$.one.test2.changes[a].value": "bar"
   ]
 
+  def multipleJsonPathConstraints = [
+    "\$.one.test1.title": "st",
+    "\$.one.test2.title": "no match"
+  ]
+
   def complexPayload = [
     "one": [
       "test1": [
@@ -285,6 +290,14 @@ class ArtifactMatcherSpec extends Specification {
   def "no match when bad expression using JSONPath constraint with multi-level json"() {
     when:
     boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(jsonPathConstraintsBadJsonPath, complexPayload)
+
+    then:
+    !result
+  }
+
+  def "no match when multiple JSONPath constraints with multi-level json"() {
+    when:
+    boolean result = ArtifactMatcher.isJsonPathConstraintInPayload(multipleJsonPathConstraints, complexPayload)
 
     then:
     !result

@@ -112,31 +112,17 @@ public class ArtifactMatcher {
 
     for (Object key : constraints.keySet()) {
       if (!payload.containsKey(key) || payload.get(key) == null) {
-        String value;
-        try {
-          value = documentContext.read(key.toString(), String.class);
-        } catch (InvalidPathException e) {
+        log.info("key not present in payload, needs to check with jsonpath");
+        List<String> values = getValueUsingJsonPath(documentContext, key.toString());
+        if (values != null && anyMatch(constraints.get(key).toString(), values)) {
+          continue;
+        }
+        return false;
+      } else {
+        if (constraints.get(key) != null
+            && !matches(constraints.get(key).toString(), payload.get(key).toString())) {
           return false;
         }
-        if (value != null) {
-          return matches(constraints.get(key).toString(), value);
-        } else {
-          List<String> values;
-          try {
-            values = documentContext.read(key.toString());
-          } catch (ClassCastException e) {
-            return false;
-          }
-          if (values != null) {
-            return values.stream().anyMatch(v -> matches(constraints.get(key).toString(), v));
-          }
-        }
-        return false;
-      }
-
-      if (constraints.get(key) != null
-          && !matches(constraints.get(key).toString(), payload.get(key).toString())) {
-        return false;
       }
     }
     return true;
@@ -144,5 +130,27 @@ public class ArtifactMatcher {
 
   private static boolean matches(String us, String other) {
     return Pattern.compile(us).asPredicate().test(other);
+  }
+
+  private static boolean anyMatch(String us, List<String> values) {
+    return values.stream().anyMatch(v -> matches(us, v));
+  }
+
+  private static List<String> getValueUsingJsonPath(DocumentContext ctx, String query) {
+    try {
+      String value = ctx.read(query, String.class);
+      if (value != null) {
+        return Collections.singletonList(value);
+      }
+      // lets try to cast to List<String>
+      return ctx.read(query, List.class);
+    } catch (InvalidPathException e) {
+      log.error("Invalid JsonPath query in constrains, with query: " + query);
+    } catch (ClassCastException e) {
+      log.error(
+          "Payload value cannot be cast, only String or List<String> are valid types, with query: "
+              + query);
+    }
+    return null;
   }
 }
