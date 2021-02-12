@@ -233,8 +233,8 @@ public class Trigger {
     return this.toBuilder().buildNumber(null).hash(null).tag(tag).build();
   }
 
-  public Trigger atDigest(final String digest) {
-    return this.toBuilder().buildNumber(null).hash(null).digest(digest).build();
+  public Trigger atTag(final String tag, final String digest) {
+    return this.toBuilder().buildNumber(null).hash(null).tag(tag).digest(digest).build();
   }
 
   public Trigger atPayload(final Map payload) {

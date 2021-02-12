@@ -88,8 +88,7 @@ public class DockerEventHandler extends BaseTriggerEventHandler<DockerEvent> {
   protected Function<Trigger, Trigger> buildTrigger(DockerEvent dockerEvent) {
     return trigger ->
         trigger
-            .atTag(dockerEvent.getContent().getTag())
-            .atDigest(dockerEvent.getContent().getDigest())
+            .atTag(dockerEvent.getContent().getTag(), dockerEvent.getContent().getDigest())
             .withEventId(dockerEvent.getEventId());
   }
 
