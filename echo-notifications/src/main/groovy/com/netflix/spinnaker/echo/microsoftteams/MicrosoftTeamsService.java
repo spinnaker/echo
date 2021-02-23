@@ -57,8 +57,9 @@ public class MicrosoftTeamsService {
     try {
       URL url = new URL(webhookUrl);
       baseUrl = url.getProtocol() + "://" + url.getHost();
-    } catch(MalformedURLException e) {
-      throw new InvalidRequestException("Unable to determine base URL from Microsoft Teams webhook URL.", e);
+    } catch (MalformedURLException e) {
+      throw new InvalidRequestException(
+          "Unable to determine base URL from Microsoft Teams webhook URL.", e);
     }
 
     return baseUrl;
@@ -74,8 +75,9 @@ public class MicrosoftTeamsService {
       if (StringUtils.isEmpty(relativePath)) {
         throw new MalformedURLException();
       }
-    } catch(MalformedURLException e) {
-      throw new InvalidRequestException("Unable to determine relative path from Microsoft Teams webhook URL.", e);
+    } catch (MalformedURLException e) {
+      throw new InvalidRequestException(
+          "Unable to determine relative path from Microsoft Teams webhook URL.", e);
     }
 
     // Remove slash from beginning of path as the client will prefix the string with a slash
