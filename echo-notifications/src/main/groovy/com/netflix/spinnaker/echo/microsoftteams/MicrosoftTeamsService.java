@@ -16,10 +16,12 @@
 
 package com.netflix.spinnaker.echo.microsoftteams;
 
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.net.MalformedURLException;
+import java.net.URL;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import retrofit.RestAdapter;
 import retrofit.client.Client;
 import retrofit.client.Response;
@@ -27,8 +29,6 @@ import retrofit.converter.JacksonConverter;
 
 @Slf4j
 public class MicrosoftTeamsService {
-  private static final String BASE_URL_REGEX_PATTERN = "^(http|https)://.+?/";
-
   private Client retrofitClient;
   private RestAdapter.LogLevel retrofitLogLevel;
 
@@ -53,21 +53,30 @@ public class MicrosoftTeamsService {
 
   private String getEndpointUrl(String webhookUrl) {
     String baseUrl = "";
-    Pattern pattern = Pattern.compile(BASE_URL_REGEX_PATTERN, Pattern.CASE_INSENSITIVE);
-    Matcher matcher = pattern.matcher(webhookUrl);
 
-    if (matcher.find()) {
-      baseUrl = matcher.group(0);
-    } else {
-      log.error("Webhook URL does not match base URL format. URL: " + webhookUrl);
+    try {
+      URL url = new URL(webhookUrl);
+      baseUrl = url.getProtocol() + "://" + url.getHost();
+    } catch(MalformedURLException e) {
+      throw new InvalidRequestException("Unable to determine base URL from Microsoft Teams webhook URL.", e);
     }
 
     return baseUrl;
   }
 
   private String getRelativePath(String webhookUrl) {
-    String baseUrl = getEndpointUrl(webhookUrl);
-    String relativePath = webhookUrl.substring(baseUrl.length());
+    String relativePath = "";
+
+    try {
+      URL url = new URL(webhookUrl);
+      relativePath = url.getPath();
+
+      if (StringUtils.isEmpty(relativePath)) {
+        throw new MalformedURLException();
+      }
+    } catch(MalformedURLException e) {
+      throw new InvalidRequestException("Unable to determine relative path from Microsoft Teams webhook URL.", e);
+    }
 
     // Remove slash from beginning of path as the client will prefix the string with a slash
     if (relativePath.charAt(0) == '/') {
