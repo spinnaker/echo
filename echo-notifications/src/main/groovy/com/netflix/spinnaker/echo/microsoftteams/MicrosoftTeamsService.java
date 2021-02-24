@@ -38,6 +38,8 @@ public class MicrosoftTeamsService {
   }
 
   public Response sendMessage(String webhookUrl, MicrosoftTeamsMessage message) {
+    // The RestAdapter instantiation needs to occur for each message to be sent as
+    // the incoming webhook base URL and path may be different for each Teams channel
     MicrosoftTeamsClient microsoftTeamsClient =
         new RestAdapter.Builder()
             .setConverter(new JacksonConverter())
@@ -52,17 +54,13 @@ public class MicrosoftTeamsService {
   }
 
   private String getEndpointUrl(String webhookUrl) {
-    String baseUrl = "";
-
     try {
       URL url = new URL(webhookUrl);
-      baseUrl = url.getProtocol() + "://" + url.getHost();
+      return url.getProtocol() + "://" + url.getHost();
     } catch (MalformedURLException e) {
       throw new InvalidRequestException(
           "Unable to determine base URL from Microsoft Teams webhook URL.", e);
     }
-
-    return baseUrl;
   }
 
   private String getRelativePath(String webhookUrl) {
@@ -82,7 +80,7 @@ public class MicrosoftTeamsService {
 
     // Remove slash from beginning of path as the client will prefix the string with a slash
     if (relativePath.charAt(0) == '/') {
-      relativePath = relativePath.substring(1, relativePath.length());
+      relativePath = relativePath.substring(1);
     }
 
     return relativePath;
