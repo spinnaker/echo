@@ -5,7 +5,6 @@
 <#if (notification.additionalContext.restrictExecutionDuringTimeWindow)??>
   <#assign executionUrl="${executionUrl}&step=1">
 </#if>
-
 <#assign stageDescription="Stage <${executionUrl}|${notification.additionalContext.stageName}> for *${notification.source.application}*">
 <#if (notification.additionalContext.execution.name)??>
   <#assign stageDescription="${stageDescription}'s *${notification.additionalContext.execution.name}* pipeline">
