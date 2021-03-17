@@ -22,6 +22,7 @@ dependencies {
   implementation project(':echo-core')
   implementation "com.netflix.spinnaker.kork:kork-jedis"
   implementation 'com.google.protobuf:protobuf-java-util'
+  implementation "com.netflix.spinnaker.kork:kork-exceptions"
   implementation "com.netflix.spinnaker.kork:kork-proto"
   implementation 'com.netflix.spinnaker.kork:kork-web'
   implementation 'com.squareup.retrofit:retrofit'
