@@ -67,7 +67,7 @@ public class PipelineCache implements MonitoredPoller {
       @Value("${front50.polling-interval-ms:30000}") int pollingIntervalMs,
       @Value("${front50.polling-sleep-ms:100}") int pollingSleepMs,
       @Value(
-              "${pipelinecache.parallelism:#{T(java.lang.Runtime).getRuntime().availableProcessors() - 1}}")
+              "${pipelineCache.parallelism:#{T(java.lang.Runtime).getRuntime().availableProcessors() - 1}}")
           int planParallelism,
       ObjectMapper objectMapper,
       @NonNull Front50Service front50,
