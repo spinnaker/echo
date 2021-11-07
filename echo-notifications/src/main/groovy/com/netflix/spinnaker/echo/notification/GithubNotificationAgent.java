@@ -80,7 +80,11 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
           String.format(
               "Stage '%s' in pipeline '%s' is %s",
               content.getStageName(), content.getPipeline(), status);
-      context = String.format("stage/%s", content.getStageName());
+      context =
+          this.hasApplicationNameInContext
+              ? String.format(
+                  "%s/%s/stage/%s", application, content.getPipeline(), content.getStageName())
+              : String.format("stage/%s", content.getStageName());
       targetUrl =
           String.format(
               "%s/#/applications/%s/executions/details/%s?pipeline=%s&stage=%d",
@@ -91,7 +95,10 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
               content.getStageIndex());
     } else if (config.get("type").equals("pipeline")) {
       description = String.format("Pipeline '%s' is %s", content.getPipeline(), status);
-      context = String.format("pipeline/%s", content.getPipeline());
+      context =
+          this.hasApplicationNameInContext
+              ? String.format("%s/pipeline/%s", application, content.getPipeline())
+              : String.format("pipeline/%s", content.getPipeline());
       targetUrl =
           String.format(
               "%s/#/applications/%s/executions/details/%s?pipeline=%s",
@@ -172,4 +179,7 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
 
   @Value("${github-status.token}")
   private String token;
+
+  @Value("${github-status.hasApplicationNameInContext}")
+  private boolean hasApplicationNameInContext;
 }
