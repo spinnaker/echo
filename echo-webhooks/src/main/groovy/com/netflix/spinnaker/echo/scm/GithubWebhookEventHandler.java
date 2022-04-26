@@ -83,15 +83,18 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
     results.put("hash", webhookEvent.getHash());
     results.put("branch", webhookEvent.getBranch());
     results.put("action", githubEvent.concat(":").concat(webhookEvent.getAction()));
+
     if (webhookEvent instanceof GithubPullRequestEvent) {
       GithubPullRequestEvent pullRequestEvent = (GithubPullRequestEvent) webhookEvent;
-      if (((GithubPullRequestEvent) webhookEvent).getPullRequest() != null) {
-        results.put("number", String.valueOf(pullRequestEvent.getPullRequest().getNumber()));
-        results.put("draft", String.valueOf(pullRequestEvent.getPullRequest().getDraft()));
-        results.put("state", pullRequestEvent.getPullRequest().getState());
-        results.put("title", pullRequestEvent.getPullRequest().getTitle());
+      if (pullRequestEvent.getPullRequest() != null) {
+        GithubPullRequestEvent.PullRequest pullRequest = pullRequestEvent.getPullRequest();
+        results.put("number", String.valueOf(pullRequest.getNumber()));
+        results.put("draft", String.valueOf(pullRequest.getDraft()));
+        results.put("state", pullRequest.getState());
+        results.put("title", pullRequest.getTitle());
       }
     }
+    
     event.content.putAll(results);
 
     log.info(
