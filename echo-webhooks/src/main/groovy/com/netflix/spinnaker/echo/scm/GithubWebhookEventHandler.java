@@ -94,7 +94,7 @@ public class GithubWebhookEventHandler implements GitWebhookHandler {
         results.put("title", pullRequest.getTitle());
       }
     }
-    
+
     event.content.putAll(results);
 
     log.info(
