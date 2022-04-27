@@ -38,7 +38,13 @@ public class GitEvent extends TriggerEvent {
   @NoArgsConstructor
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Content {
-    public Content(String repoProject, String slug, String hash, String branch, String action, List<Artifact> artifacts) {
+    public Content(
+        String repoProject,
+        String slug,
+        String hash,
+        String branch,
+        String action,
+        List<Artifact> artifacts) {
       this.repoProject = repoProject;
       this.slug = slug;
       this.hash = hash;
@@ -58,8 +64,6 @@ public class GitEvent extends TriggerEvent {
     private String title;
     private List<Artifact> artifacts;
   }
-
-
 
   @JsonIgnore
   public String getHash() {
