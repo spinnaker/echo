@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 
 class StashWebhookEventHandlerTest {
 
@@ -34,6 +35,7 @@ class StashWebhookEventHandlerTest {
     event.content.put("event_type", "repo:push");
 
     StashWebhookEventHandler handler = new StashWebhookEventHandler();
-    assertThatCode(() -> handler.handle(event, payload)).doesNotThrowAnyException();
+    assertThatCode(() -> handler.handle(event, payload, HttpHeaders.EMPTY))
+        .doesNotThrowAnyException();
   }
 }
