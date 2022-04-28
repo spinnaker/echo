@@ -35,7 +35,7 @@ public class GithubBranchEvent implements GithubWebhookEvent {
         .orElse("");
   }
 
-  // `.repository.owner.name`
+  // `.repository.owner.login`
   @Override
   public String getRepoProject() {
     return Optional.of(this)
@@ -54,7 +54,7 @@ public class GithubBranchEvent implements GithubWebhookEvent {
         .orElse("");
   }
 
-  // `.after`
+  // `.sha` (doesn't exist, but it's required by the interface)
   @Override
   public String getHash() {
     return "";
