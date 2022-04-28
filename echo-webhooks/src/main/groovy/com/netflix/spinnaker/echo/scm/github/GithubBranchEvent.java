@@ -41,7 +41,7 @@ public class GithubBranchEvent implements GithubWebhookEvent {
     return Optional.of(this)
         .map(GithubBranchEvent::getRepository)
         .map(Repository::getOwner)
-        .map(RepositoryOwner::getName)
+        .map(RepositoryOwner::getLogin)
         .orElse("");
   }
 
@@ -77,6 +77,6 @@ public class GithubBranchEvent implements GithubWebhookEvent {
 
   @Data
   private static class RepositoryOwner {
-    String name;
+    String login;
   }
 }
