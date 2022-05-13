@@ -75,7 +75,7 @@ class WebhooksController {
     if (headers.containsKey('X-Event-Key')) {
       event.content.event_type = headers['X-Event-Key'][0]
     }
-    def filteredHeaders = CollectionUtils.toMultiValueMap(headers.findAll { it.key.startsWith("x-github") })
+    def filteredHeaders = CollectionUtils.toMultiValueMap(headers.findAll { headersPredicate(it) })
 
     if (type == 'git') {
       GitWebhookHandler handler
@@ -104,6 +104,11 @@ class WebhooksController {
     return sendEvent ?
       WebhookResponse.newInstance(eventProcessed: true, eventId: event.eventId) :
       WebhookResponse.newInstance(eventProcessed: false);
+  }
+
+  // If your scm implementation needs access to headers, add them as a clause to this filter predicate
+  private static boolean headersPredicate(Map.Entry<String, List<String>> header) {
+    header.key.toLowerCase().startsWith("x-github")
   }
 
   @RequestMapping(value = '/webhooks/{type}', method = RequestMethod.POST)
