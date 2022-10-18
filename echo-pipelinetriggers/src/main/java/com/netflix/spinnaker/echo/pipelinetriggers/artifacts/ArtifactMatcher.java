@@ -134,7 +134,12 @@ public class ArtifactMatcher {
     try {
       p = Pattern.compile(us);
     } catch (PatternSyntaxException ex) {
-      log.error("Invalid Regex pattern for constraint, will never match any payload: " + us);
+      log.error(
+          "Invalid regex pattern for constraint, will never match any payload: \""
+              + us
+              + "\": "
+              + ex.getMessage(),
+          ex);
       return false;
     }
     return p.asPredicate().test(other);
