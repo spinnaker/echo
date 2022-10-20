@@ -57,7 +57,7 @@ public class BuildEvent extends TriggerEvent {
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Build {
     private boolean building;
-    private int number;
+    private String number;
     private Result result;
     private String url;
     private List<Artifact> artifacts;
@@ -73,7 +73,7 @@ public class BuildEvent extends TriggerEvent {
   }
 
   @JsonIgnore
-  public int getBuildNumber() {
+  public String getBuildNumber() {
     return content.getProject().getLastBuild().getNumber();
   }
 }

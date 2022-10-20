@@ -26,7 +26,7 @@ class BuildEventHandlerSpec extends Specification implements RetrofitStubs {
 
   String MASTER_NAME = "jenkins-server"
   String JOB_NAME = "my-job"
-  int BUILD_NUMBER = 7
+  String BUILD_NUMBER = "7"
   def PROPERTY_FILE = "property-file"
   static Map<String, Object> BUILD_INFO = [
     abc: 123

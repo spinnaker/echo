@@ -64,7 +64,7 @@ trait RetrofitStubs {
   }
 
   BuildEvent createBuildEventWith(BuildEvent.Result result) {
-    def build = result ? new BuildEvent.Build(result == BUILDING, 1, result, null, []) : null
+    def build = result ? new BuildEvent.Build(result == BUILDING, '1', result, null, []) : null
     def res = new BuildEvent()
     res.content = new BuildEvent.Content(new BuildEvent.Project("job", build), "master")
     res.details = new Metadata([type: BuildEvent.TYPE])

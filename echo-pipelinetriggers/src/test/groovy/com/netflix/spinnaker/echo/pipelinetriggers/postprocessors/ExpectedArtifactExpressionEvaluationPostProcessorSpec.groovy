@@ -19,7 +19,7 @@ class ExpectedArtifactExpressionEvaluationPostProcessorSpec extends Specificatio
     .enabled(true).type('jenkins')
     .master('master')
     .job('job')
-    .buildNumber(100)
+    .buildNumber('100')
     .build()
 
   def 'evaluates expressions in expected artifacts'() {
