@@ -19,14 +19,14 @@ package com.netflix.spinnaker.echo.scm.bitbucket.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
-import com.netflix.spinnaker.echo.scm.BitbucketWebhookEventHandler;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 @Component
 public class BitbucketServerEventHandler {
 
-  public static final List<String> bitbucketServerEventTypes =
+  private final List<String> bitbucketServerEventTypes =
       List.of(
           "pr:opened",
           "repo:refs_changed",
@@ -41,6 +41,11 @@ public class BitbucketServerEventHandler {
   private String branch;
 
   private final ObjectMapper objectMapper = EchoObjectMapper.getInstance();
+
+  public boolean looksLikeBitbucketServer(Event event) {
+    String eventType = event.content.get("event_type").toString();
+    return bitbucketServerEventTypes.contains(eventType);
+  }
 
   public void handleBitbucketServerEvent(Event event) {
 
@@ -94,19 +99,15 @@ public class BitbucketServerEventHandler {
         && prOpenedEvent.getPullRequest().getFromRef() != null) {
 
       BitbucketServerPrEvent.Ref fromRef = prOpenedEvent.getPullRequest().getFromRef();
-      branch =
-          BitbucketWebhookEventHandler.emptyOrDefault(fromRef.getId(), "")
-              .replace("refs/heads/", "");
+      branch = StringUtils.defaultIfEmpty(fromRef.getId(), "").replace("refs/heads/", "");
 
       if (fromRef.getRepository() != null) {
-        repoProject =
-            BitbucketWebhookEventHandler.emptyOrDefault(
-                fromRef.getRepository().getProject().getKey(), "");
-        slug = BitbucketWebhookEventHandler.emptyOrDefault(fromRef.getRepository().getSlug(), "");
+        repoProject = StringUtils.defaultIfEmpty(fromRef.getRepository().getProject().getKey(), "");
+        slug = StringUtils.defaultIfEmpty(fromRef.getRepository().getSlug(), "");
       }
 
       if (fromRef.getLatestCommit() != null) {
-        hash = BitbucketWebhookEventHandler.emptyOrDefault(fromRef.latestCommit, "");
+        hash = StringUtils.defaultIfEmpty(fromRef.latestCommit, "");
       }
     }
   }
@@ -116,18 +117,15 @@ public class BitbucketServerEventHandler {
         objectMapper.convertValue(event.content, BitbucketServerRepoEvent.class);
 
     if (refsChangedEvent.repository != null) {
-      repoProject =
-          BitbucketWebhookEventHandler.emptyOrDefault(refsChangedEvent.repository.project.key, "");
-      slug = BitbucketWebhookEventHandler.emptyOrDefault(refsChangedEvent.repository.slug, "");
+      repoProject = StringUtils.defaultIfEmpty(refsChangedEvent.repository.project.key, "");
+      slug = StringUtils.defaultIfEmpty(refsChangedEvent.repository.slug, "");
     }
 
     if (!refsChangedEvent.changes.isEmpty()) {
       BitbucketServerRepoEvent.Change change = refsChangedEvent.changes.get(0);
-      hash = BitbucketWebhookEventHandler.emptyOrDefault(change.toHash, "");
+      hash = StringUtils.defaultIfEmpty(change.toHash, "");
       if (change.ref != null) {
-        branch =
-            BitbucketWebhookEventHandler.emptyOrDefault(change.ref.id, "")
-                .replace("refs/heads/", "");
+        branch = StringUtils.defaultIfEmpty(change.ref.id, "").replace("refs/heads/", "");
       }
     }
   }
@@ -140,19 +138,15 @@ public class BitbucketServerEventHandler {
         && fromRefUpdatedEvent.getPullRequest().getFromRef() != null) {
 
       BitbucketServerPrEvent.Ref fromRef = fromRefUpdatedEvent.getPullRequest().getFromRef();
-      branch =
-          BitbucketWebhookEventHandler.emptyOrDefault(fromRef.getId(), "")
-              .replace("refs/heads/", "");
+      branch = StringUtils.defaultIfEmpty(fromRef.getId(), "").replace("refs/heads/", "");
 
       if (fromRef.getRepository() != null) {
-        repoProject =
-            BitbucketWebhookEventHandler.emptyOrDefault(
-                fromRef.getRepository().getProject().getKey(), "");
-        slug = BitbucketWebhookEventHandler.emptyOrDefault(fromRef.getRepository().getSlug(), "");
+        repoProject = StringUtils.defaultIfEmpty(fromRef.getRepository().getProject().getKey(), "");
+        slug = StringUtils.defaultIfEmpty(fromRef.getRepository().getSlug(), "");
       }
 
       if (fromRef.getLatestCommit() != null) {
-        hash = BitbucketWebhookEventHandler.emptyOrDefault(fromRef.latestCommit, "");
+        hash = StringUtils.defaultIfEmpty(fromRef.latestCommit, "");
       }
     }
   }
@@ -163,13 +157,10 @@ public class BitbucketServerEventHandler {
 
     if (prMergedEvent.getPullRequest() != null && prMergedEvent.getPullRequest().toRef != null) {
       BitbucketServerPrEvent.Ref toRef = prMergedEvent.getPullRequest().toRef;
-      branch =
-          BitbucketWebhookEventHandler.emptyOrDefault(toRef.getId(), "").replace("refs/heads/", "");
+      branch = StringUtils.defaultIfEmpty(toRef.getId(), "").replace("refs/heads/", "");
       if (toRef.getRepository() != null) {
-        repoProject =
-            BitbucketWebhookEventHandler.emptyOrDefault(
-                toRef.getRepository().getProject().getKey(), "");
-        slug = BitbucketWebhookEventHandler.emptyOrDefault(toRef.getRepository().getSlug(), "");
+        repoProject = StringUtils.defaultIfEmpty(toRef.getRepository().getProject().getKey(), "");
+        slug = StringUtils.defaultIfEmpty(toRef.getRepository().getSlug(), "");
       }
     }
 
@@ -177,7 +168,7 @@ public class BitbucketServerEventHandler {
         && prMergedEvent.getPullRequest().getProperties() != null) {
       BitbucketServerPrEvent.Properties properties = prMergedEvent.getPullRequest().getProperties();
       if (properties.getMergeCommit() != null) {
-        hash = BitbucketWebhookEventHandler.emptyOrDefault(properties.getMergeCommit().getId(), "");
+        hash = StringUtils.defaultIfEmpty(properties.getMergeCommit().getId(), "");
       }
     }
   }
@@ -190,19 +181,15 @@ public class BitbucketServerEventHandler {
         && prDeclinedEvent.getPullRequest().getFromRef() != null) {
 
       BitbucketServerPrEvent.Ref fromRef = prDeclinedEvent.getPullRequest().getFromRef();
-      branch =
-          BitbucketWebhookEventHandler.emptyOrDefault(fromRef.getId(), "")
-              .replace("refs/heads/", "");
+      branch = StringUtils.defaultIfEmpty(fromRef.getId(), "").replace("refs/heads/", "");
 
       if (fromRef.getRepository() != null) {
-        repoProject =
-            BitbucketWebhookEventHandler.emptyOrDefault(
-                fromRef.getRepository().getProject().getKey(), "");
-        slug = BitbucketWebhookEventHandler.emptyOrDefault(fromRef.getRepository().getSlug(), "");
+        repoProject = StringUtils.defaultIfEmpty(fromRef.getRepository().getProject().getKey(), "");
+        slug = StringUtils.defaultIfEmpty(fromRef.getRepository().getSlug(), "");
       }
 
       if (fromRef.getLatestCommit() != null) {
-        hash = BitbucketWebhookEventHandler.emptyOrDefault(fromRef.latestCommit, "");
+        hash = StringUtils.defaultIfEmpty(fromRef.latestCommit, "");
       }
     }
   }
@@ -215,19 +202,15 @@ public class BitbucketServerEventHandler {
         && prDeletedEvent.getPullRequest().getFromRef() != null) {
 
       BitbucketServerPrEvent.Ref fromRef = prDeletedEvent.getPullRequest().getFromRef();
-      branch =
-          BitbucketWebhookEventHandler.emptyOrDefault(fromRef.getId(), "")
-              .replace("refs/heads/", "");
+      branch = StringUtils.defaultIfEmpty(fromRef.getId(), "").replace("refs/heads/", "");
 
       if (fromRef.getRepository() != null) {
-        repoProject =
-            BitbucketWebhookEventHandler.emptyOrDefault(
-                fromRef.getRepository().getProject().getKey(), "");
-        slug = BitbucketWebhookEventHandler.emptyOrDefault(fromRef.getRepository().getSlug(), "");
+        repoProject = StringUtils.defaultIfEmpty(fromRef.getRepository().getProject().getKey(), "");
+        slug = StringUtils.defaultIfEmpty(fromRef.getRepository().getSlug(), "");
       }
 
       if (fromRef.getLatestCommit() != null) {
-        hash = BitbucketWebhookEventHandler.emptyOrDefault(fromRef.latestCommit, "");
+        hash = StringUtils.defaultIfEmpty(fromRef.latestCommit, "");
       }
     }
   }

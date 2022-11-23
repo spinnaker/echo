@@ -68,7 +68,7 @@ public class BitbucketWebhookEventHandler implements GitWebhookHandler {
 
     if (looksLikeBitbucketCloud(event)) {
       handleBitbucketCloudEvent(event, postedEvent);
-    } else if (looksLikeBitbucketServer(event)) {
+    } else if (bitbucketServerEventHandler.looksLikeBitbucketServer(event)) {
       bitbucketServerEventHandler.handleBitbucketServerEvent(event);
     } else {
       // Could not determine what type of Bitbucket event this was.
@@ -119,11 +119,6 @@ public class BitbucketWebhookEventHandler implements GitWebhookHandler {
     return (eventType.equals("repo:push") || eventType.equals("pullrequest:fulfilled"));
   }
 
-  private boolean looksLikeBitbucketServer(Event event) {
-    String eventType = event.content.get("event_type").toString();
-    return BitbucketServerEventHandler.bitbucketServerEventTypes.contains(eventType);
-  }
-
   private String getFullRepoName(Event event) {
     if (looksLikeBitbucketCloud(event)) {
       return ((Map<String, Object>) event.content.get("repository")).get("full_name").toString();
@@ -162,43 +157,39 @@ public class BitbucketWebhookEventHandler implements GitWebhookHandler {
     BitbucketCloudEvent bitbucketCloudEvent =
         objectMapper.convertValue(postedEvent, BitbucketCloudEvent.class);
     if (bitbucketCloudEvent.repository != null) {
-      slug = emptyOrDefault(bitbucketCloudEvent.repository.fullName, "");
+      slug = StringUtils.defaultIfEmpty(bitbucketCloudEvent.repository.fullName, "");
       if (bitbucketCloudEvent.repository.owner != null) {
-        repoProject = emptyOrDefault(bitbucketCloudEvent.repository.owner.username, "");
+        repoProject = StringUtils.defaultIfEmpty(bitbucketCloudEvent.repository.owner.username, "");
       }
     }
     if (bitbucketCloudEvent.pullRequest != null) {
       BitbucketCloudEvent.PullRequest pullRequest = bitbucketCloudEvent.pullRequest;
       if (pullRequest.mergeCommit != null) {
-        hash = emptyOrDefault(pullRequest.mergeCommit.hash, "");
+        hash = StringUtils.defaultIfEmpty(pullRequest.mergeCommit.hash, "");
       }
       if (pullRequest.destination != null && pullRequest.destination.branch != null) {
-        branch = emptyOrDefault(pullRequest.destination.branch.name, "");
+        branch = StringUtils.defaultIfEmpty(pullRequest.destination.branch.name, "");
       }
     } else if (bitbucketCloudEvent.push != null) {
       BitbucketCloudEvent.Push push = bitbucketCloudEvent.push;
       if (!push.changes.isEmpty()) {
         BitbucketCloudEvent.Change change = push.changes.get(0);
         if (change.newObj != null) {
-          branch = emptyOrDefault(change.newObj.name, "");
+          branch = StringUtils.defaultIfEmpty(change.newObj.name, "");
         }
         if (!change.commits.isEmpty()) {
           BitbucketCloudEvent.Commit commit = change.commits.get(0);
-          hash = emptyOrDefault(commit.hash, "");
+          hash = StringUtils.defaultIfEmpty(commit.hash, "");
         }
       }
     }
-    action = emptyOrDefault(event.content.get("event_type").toString(), "");
+    action = StringUtils.defaultIfEmpty(event.content.get("event_type").toString(), "");
 
     event.content.put("repoProject", repoProject);
     event.content.put("slug", slug);
     event.content.put("hash", hash);
     event.content.put("branch", branch);
     event.content.put("action", action);
-  }
-
-  public static String emptyOrDefault(String test, String def) {
-    return StringUtils.isNotEmpty(test) ? test : def;
   }
 
   @Data
