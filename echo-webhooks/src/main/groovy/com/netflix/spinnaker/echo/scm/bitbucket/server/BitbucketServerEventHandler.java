@@ -21,7 +21,6 @@ import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import com.netflix.spinnaker.echo.scm.BitbucketWebhookEventHandler;
 import java.util.List;
-import java.util.Map;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -43,7 +42,7 @@ public class BitbucketServerEventHandler {
 
   private final ObjectMapper objectMapper = EchoObjectMapper.getInstance();
 
-  public void handleBitbucketServerEvent(Event event, Map postedEvent) {
+  public void handleBitbucketServerEvent(Event event) {
 
     if (!event.content.containsKey("event_type")) {
       return;
@@ -74,6 +73,9 @@ public class BitbucketServerEventHandler {
 
       case "pr:deleted":
         handlePrDeletedEvent(event);
+        break;
+
+      default: // Do nothing
         break;
     }
 

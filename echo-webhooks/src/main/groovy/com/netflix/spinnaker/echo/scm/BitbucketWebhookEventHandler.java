@@ -69,7 +69,7 @@ public class BitbucketWebhookEventHandler implements GitWebhookHandler {
     if (looksLikeBitbucketCloud(event)) {
       handleBitbucketCloudEvent(event, postedEvent);
     } else if (looksLikeBitbucketServer(event)) {
-      bitbucketServerEventHandler.handleBitbucketServerEvent(event, postedEvent);
+      bitbucketServerEventHandler.handleBitbucketServerEvent(event);
     } else {
       // Could not determine what type of Bitbucket event this was.
       log.info(
