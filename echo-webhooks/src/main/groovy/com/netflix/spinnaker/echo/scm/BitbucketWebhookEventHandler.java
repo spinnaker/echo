@@ -22,21 +22,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
+import com.netflix.spinnaker.echo.scm.bitbucket.server.BitbucketServerEventHandler;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
 public class BitbucketWebhookEventHandler implements GitWebhookHandler {
 
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
+  private final Optional<BitbucketServerEventHandler> bitbucketServerEventHandler;
 
-  public BitbucketWebhookEventHandler() {
+  public BitbucketWebhookEventHandler(
+      @Nullable BitbucketServerEventHandler bitbucketServerEventHandler) {
     this.objectMapper = EchoObjectMapper.getInstance();
+    this.bitbucketServerEventHandler = Optional.ofNullable(bitbucketServerEventHandler);
   }
 
   public boolean handles(String source) {
@@ -116,6 +122,10 @@ public class BitbucketWebhookEventHandler implements GitWebhookHandler {
   }
 
   private boolean looksLikeBitbucketServer(Event event) {
+    if (bitbucketServerEventHandler.isPresent()) {
+      return bitbucketServerEventHandler.get().looksLikeBitbucketServer(event);
+    }
+
     String eventType = event.content.get("event_type").toString();
     return (eventType.equals("repo:refs_changed") || eventType.equals("pr:merged"));
   }
@@ -194,6 +204,11 @@ public class BitbucketWebhookEventHandler implements GitWebhookHandler {
   }
 
   private void handleBitbucketServerEvent(Event event, Map postedEvent) {
+    if (bitbucketServerEventHandler.isPresent()) {
+      bitbucketServerEventHandler.get().handleBitbucketServerEvent(event);
+      return;
+    }
+
     String repoProject = "";
     String slug = "";
     String hash = "";
