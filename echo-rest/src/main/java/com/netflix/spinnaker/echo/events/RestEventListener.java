@@ -44,6 +44,7 @@ class RestEventListener implements EventListener {
 
   private RestUrls restUrls;
   private RestEventTemplateEngine restEventTemplateEngine;
+  private RestEventService restEventService;
   private Registry registry;
   private RetrySupport retrySupport;
 
@@ -53,14 +54,19 @@ class RestEventListener implements EventListener {
   @Value("${rest.default-field-name:payload}")
   private String fieldName;
 
+  @Value("${rest.circuit-breaker-enabled}")
+  private boolean circuitBreakerEnabled;
+
   @Autowired
   RestEventListener(
       RestUrls restUrls,
       RestEventTemplateEngine restEventTemplateEngine,
+      RestEventService restEventService,
       Registry registry,
       RetrySupport retrySupport) {
     this.restUrls = restUrls;
     this.restEventTemplateEngine = restEventTemplateEngine;
+    this.restEventService = restEventService;
     this.registry = registry;
     this.retrySupport = retrySupport;
   }
@@ -103,11 +109,16 @@ class RestEventListener implements EventListener {
                 }
 
                 Map<String, Object> finalEventMap = eventMap;
-                retrySupport.retry(
-                    () -> service.getClient().recordEvent(finalEventMap),
-                    service.getConfig().getRetryCount(),
-                    Duration.ofMillis(200),
-                    false);
+
+                if (circuitBreakerEnabled) {
+                  restEventService.sendEvent(eventMap, service);
+                } else {
+                  retrySupport.retry(
+                      () -> service.getClient().recordEvent(finalEventMap),
+                      service.getConfig().getRetryCount(),
+                      Duration.ofMillis(200),
+                      false);
+                }
               } catch (Exception e) {
                 if (event != null
                     && event.getDetails() != null
