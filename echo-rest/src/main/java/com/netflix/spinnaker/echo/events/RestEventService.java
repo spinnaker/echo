@@ -33,6 +33,10 @@ public class RestEventService {
   private final RetrySupport retrySupport;
 
   @CircuitBreaker(name = "sendEvent")
+  public void sendEventWithCircuitBreaker(Map<String, Object> event, RestUrls.Service service) {
+    sendEvent(event, service);
+  }
+
   public void sendEvent(Map<String, Object> event, RestUrls.Service service) {
     retrySupport.retry(
         () -> service.getClient().recordEvent(event),

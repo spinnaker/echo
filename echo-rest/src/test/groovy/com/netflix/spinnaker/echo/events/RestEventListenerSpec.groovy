@@ -30,7 +30,7 @@ class RestEventListenerSpec extends Specification {
 
   @Subject
   RestEventService restEventService = new RestEventService(new RetrySupport())
-  RestEventListener listener = new RestEventListener(null, null, restEventService, new NoopRegistry(), new RetrySupport())
+  RestEventListener listener = new RestEventListener(null, null, restEventService, new NoopRegistry())
   Event event = new Event(content: ['uno': 'dos'])
   RestService restService
 

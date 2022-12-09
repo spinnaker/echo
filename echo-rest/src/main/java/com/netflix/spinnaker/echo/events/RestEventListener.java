@@ -22,8 +22,6 @@ import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.api.events.EventListener;
 import com.netflix.spinnaker.echo.config.RestUrls;
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
-import com.netflix.spinnaker.kork.core.RetrySupport;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -46,7 +44,6 @@ class RestEventListener implements EventListener {
   private RestEventTemplateEngine restEventTemplateEngine;
   private RestEventService restEventService;
   private Registry registry;
-  private RetrySupport retrySupport;
 
   @Value("${rest.default-event-name:spinnaker_events}")
   private String eventName;
@@ -62,13 +59,11 @@ class RestEventListener implements EventListener {
       RestUrls restUrls,
       RestEventTemplateEngine restEventTemplateEngine,
       RestEventService restEventService,
-      Registry registry,
-      RetrySupport retrySupport) {
+      Registry registry) {
     this.restUrls = restUrls;
     this.restEventTemplateEngine = restEventTemplateEngine;
     this.restEventService = restEventService;
     this.registry = registry;
-    this.retrySupport = retrySupport;
   }
 
   @Override
@@ -108,16 +103,10 @@ class RestEventListener implements EventListener {
                   }
                 }
 
-                Map<String, Object> finalEventMap = eventMap;
-
                 if (circuitBreakerEnabled) {
-                  restEventService.sendEvent(eventMap, service);
+                  restEventService.sendEventWithCircuitBreaker(eventMap, service);
                 } else {
-                  retrySupport.retry(
-                      () -> service.getClient().recordEvent(finalEventMap),
-                      service.getConfig().getRetryCount(),
-                      Duration.ofMillis(200),
-                      false);
+                  restEventService.sendEvent(eventMap, service);
                 }
               } catch (Exception e) {
                 if (event != null
