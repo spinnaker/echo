@@ -37,6 +37,7 @@ class PipelineCacheSpec extends Specification implements RetrofitStubs {
   def orca = Mock(OrcaService)
   def registry = new NoopRegistry()
   def objectMapper = EchoObjectMapper.getInstance()
+  def pipelineCacheConfigurationProperties = new PipelineCacheConfigurationProperties()
 
   @Shared
   def interval = 30
@@ -44,11 +45,8 @@ class PipelineCacheSpec extends Specification implements RetrofitStubs {
   @Shared
   def sleepMs = 100
 
-  @Shared
-  def parallelism = 8
-
   @Subject
-  def pipelineCache = new PipelineCache(Mock(ScheduledExecutorService), interval, sleepMs, parallelism, objectMapper, front50, orca, registry)
+  def pipelineCache = new PipelineCache(Mock(ScheduledExecutorService), interval, sleepMs, pipelineCacheConfigurationProperties, objectMapper, front50, orca, registry)
 
   def "keeps polling if Front50 returns an error"() {
     given:
@@ -164,4 +162,3 @@ class PipelineCacheSpec extends Specification implements RetrofitStubs {
     triggers.isEmpty()
   }
 }
-
