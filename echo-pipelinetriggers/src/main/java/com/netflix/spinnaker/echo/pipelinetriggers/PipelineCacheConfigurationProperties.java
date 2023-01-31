@@ -24,4 +24,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class PipelineCacheConfigurationProperties {
   /** parallelism in the ForkJoinPool used to process pipelines from front50 */
   private int parallelism = Runtime.getRuntime().availableProcessors();
+
+  /**
+   * If false, query front50 for all pipelines. If true, query front50 for only enabled pipelines
+   * with enabled triggers with types that echo requires.
+   */
+  private boolean filterFront50Pipelines;
 }
