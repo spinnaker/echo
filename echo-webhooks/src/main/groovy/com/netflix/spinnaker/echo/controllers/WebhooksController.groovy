@@ -29,6 +29,8 @@ import org.springframework.http.HttpHeaders
 import org.springframework.util.CollectionUtils
 import org.springframework.util.MultiValueMap
 import org.springframework.web.bind.annotation.*
+import io.cloudevents.CloudEvent
+import java.nio.charset.StandardCharsets
 
 @RestController
 @Slf4j
@@ -126,6 +128,36 @@ class WebhooksController {
     }
 
     log.info("Webhook ${type}:${event.details.source}:${event.content}")
+
+    propagator.processEvent(event)
+
+    WebhookResponse.newInstance(eventProcessed: true, eventId: event.eventId)
+  }
+
+  @RequestMapping(value = '/webhooks/cdevents/{source}', method = RequestMethod.POST)
+  WebhooksController.WebhookResponse forwardEvent(@PathVariable String source,
+                                                  @RequestBody CloudEvent cdevent,
+                                                  @RequestHeader HttpHeaders headers) {
+    log.info("CDEvents Webhook received with source ${source} and with event type ${cdevent.getType()}")
+
+    String ceDataJsonString = new String(cdevent.getData().toBytes(), StandardCharsets.UTF_8);
+
+    Event event = new Event()
+    boolean sendEvent = true
+    event.details = new Metadata()
+    event.details.source = source
+    event.details.type = "cdevents"
+    event.details.requestHeaders = headers
+    event.rawContent = ceDataJsonString
+    Map postedEvent
+    try {
+      postedEvent = mapper.readValue(ceDataJsonString, Map) ?: [:]
+    } catch (Exception e) {
+      log.error("Failed to parse payload ceDataJsonString: {}", ceDataJsonString, e);
+      throw e
+    }
+    event.content = postedEvent
+    event.payload = new HashMap(postedEvent)
 
     propagator.processEvent(event)
 
