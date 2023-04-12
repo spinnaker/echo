@@ -98,9 +98,11 @@ public class CDEventsWebhookHandler extends BaseTriggerEventHandler<CDEvent> {
             && trigger.getType().equalsIgnoreCase(type)
             && trigger.getSource() != null
             && trigger.getSource().equals(source)
-            && (trigger.getAttributeConstraints() != null
-                && isAttributeConstraintInReqHeader(
-                    trigger.getAttributeConstraints(), cdEvent.getDetails().getRequestHeaders()))
+            && (trigger.getAttributeConstraints() == null
+                || trigger.getAttributeConstraints() != null
+                    && isAttributeConstraintInReqHeader(
+                        trigger.getAttributeConstraints(),
+                        cdEvent.getDetails().getRequestHeaders()))
             && (trigger.getPayloadConstraints() == null
                 || (trigger.getPayloadConstraints() != null
                     && isJsonPathConstraintInPayload(
