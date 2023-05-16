@@ -70,12 +70,15 @@ public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
           "Sending CDEvent {} notification to events broker url {}", cdEventType, eventsBrokerUrl);
       HttpURLConnection response =
           cdEventsSenderService.sendCDEvent(ceToSend, new URL(eventsBrokerUrl));
-      log.info(
-          "Received response from events broker : {} {} for execution id {}. {}",
-          response.getResponseCode(),
-          response.getResponseMessage(),
-          executionId,
-          new String(((TypedByteArray) response.getContent()).getBytes()));
+      if (response != null) {
+        log.info(
+            "Received response from events broker : {} {} for execution id {}. {}",
+            response.getResponseCode(),
+            response.getResponseMessage(),
+            executionId,
+            new String(((TypedByteArray) response.getContent()).getBytes()));
+      }
+
     } catch (Exception e) {
       log.error("Exception occurred while sending CDEvent {}", e);
       throw new CDEventsException("Exception occurred while sending CDEvent", e);
