@@ -57,8 +57,8 @@ public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
             .map(e -> (Map) e.get("execution"))
             .map(e -> (String) e.get("id"))
             .orElse(null);
-    String cdEventType =
-        Optional.ofNullable(preference).map(p -> (String) p.get("cdEventType")).orElse(null);
+    String cdEventsType =
+        Optional.ofNullable(preference).map(p -> (String) p.get("cdEventsType")).orElse(null);
     String eventsBrokerUrl =
         Optional.ofNullable(preference).map(p -> (String) p.get("address")).orElse(null);
 
@@ -67,7 +67,7 @@ public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
           cdEventsBuilderService.createCDEvent(
               preference, application, event, config, status, getSpinnakerUrl());
       log.info(
-          "Sending CDEvent {} notification to events broker url {}", cdEventType, eventsBrokerUrl);
+          "Sending CDEvent {} notification to events broker url {}", cdEventsType, eventsBrokerUrl);
       HttpURLConnection response =
           cdEventsSenderService.sendCDEvent(ceToSend, new URL(eventsBrokerUrl));
       if (response != null) {

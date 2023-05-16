@@ -63,28 +63,28 @@ public class CDEventsBuilderService {
             .map(e -> (String) e.get("name"))
             .orElse(null);
 
-    String cdEventType =
-        Optional.ofNullable(preference).map(p -> (String) p.get("cdEventType")).orElse(null);
+    String cdEventsType =
+        Optional.ofNullable(preference).map(p -> (String) p.get("cdEventsType")).orElse(null);
 
     CloudEvent ceToSend =
         buildCloudEventWithCDEventType(
-            cdEventType, executionId, executionUrl, executionName, spinnakerUrl, status);
+            cdEventsType, executionId, executionUrl, executionName, spinnakerUrl, status);
     if (ceToSend == null) {
-      log.error("Failed to created CDEvent with type {} as CloudEvent", cdEventType);
+      log.error("Failed to created CDEvent with type {} as CloudEvent", cdEventsType);
       throw new CDEventsException("Failed to created CDEvent as CloudEvent");
     }
     return ceToSend;
   }
 
   private CloudEvent buildCloudEventWithCDEventType(
-      String cdEventType,
+      String cdEventsType,
       String executionId,
       String executionUrl,
       String executionName,
       String spinnakerUrl,
       String status) {
     CloudEvent ceToSend = null;
-    switch (cdEventType) {
+    switch (cdEventsType) {
       case "dev.cdevents.pipelinerun.queued":
         ceToSend =
             createPipelineRunQueuedEvent(executionId, executionUrl, executionName, spinnakerUrl);
@@ -109,7 +109,7 @@ public class CDEventsBuilderService {
         break;
       default:
         throw new CDEventsException(
-            "Invalid CDEvent Type " + cdEventType + " provided to create CDEvent");
+            "Invalid CDEvents Type " + cdEventsType + " provided to create CDEvent");
     }
     return ceToSend;
   }

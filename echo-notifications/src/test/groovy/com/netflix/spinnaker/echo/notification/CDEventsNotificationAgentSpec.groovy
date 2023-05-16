@@ -34,7 +34,7 @@ class CDEventsNotificationAgentSpec extends Specification {
   def agent = new CDEventsNotificationAgent(cdEventsSenderService: cdeventsSender, cdEventsBuilderService: cdEventsBuilder, spinnakerUrl: 'http://spinnaker')
 
   @Unroll
-  def "sends CDEvent of type #cdEventType when pipeline status has #status"() {
+  def "sends CDEvent of type #cdEventsType when pipeline status has #status"() {
     given:
     def cdevent = new BlockingVariable<CloudEvent>()
     cdeventsSender.sendCDEvent(*_) >> { ceToSend, eventsBrokerURL ->
@@ -42,13 +42,13 @@ class CDEventsNotificationAgentSpec extends Specification {
     }
 
     when:
-    agent.sendNotifications([address: brokerURL, cdEventType: cdEventType], application, event, [type: type, link: "link"], status)
+    agent.sendNotifications([address: brokerURL, cdEventsType: cdEventsType], application, event, [type: type, link: "link"], status)
 
     then:
     cdevent.get().getType() ==~ expectedType
 
     where:
-    cdEventType      || expectedType || status
+    cdEventsType      || expectedType || status
     "dev.cdevents.pipelinerun.queued" || /dev.cdevents.pipelinerun.queued.0.1.0/ || /starting/
     "dev.cdevents.pipelinerun.started" || /dev.cdevents.pipelinerun.started.0.1.0/ || /started/
     "dev.cdevents.pipelinerun.finished" || /dev.cdevents.pipelinerun.finished.0.1.0/ || /complete/
