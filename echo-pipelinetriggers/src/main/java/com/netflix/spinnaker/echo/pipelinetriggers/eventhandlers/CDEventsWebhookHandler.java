@@ -41,7 +41,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CDEventsWebhookHandler extends BaseTriggerEventHandler<CDEvent> {
   private static final String TRIGGER_TYPE = "cdevents";
-  private static final List<String> supportedTriggerTypes = Collections.singletonList(TRIGGER_TYPE);
+  private static final List<String> supportedTriggerTypes = List.of(TRIGGER_TYPE);
 
   @Autowired
   public CDEventsWebhookHandler(
