@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2023 Nordix Foundation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@
 package com.netflix.spinnaker.echo.model.trigger;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.netflix.spinnaker.echo.model.WebhookContent;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.List;
 import java.util.Map;
@@ -25,14 +27,6 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CDEvent extends TriggerEvent {
+public class CDEvent extends WebhookContent {
   public static final String TYPE = "CDEVENTS";
-  private Content content;
-
-  @Data
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class Content {
-    private List<Artifact> artifacts;
-    private Map<?, ?> parameters;
-  }
 }
