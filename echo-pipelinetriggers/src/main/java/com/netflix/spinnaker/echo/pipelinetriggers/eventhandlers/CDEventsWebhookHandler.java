@@ -126,9 +126,7 @@ public class CDEventsWebhookHandler extends BaseTriggerEventHandler<CDEvent> {
 
   @Override
   public Map<String, String> getAdditionalTags(Pipeline pipeline) {
-    Map<String, String> tags = new HashMap<>();
-    tags.put("type", pipeline.getTrigger().getType());
-    return tags;
+    return Map.of("type", pipeline.getTrigger().getType());
   }
 
   @Override
