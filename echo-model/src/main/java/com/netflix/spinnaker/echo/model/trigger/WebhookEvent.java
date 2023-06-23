@@ -18,9 +18,6 @@ package com.netflix.spinnaker.echo.model.trigger;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.netflix.spinnaker.echo.model.WebhookContent;
-import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import java.util.List;
-import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

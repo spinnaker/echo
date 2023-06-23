@@ -19,11 +19,10 @@ package com.netflix.spinnaker.echo.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.netflix.spinnaker.echo.model.trigger.TriggerEvent;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.util.List;
 import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
