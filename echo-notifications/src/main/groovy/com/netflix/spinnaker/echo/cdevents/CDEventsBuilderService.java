@@ -128,6 +128,7 @@ public class CDEventsBuilderService {
     cdEvent.setSubjectTaskName(executionName);
     cdEvent.setSubjectUrl(URI.create(executionUrl));
     cdEvent.setSubjectErrors(status);
+    cdEvent.setSubjectPipelineRunId(executionId);
     if (status.equals("complete")) {
       cdEvent.setSubjectOutcome(CDEventConstants.Outcome.SUCCESS);
     } else if (status.equals("failed")) {
@@ -145,6 +146,7 @@ public class CDEventsBuilderService {
     cdEvent.setSubjectSource(URI.create(spinnakerUrl));
     cdEvent.setSubjectTaskName(executionName);
     cdEvent.setSubjectUrl(URI.create(executionUrl));
+    cdEvent.setSubjectPipelineRunId(executionId);
 
     return CDEvents.cdEventAsCloudEvent(cdEvent);
   }
