@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,14 +94,10 @@ class RestEventListener implements EventListener {
 
                     m.put(
                         "eventName",
-                        service.getConfig().getEventName() == null
-                            ? eventName
-                            : service.getConfig().getEventName());
+                        StringUtils.defaultString(service.getConfig().getEventName(), eventName));
 
                     m.put(
-                        service.getConfig().getFieldName() == null
-                            ? fieldName
-                            : service.getConfig().getFieldName(),
+                        StringUtils.defaultString(service.getConfig().getFieldName(), fieldName),
                         eventMap);
 
                     eventMap = m;
