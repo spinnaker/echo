@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty("rest.enabled")
 @Getter
 @Setter
-class RestEventListener implements EventListener {
+public class RestEventListener implements EventListener {
 
   private static final Logger log = LoggerFactory.getLogger(RestEventListener.class);
 
@@ -60,7 +60,7 @@ class RestEventListener implements EventListener {
   private boolean circuitBreakerEnabled;
 
   @Autowired
-  RestEventListener(
+  public RestEventListener(
       RestUrls restUrls,
       RestEventTemplateEngine restEventTemplateEngine,
       RestEventService restEventService,
