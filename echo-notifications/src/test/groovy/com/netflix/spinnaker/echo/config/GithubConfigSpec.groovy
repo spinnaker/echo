@@ -45,7 +45,7 @@ class GithubConfigSpec extends Specification {
   }
 
 
-  def 'log level should not default to outputing authorization headers and match basci API call structure'() {
+  def 'default log level does not output authorization headers and matches basic API call structure'() {
     given:
     def systemError = System.out;
     def testErr = new ByteArrayOutputStream();
