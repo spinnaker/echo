@@ -23,6 +23,8 @@ import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.api.events.EventListener;
 import com.netflix.spinnaker.echo.config.RestUrls;
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
@@ -82,16 +84,51 @@ public class RestEventListener implements EventListener {
         .forEach(
             (service) -> {
               try {
-                Map<String, Object> eventMap = transformEventToMap(event, service);
                 if (service.getConfig().getCircuitBreakerEnabled()) {
-                  restEventService.sendEventWithCircuitBreaker(eventMap, service);
+                  processEventWithCircuitBreaker(event, service);
                 } else {
+                  Map<String, Object> eventMap = transformEventToMap(event, service);
                   restEventService.sendEvent(eventMap, service);
                 }
               } catch (Exception e) {
                 handleError(event, service, e);
               }
             });
+  }
+
+  /**
+   * Processes the incoming event and sends it to all configured services. Checks if the Circuit
+   * Breaker is enabled per service and executes the event sending with Circuit Breaker protection.
+   *
+   * @param event The event to be processed.
+   * @param service The REST service for which the event is being processed and sent.
+   */
+  private void processEventWithCircuitBreaker(Event event, RestUrls.Service service) {
+    CircuitBreaker circuitBreaker = restEventService.getCircuitBreakerInstance(service);
+    try {
+      // check circuit breaker's state and try to acquire permission before writing to a Map
+      // it will throw a CallNotPermittedException if it's not permitted
+      // this will save processing and memory usage if the Circuit Breaker is OPEN or HALF_OPEN
+      circuitBreaker.acquirePermission();
+
+      // releasing permission is needed because it was unused. We only used it to prevent
+      // premature object mapping
+      circuitBreaker.releasePermission();
+
+      // proceed with object mapping and sending the event
+      Map<String, Object> eventMap = transformEventToMap(event, service);
+      restEventService.sendEventWithCircuitBreaker(eventMap, service, circuitBreaker);
+    } catch (CallNotPermittedException callNotPermittedException) {
+      log.error(
+          "Circuit Breaker '{}' blocked sending an event to {}",
+          circuitBreaker.getName(),
+          service.getConfig().getUrl(),
+          callNotPermittedException);
+    }
+    // catch any other exceptions not related to Circuit Breaker permissions
+    catch (Exception e) {
+      handleError(event, service, e);
+    }
   }
 
   /**

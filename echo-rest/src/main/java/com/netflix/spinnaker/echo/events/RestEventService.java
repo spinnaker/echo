@@ -42,8 +42,8 @@ public class RestEventService {
    * @param eventMap The event data to be sent.
    * @param service The REST service to which the event should be sent.
    */
-  public void sendEventWithCircuitBreaker(Map<String, Object> eventMap, RestUrls.Service service) {
-    CircuitBreaker circuitBreaker = getCircuitBreakerInstance(service);
+  public void sendEventWithCircuitBreaker(
+      Map<String, Object> eventMap, RestUrls.Service service, CircuitBreaker circuitBreaker) {
     circuitBreaker.executeRunnable(() -> sendEvent(eventMap, service));
   }
 

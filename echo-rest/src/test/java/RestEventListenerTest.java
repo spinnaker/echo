@@ -25,6 +25,7 @@ import com.netflix.spinnaker.echo.events.SimpleEventTemplateEngine;
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import com.netflix.spinnaker.echo.rest.RestService;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -57,7 +58,7 @@ class RestEventListenerTest {
             .minimumNumberOfCalls(1)
             .build();
 
-    // Create a CircuitBreakerRegistry with a custom global configuration
+    // Create a CircuitBreakerRegistry with a custom configuration
     circuitBreakerRegistry = CircuitBreakerRegistry.of(circuitBreakerConfig);
 
     // Get the CircuitBreaker from the CircuitBreakerRegistry with a custom configuration
@@ -234,6 +235,7 @@ class RestEventListenerTest {
     RestProperties.RestEndpointConfiguration config =
         new RestProperties.RestEndpointConfiguration();
     config.setCircuitBreakerEnabled(true);
+    config.setEventName("circuitBreakerTest");
 
     RestUrls.Service service =
         RestUrls.Service.builder().client(restService).config(config).build();
@@ -245,6 +247,46 @@ class RestEventListenerTest {
     listener.processEvent(event);
 
     Mockito.verify(restService, Mockito.times(1)).recordEvent(expectedEvent);
+  }
+
+  @Test
+  void shouldNotInvokeObjectMapperWhenCircuitBreakerThrowsCallNotPermittedException() {
+    RestProperties.RestEndpointConfiguration config =
+        new RestProperties.RestEndpointConfiguration();
+    config.setCircuitBreakerEnabled(true);
+    config.setEventName("mockedCircuitBreaker");
+
+    RestUrls.Service service =
+        RestUrls.Service.builder().client(restService).config(config).build();
+
+    ObjectMapper objectMapper = Mockito.mock(ObjectMapper.class);
+    RestEventService mockedRestEventService = Mockito.mock(RestEventService.class);
+    listener =
+        new RestEventListener(
+            new RestUrls(),
+            new SimpleEventTemplateEngine(),
+            mockedRestEventService,
+            new NoopRegistry());
+    listener.setMapper(objectMapper);
+
+    listener.getRestUrls().setServices(List.of(service));
+
+    Map<String, Object> expectedEvent =
+        EchoObjectMapper.getInstance().convertValue(event, Map.class);
+
+    CircuitBreaker mockedCircuitBreaker = Mockito.mock(CircuitBreaker.class);
+
+    Mockito.when(mockedRestEventService.getCircuitBreakerInstance(service))
+        .thenReturn(mockedCircuitBreaker);
+
+    Mockito.doThrow(CallNotPermittedException.class).when(mockedCircuitBreaker).acquirePermission();
+
+    listener.processEvent(event);
+
+    Mockito.verify(objectMapper, Mockito.times(0)).convertValue(event, Map.class);
+    Mockito.verify(restService, Mockito.times(0)).recordEvent(expectedEvent);
+    Assertions.assertThrows(
+        CallNotPermittedException.class, mockedCircuitBreaker::acquirePermission);
   }
 
   @Test
@@ -267,10 +309,10 @@ class RestEventListenerTest {
     listener.processEvent(event);
 
     Mockito.verify(restService, Mockito.times(1)).recordEvent(expectedEvent);
-
     Assertions.assertEquals(
         CircuitBreaker.State.OPEN,
         circuitBreakerRegistry.circuitBreaker("circuitBreakerTest").getState());
+    Assertions.assertThrows(RuntimeException.class, () -> restService.recordEvent(expectedEvent));
 
     // reset RestService mock to correctly evaluate that recordEvent is not being called
     Mockito.reset(restService);
@@ -300,13 +342,15 @@ class RestEventListenerTest {
         EchoObjectMapper.getInstance().convertValue(event, Map.class);
 
     Mockito.when(objectMapper.convertValue(event, Map.class))
-        .thenThrow(new IllegalArgumentException());
+        .thenThrow(IllegalArgumentException.class);
 
     listener.processEvent(event);
 
     // RestEventListener.transformEventToMap() threw exception and returned null map
     // It shouldn't try to send an empty event
     Mockito.verify(restService, Mockito.times(0)).recordEvent(expectedEvent);
+    Assertions.assertThrows(
+        IllegalArgumentException.class, () -> objectMapper.convertValue(event, Map.class));
   }
 
   @Test
@@ -327,7 +371,7 @@ class RestEventListenerTest {
     Map<String, Object> expectedEvent =
         EchoObjectMapper.getInstance().convertValue(event, Map.class);
 
-    Mockito.when(objectMapper.convertValue(expectedEvent, Map.class))
+    Mockito.when(objectMapper.convertValue(event, Map.class))
         .thenThrow(new IllegalArgumentException());
 
     listener.processEvent(event);
@@ -335,10 +379,11 @@ class RestEventListenerTest {
     // RestEventListener.transformEventToMap() threw exception and returned null map
     // It shouldn't try to send an empty event
     Mockito.verify(restService, Mockito.times(0)).recordEvent(expectedEvent);
-
     Assertions.assertEquals(
         CircuitBreaker.State.CLOSED,
         circuitBreakerRegistry.circuitBreaker("circuitBreakerTest").getState());
+    Assertions.assertThrows(
+        IllegalArgumentException.class, () -> objectMapper.convertValue(event, Map.class));
   }
 
   @Test()
