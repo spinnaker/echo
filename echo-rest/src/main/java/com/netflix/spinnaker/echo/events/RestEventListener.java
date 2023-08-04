@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.echo.events;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spinnaker.echo.api.events.Event;
@@ -78,32 +79,7 @@ public class RestEventListener implements EventListener {
         .forEach(
             (service) -> {
               try {
-                Map<String, Object> eventMap = mapper.convertValue(event, Map.class);
-
-                if (service.getConfig().getFlatten()) {
-                  eventMap.put("content", mapper.writeValueAsString(eventMap.get("content")));
-                  eventMap.put("details", mapper.writeValueAsString(eventMap.get("details")));
-                }
-
-                if (service.getConfig().getWrap()) {
-                  if (service.getConfig().getTemplate() != null) {
-                    eventMap =
-                        restEventTemplateEngine.render(service.getConfig().getTemplate(), eventMap);
-                  } else {
-                    Map<String, Object> m = new HashMap<>();
-
-                    m.put(
-                        "eventName",
-                        StringUtils.defaultString(service.getConfig().getEventName(), eventName));
-
-                    m.put(
-                        StringUtils.defaultString(service.getConfig().getFieldName(), fieldName),
-                        eventMap);
-
-                    eventMap = m;
-                  }
-                }
-
+                Map<String, Object> eventMap = transformEventToMap(event, service);
                 if (circuitBreakerEnabled) {
                   restEventService.sendEventWithCircuitBreaker(eventMap, service);
                 } else {
@@ -130,5 +106,39 @@ public class RestEventListener implements EventListener {
                     .increment();
               }
             });
+  }
+
+  /**
+   * Transforms the event into a map to be sent in the REST request.
+   *
+   * @param event The event to be transformed.
+   * @param service The service for which the transformation is done.
+   * @return The transformed event as a map.
+   */
+  private Map<String, Object> transformEventToMap(Event event, RestUrls.Service service)
+      throws JsonProcessingException {
+    Map<String, Object> eventMap = mapper.convertValue(event, Map.class);
+
+    if (service.getConfig().getFlatten()) {
+      eventMap.put("content", mapper.writeValueAsString(eventMap.get("content")));
+      eventMap.put("details", mapper.writeValueAsString(eventMap.get("details")));
+    }
+
+    if (service.getConfig().getWrap()) {
+      if (service.getConfig().getTemplate() != null) {
+        eventMap = restEventTemplateEngine.render(service.getConfig().getTemplate(), eventMap);
+      } else {
+        Map<String, Object> m = new HashMap<>();
+
+        m.put(
+            "eventName", StringUtils.defaultString(service.getConfig().getEventName(), eventName));
+
+        m.put(StringUtils.defaultString(service.getConfig().getFieldName(), fieldName), eventMap);
+
+        eventMap = m;
+      }
+    }
+
+    return eventMap;
   }
 }
