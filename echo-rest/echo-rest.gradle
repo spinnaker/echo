@@ -29,6 +29,5 @@ dependencies {
   implementation "javax.validation:validation-api"
   implementation "org.apache.commons:commons-lang3"
 
-  testImplementation "org.spockframework:spock-spring"
   testImplementation "org.springframework.boot:spring-boot-starter-test"
 }

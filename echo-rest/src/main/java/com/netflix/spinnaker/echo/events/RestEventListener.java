@@ -57,9 +57,6 @@ public class RestEventListener implements EventListener {
   @Value("${rest.default-field-name:payload}")
   private String fieldName;
 
-  @Value("${rest.circuit-breaker-enabled:false}")
-  private boolean circuitBreakerEnabled;
-
   @Autowired
   public RestEventListener(
       RestUrls restUrls,
@@ -72,6 +69,12 @@ public class RestEventListener implements EventListener {
     this.registry = registry;
   }
 
+  /**
+   * Processes the incoming event and sends it to all configured services. Checks if the Circuit
+   * Breaker is enabled per service
+   *
+   * @param event The event to be processed.
+   */
   @Override
   public void processEvent(Event event) {
     restUrls
@@ -80,7 +83,7 @@ public class RestEventListener implements EventListener {
             (service) -> {
               try {
                 Map<String, Object> eventMap = transformEventToMap(event, service);
-                if (circuitBreakerEnabled) {
+                if (service.getConfig().getCircuitBreakerEnabled()) {
                   restEventService.sendEventWithCircuitBreaker(eventMap, service);
                 } else {
                   restEventService.sendEvent(eventMap, service);
@@ -97,6 +100,7 @@ public class RestEventListener implements EventListener {
    * @param event The event to be transformed.
    * @param service The service for which the transformation is done.
    * @return The transformed event as a map.
+   * @throws JsonProcessingException if there is an issue with JSON processing.
    */
   private Map<String, Object> transformEventToMap(Event event, RestUrls.Service service)
       throws JsonProcessingException {
