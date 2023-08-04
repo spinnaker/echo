@@ -24,6 +24,8 @@ import com.netflix.spinnaker.echo.config.RestUrls;
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,16 +36,18 @@ import org.springframework.stereotype.Component;
 /** Event listener for echo events */
 @Component
 @ConditionalOnProperty("rest.enabled")
+@Getter
+@Setter
 class RestEventListener implements EventListener {
 
   private static final Logger log = LoggerFactory.getLogger(RestEventListener.class);
 
   private ObjectMapper mapper = EchoObjectMapper.getInstance();
 
-  private RestUrls restUrls;
-  private RestEventTemplateEngine restEventTemplateEngine;
-  private RestEventService restEventService;
-  private Registry registry;
+  private final RestUrls restUrls;
+  private final RestEventTemplateEngine restEventTemplateEngine;
+  private final RestEventService restEventService;
+  private final Registry registry;
 
   @Value("${rest.default-event-name:spinnaker_events}")
   private String eventName;

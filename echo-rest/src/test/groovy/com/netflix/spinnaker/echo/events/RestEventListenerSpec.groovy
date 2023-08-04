@@ -30,15 +30,13 @@ class RestEventListenerSpec extends Specification {
 
   @Subject
   RestEventService restEventService = new RestEventService(new RetrySupport())
-  RestEventListener listener = new RestEventListener(null, null, restEventService, new NoopRegistry())
+  RestEventListener listener = new RestEventListener(new RestUrls(), new SimpleEventTemplateEngine(), restEventService, new NoopRegistry())
   Event event = new Event(content: ['uno': 'dos'])
   RestService restService
 
   void setup() {
     listener.eventName = 'defaultEvent'
     listener.fieldName = 'defaultField'
-    listener.restUrls = new RestUrls()
-    listener.restEventTemplateEngine = new SimpleEventTemplateEngine()
     restService = Mock(RestService)
   }
 
