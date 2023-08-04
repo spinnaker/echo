@@ -86,24 +86,7 @@ public class RestEventListener implements EventListener {
                   restEventService.sendEvent(eventMap, service);
                 }
               } catch (Exception e) {
-                if (event != null
-                    && event.getDetails() != null
-                    && event.getDetails().getSource() != null
-                    && event.getDetails().getType() != null) {
-                  log.error(
-                      "Could not send event source={}, type={} to {}.\n Event details: {}",
-                      event.getDetails().getSource(),
-                      event.getDetails().getType(),
-                      service.getConfig().getUrl(),
-                      event,
-                      e);
-                } else {
-                  log.error("Could not send event.", e);
-                }
-
-                registry
-                    .counter("event.send.errors", "exception", e.getClass().getName())
-                    .increment();
+                handleError(event, service, e);
               }
             });
   }
@@ -140,5 +123,31 @@ public class RestEventListener implements EventListener {
     }
 
     return eventMap;
+  }
+
+  /**
+   * Handles errors that occur while processing or sending the event.
+   *
+   * @param event The event that caused the error.
+   * @param service The service to which the event was being sent.
+   * @param exception The exception that occurred.
+   */
+  private void handleError(Event event, RestUrls.Service service, Exception exception) {
+    if (event != null
+        && event.getDetails() != null
+        && event.getDetails().getSource() != null
+        && event.getDetails().getType() != null) {
+      log.error(
+          "Could not send event source={}, type={} to {}.\n Event details: {}",
+          event.getDetails().getSource(),
+          event.getDetails().getType(),
+          service.getConfig().getUrl(),
+          event,
+          exception);
+    } else {
+      log.error("Could not send event.", exception);
+    }
+
+    registry.counter("event.send.errors", "exception", exception.getClass().getName()).increment();
   }
 }
