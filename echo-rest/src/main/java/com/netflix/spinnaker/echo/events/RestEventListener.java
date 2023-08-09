@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty("rest.enabled")
 @Getter
 @Setter
-public class RestEventListener implements EventListener {
+class RestEventListener implements EventListener {
 
   private static final Logger log = LoggerFactory.getLogger(RestEventListener.class);
 

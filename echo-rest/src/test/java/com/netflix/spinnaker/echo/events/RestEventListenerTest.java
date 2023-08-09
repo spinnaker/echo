@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
+package com.netflix.spinnaker.echo.events;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.NoopRegistry;
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.config.RestProperties;
 import com.netflix.spinnaker.echo.config.RestUrls;
-import com.netflix.spinnaker.echo.events.RestEventListener;
-import com.netflix.spinnaker.echo.events.RestEventService;
-import com.netflix.spinnaker.echo.events.SimpleEventTemplateEngine;
 import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import com.netflix.spinnaker.echo.rest.RestService;
 import com.netflix.spinnaker.kork.core.RetrySupport;
