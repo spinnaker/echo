@@ -72,7 +72,7 @@ public class RestEventService {
    */
   public CircuitBreaker getCircuitBreakerInstance(RestUrls.Service service) {
     String circuitBreakerInstance =
-        StringUtils.defaultString(service.getConfig().getEventName(), "default");
+        StringUtils.defaultString(service.getConfig().getEventName(), "sendEvent");
 
     return circuitBreakerRegistry.circuitBreaker(circuitBreakerInstance);
   }

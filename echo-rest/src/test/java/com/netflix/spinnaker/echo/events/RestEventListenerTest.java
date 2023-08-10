@@ -44,6 +44,7 @@ class RestEventListenerTest {
   private RestEventListener listener;
   private Event event;
   private RestService restService;
+  private RestEventService restEventService;
 
   private CircuitBreakerRegistry circuitBreakerRegistry;
 
@@ -63,12 +64,11 @@ class RestEventListenerTest {
     // Get the CircuitBreaker from the CircuitBreakerRegistry with a custom configuration
     circuitBreakerRegistry.circuitBreaker("circuitBreakerTest", circuitBreakerConfig);
 
+    restEventService = new RestEventService(new RetrySupport(), circuitBreakerRegistry);
+
     listener =
         new RestEventListener(
-            new RestUrls(),
-            new SimpleEventTemplateEngine(),
-            new RestEventService(new RetrySupport(), circuitBreakerRegistry),
-            new NoopRegistry());
+            new RestUrls(), new SimpleEventTemplateEngine(), restEventService, new NoopRegistry());
 
     event = new Event();
     event.setContent(Map.of("uno", "dos"));
@@ -245,6 +245,32 @@ class RestEventListenerTest {
 
     listener.processEvent(event);
 
+    Mockito.verify(restService, Mockito.times(1)).recordEvent(expectedEvent);
+  }
+
+  /**
+   * Testing backwards compatibility. Previously if you enabled the circuit breaker via: {@code
+   * rest.circuit-breaker-enabled=true} all rest events used the circuit breaker with the name
+   * "sendEvent". This test ensures that users with legacy configs can continue using the circuit
+   * breaker
+   */
+  @Test
+  void shouldSendEventWithCircuitBreakerWhenListenerCircuitBreakerFlagIsEnabled() {
+    RestProperties.RestEndpointConfiguration config =
+        new RestProperties.RestEndpointConfiguration(); // not enabling circuit breaker per service
+
+    RestUrls.Service service =
+        RestUrls.Service.builder().client(restService).config(config).build();
+
+    listener.getRestUrls().setServices(List.of(service));
+    listener.setCircuitBreakerEnabled(true); // enabling circuit breaker across all rest services
+
+    Map<String, Object> expectedEvent = listener.getMapper().convertValue(event, Map.class);
+
+    listener.processEvent(event);
+
+    Assertions.assertEquals(
+        "sendEvent", restEventService.getCircuitBreakerInstance(service).getName());
     Mockito.verify(restService, Mockito.times(1)).recordEvent(expectedEvent);
   }
 

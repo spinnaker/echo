@@ -59,8 +59,11 @@ class RestEventListener implements EventListener {
   @Value("${rest.default-field-name:payload}")
   private String fieldName;
 
+  @Value("${rest.circuit-breaker-enabled:false}")
+  private boolean circuitBreakerEnabled;
+
   @Autowired
-  public RestEventListener(
+  RestEventListener(
       RestUrls restUrls,
       RestEventTemplateEngine restEventTemplateEngine,
       RestEventService restEventService,
@@ -84,7 +87,7 @@ class RestEventListener implements EventListener {
         .forEach(
             (service) -> {
               try {
-                if (service.getConfig().getCircuitBreakerEnabled()) {
+                if (service.getConfig().getCircuitBreakerEnabled() || circuitBreakerEnabled) {
                   processEventWithCircuitBreaker(event, service);
                 } else {
                   Map<String, Object> eventMap = transformEventToMap(event, service);
