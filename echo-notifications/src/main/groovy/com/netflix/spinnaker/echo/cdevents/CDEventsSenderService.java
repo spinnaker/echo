@@ -13,70 +13,96 @@
 
     SPDX-License-Identifier: Apache-2.0
 */
+
 package com.netflix.spinnaker.echo.cdevents;
 
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
+import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import io.cloudevents.CloudEvent;
-import io.cloudevents.core.message.MessageWriter;
-import io.cloudevents.http.HttpMessageFactory;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
+import retrofit.RequestInterceptor;
+import retrofit.RestAdapter;
+import retrofit.client.Client;
+import retrofit.client.Response;
+import io.cloudevents.jackson.JsonFormat;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
+@Slf4j
 @Component
 public class CDEventsSenderService {
+  private Client retrofitClient;
+  private RestAdapter.LogLevel retrofitLogLevel;
 
-  /**
-   * Sends CDEvent to the Configured ClouEvent broker URL.
-   *
-   * @param ceToSend
-   * @param url
-   * @return HttpURLConnection
-   * @throws IOException
-   */
-  public HttpURLConnection sendCDEvent(CloudEvent ceToSend, URL url) throws IOException {
-    HttpURLConnection httpUrlConnection = createConnection(url);
-    MessageWriter messageWriter = createMessageWriter(httpUrlConnection);
-    messageWriter.writeBinary(ceToSend);
-
-    return httpUrlConnection;
+  public CDEventsSenderService(Client retrofitClient, RestAdapter.LogLevel retrofitLogLevel) {
+    this.retrofitClient = retrofitClient;
+    this.retrofitLogLevel = retrofitLogLevel;
   }
 
-  /**
-   * @param url
-   * @return httpUrlConnection
-   * @throws IOException
-   */
-  private HttpURLConnection createConnection(URL url) throws IOException {
-    HttpURLConnection httpUrlConnection = (HttpURLConnection) url.openConnection();
-    httpUrlConnection.setRequestMethod("POST");
-    httpUrlConnection.setDoOutput(true);
-    httpUrlConnection.setDoInput(true);
-    return httpUrlConnection;
+  public Response sendCDEvent(CloudEvent cdEvent, String eventsBrokerUrl) {
+    CDEventsHTTPMessageConverter converterFactory = CDEventsHTTPMessageConverter.create();
+    RequestInterceptor authInterceptor = new RequestInterceptor() {
+      @Override
+      public void intercept(RequestInterceptor.RequestFacade request) {
+        request.addHeader("Ce-Id", cdEvent.getId());
+        request.addHeader("Ce-Specversion", cdEvent.getSpecVersion().V1.toString());
+        request.addHeader("Ce-Source", cdEvent.getSource().toString());
+        request.addHeader("Ce-Type", cdEvent.getType());
+        request.addHeader("Content-Type", "application/json");
+      }
+    };
+
+    CDEventsSenderClient cdEventsSenderClient =
+        new RestAdapter.Builder()
+            .setConverter(converterFactory)
+            .setClient(retrofitClient)
+            .setEndpoint(getEndpointUrl(eventsBrokerUrl))
+            .setRequestInterceptor(authInterceptor)
+            .setLogLevel(retrofitLogLevel)
+            .setLog(new Slf4jRetrofitLogger(CDEventsSenderClient.class))
+            .build()
+            .create(CDEventsSenderClient.class);
+    String jsonEvent = converterFactory.convertCDEventToJson(cdEvent);
+    log.info("Sending CDEvent Json {} ", jsonEvent);
+    return cdEventsSenderClient.sendCDEvent(jsonEvent, getRelativePath(eventsBrokerUrl));
   }
 
-  /**
-   * @param httpUrlConnection
-   * @return messageWriter
-   */
-  private MessageWriter createMessageWriter(HttpURLConnection httpUrlConnection) {
-    return HttpMessageFactory.createWriter(
-        httpUrlConnection::setRequestProperty,
-        body -> {
-          try {
-            if (body != null) {
-              httpUrlConnection.setRequestProperty("content-length", String.valueOf(body.length));
-              try (OutputStream outputStream = httpUrlConnection.getOutputStream()) {
-                outputStream.write(body);
-              }
-            } else {
-              httpUrlConnection.setRequestProperty("content-length", "0");
-            }
-          } catch (IOException t) {
-            throw new UncheckedIOException(t);
-          }
-        });
+  private String getEndpointUrl(String webhookUrl) {
+    try {
+      URL url = new URL(webhookUrl);
+      String endPointURL = url.getPort() != -1 ? url.getProtocol() + "://" + url.getHost() + ":" + url.getPort()
+        : url.getProtocol() + "://" + url.getHost();
+      log.info("endpoint Url to send CDEvent {} ", endPointURL);
+      return endPointURL;
+    } catch (MalformedURLException e) {
+      throw new InvalidRequestException(
+          "Unable to determine base URL from Microsoft Teams webhook URL.", e);
+    }
+  }
+
+  private String getRelativePath(String webhookUrl) {
+    String relativePath = "";
+
+    try {
+      URL url = new URL(webhookUrl);
+      relativePath = url.getPath();
+
+      if (StringUtils.isEmpty(relativePath)) {
+        throw new MalformedURLException();
+      }
+    } catch (MalformedURLException e) {
+      throw new InvalidRequestException(
+          "Unable to determine relative path from Microsoft Teams webhook URL.", e);
+    }
+
+    // Remove slash from beginning of path as the client will prefix the string with a slash
+    if (relativePath.charAt(0) == '/') {
+      relativePath = relativePath.substring(1);
+    }
+
+    return relativePath;
   }
 }
