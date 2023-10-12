@@ -19,6 +19,8 @@ package com.netflix.spinnaker.echo.cdevents;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import io.cloudevents.CloudEvent;
+import java.net.MalformedURLException;
+import java.net.URL;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -26,10 +28,6 @@ import retrofit.RequestInterceptor;
 import retrofit.RestAdapter;
 import retrofit.client.Client;
 import retrofit.client.Response;
-import io.cloudevents.jackson.JsonFormat;
-
-import java.net.MalformedURLException;
-import java.net.URL;
 
 @Slf4j
 @Component
@@ -44,16 +42,17 @@ public class CDEventsSenderService {
 
   public Response sendCDEvent(CloudEvent cdEvent, String eventsBrokerUrl) {
     CDEventsHTTPMessageConverter converterFactory = CDEventsHTTPMessageConverter.create();
-    RequestInterceptor authInterceptor = new RequestInterceptor() {
-      @Override
-      public void intercept(RequestInterceptor.RequestFacade request) {
-        request.addHeader("Ce-Id", cdEvent.getId());
-        request.addHeader("Ce-Specversion", cdEvent.getSpecVersion().V1.toString());
-        request.addHeader("Ce-Source", cdEvent.getSource().toString());
-        request.addHeader("Ce-Type", cdEvent.getType());
-        request.addHeader("Content-Type", "application/json");
-      }
-    };
+    RequestInterceptor authInterceptor =
+        new RequestInterceptor() {
+          @Override
+          public void intercept(RequestInterceptor.RequestFacade request) {
+            request.addHeader("Ce-Id", cdEvent.getId());
+            request.addHeader("Ce-Specversion", cdEvent.getSpecVersion().V1.toString());
+            request.addHeader("Ce-Source", cdEvent.getSource().toString());
+            request.addHeader("Ce-Type", cdEvent.getType());
+            request.addHeader("Content-Type", "application/json");
+          }
+        };
 
     CDEventsSenderClient cdEventsSenderClient =
         new RestAdapter.Builder()
@@ -73,8 +72,10 @@ public class CDEventsSenderService {
   private String getEndpointUrl(String webhookUrl) {
     try {
       URL url = new URL(webhookUrl);
-      String endPointURL = url.getPort() != -1 ? url.getProtocol() + "://" + url.getHost() + ":" + url.getPort()
-        : url.getProtocol() + "://" + url.getHost();
+      String endPointURL =
+          url.getPort() != -1
+              ? url.getProtocol() + "://" + url.getHost() + ":" + url.getPort()
+              : url.getProtocol() + "://" + url.getHost();
       log.info("endpoint Url to send CDEvent {} ", endPointURL);
       return endPointURL;
     } catch (MalformedURLException e) {

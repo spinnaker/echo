@@ -21,6 +21,8 @@ import com.netflix.spinnaker.echo.cdevents.CDEventsBuilderService;
 import com.netflix.spinnaker.echo.cdevents.CDEventsSenderService;
 import dev.cdevents.exception.CDEventsException;
 import io.cloudevents.CloudEvent;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,16 +30,12 @@ import org.springframework.stereotype.Service;
 import retrofit.client.Response;
 import retrofit.mime.TypedByteArray;
 
-import java.util.Map;
-import java.util.Optional;
-
 @Slf4j
 @ConditionalOnProperty("cdevents.enabled")
 @Service
 public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
   @Autowired CDEventsBuilderService cdEventsBuilderService;
-  @Autowired
-  CDEventsSenderService cdEventsSenderService;
+  @Autowired CDEventsSenderService cdEventsSenderService;
 
   @Override
   public String getNotificationType() {
@@ -69,15 +67,16 @@ public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
               preference, application, event, config, status, getSpinnakerUrl());
       log.info(
           "Sending CDEvent {} notification to events broker url {}", cdEventsType, eventsBrokerUrl);
-      Response response =
-          cdEventsSenderService.sendCDEvent(cdEvent, eventsBrokerUrl);
+      Response response = cdEventsSenderService.sendCDEvent(cdEvent, eventsBrokerUrl);
       if (response != null) {
         log.info(
             "Received response from events broker : {} {} for execution id {}. {}",
             response.getStatus(),
             response.getReason(),
             executionId,
-          response.getBody() != null ? new String(((TypedByteArray) response.getBody()).getBytes()) : "");
+            response.getBody() != null
+                ? new String(((TypedByteArray) response.getBody()).getBytes())
+                : "");
       }
 
     } catch (Exception e) {
