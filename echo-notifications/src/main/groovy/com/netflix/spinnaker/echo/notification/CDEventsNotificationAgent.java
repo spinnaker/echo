@@ -19,7 +19,6 @@ package com.netflix.spinnaker.echo.notification;
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.cdevents.CDEventsBuilderService;
 import com.netflix.spinnaker.echo.cdevents.CDEventsSenderService;
-import dev.cdevents.exception.CDEventsException;
 import io.cloudevents.CloudEvent;
 import java.util.Map;
 import java.util.Optional;
@@ -61,27 +60,21 @@ public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
     String eventsBrokerUrl =
         Optional.ofNullable(preference).map(p -> (String) p.get("address")).orElse(null);
 
-    try {
-      CloudEvent cdEvent =
-          cdEventsBuilderService.createCDEvent(
-              preference, application, event, config, status, getSpinnakerUrl());
+    CloudEvent cdEvent =
+        cdEventsBuilderService.createCDEvent(
+            preference, application, event, config, status, getSpinnakerUrl());
+    log.info(
+        "Sending CDEvent {} notification to events broker url {}", cdEventsType, eventsBrokerUrl);
+    Response response = cdEventsSenderService.sendCDEvent(cdEvent, eventsBrokerUrl);
+    if (response != null) {
       log.info(
-          "Sending CDEvent {} notification to events broker url {}", cdEventsType, eventsBrokerUrl);
-      Response response = cdEventsSenderService.sendCDEvent(cdEvent, eventsBrokerUrl);
-      if (response != null) {
-        log.info(
-            "Received response from events broker : {} {} for execution id {}. {}",
-            response.getStatus(),
-            response.getReason(),
-            executionId,
-            response.getBody() != null
-                ? new String(((TypedByteArray) response.getBody()).getBytes())
-                : "");
-      }
-
-    } catch (Exception e) {
-      log.error("Exception occurred while sending CDEvent {}", e);
-      throw new CDEventsException("Exception occurred while sending CDEvent", e);
+          "Received response from events broker : {} {} for execution id {}. {}",
+          response.getStatus(),
+          response.getReason(),
+          executionId,
+          response.getBody() != null
+              ? new String(((TypedByteArray) response.getBody()).getBytes())
+              : "");
     }
   }
 }

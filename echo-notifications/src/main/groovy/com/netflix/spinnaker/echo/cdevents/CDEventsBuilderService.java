@@ -17,9 +17,14 @@
 package com.netflix.spinnaker.echo.cdevents;
 
 import com.netflix.spinnaker.echo.api.events.Event;
+import com.netflix.spinnaker.echo.exceptions.FieldNotFoundException;
 import dev.cdevents.CDEvents;
 import dev.cdevents.constants.CDEventConstants;
-import dev.cdevents.events.*;
+import dev.cdevents.events.PipelineRunFinishedCDEvent;
+import dev.cdevents.events.PipelineRunQueuedCDEvent;
+import dev.cdevents.events.PipelineRunStartedCDEvent;
+import dev.cdevents.events.TaskRunFinishedCDEvent;
+import dev.cdevents.events.TaskRunStartedCDEvent;
 import dev.cdevents.exception.CDEventsException;
 import io.cloudevents.CloudEvent;
 import java.net.URI;
@@ -40,8 +45,14 @@ public class CDEventsBuilderService {
       String status,
       String spinnakerUrl) {
 
-    String configType = Optional.ofNullable(config).map(c -> (String) c.get("type")).orElse(null);
-    String configLink = Optional.ofNullable(config).map(c -> (String) c.get("link")).orElse(null);
+    String configType =
+        Optional.ofNullable(config)
+            .map(c -> (String) c.get("type"))
+            .orElseThrow(FieldNotFoundException::new);
+    String configLink =
+        Optional.ofNullable(config)
+            .map(c -> (String) c.get("link"))
+            .orElseThrow(FieldNotFoundException::new);
 
     String executionId =
         Optional.ofNullable(event.content)
@@ -64,7 +75,9 @@ public class CDEventsBuilderService {
             .orElse(null);
 
     String cdEventsType =
-        Optional.ofNullable(preference).map(p -> (String) p.get("cdEventsType")).orElse(null);
+        Optional.ofNullable(preference)
+            .map(p -> (String) p.get("cdEventsType"))
+            .orElseThrow(FieldNotFoundException::new);
 
     CloudEvent ceToSend =
         buildCloudEventWithCDEventType(
