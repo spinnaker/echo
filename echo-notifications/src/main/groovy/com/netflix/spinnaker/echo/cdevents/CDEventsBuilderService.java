@@ -18,16 +18,9 @@ package com.netflix.spinnaker.echo.cdevents;
 
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.exceptions.FieldNotFoundException;
-import dev.cdevents.CDEvents;
-import dev.cdevents.constants.CDEventConstants;
-import dev.cdevents.events.PipelineRunFinishedCDEvent;
-import dev.cdevents.events.PipelineRunQueuedCDEvent;
-import dev.cdevents.events.PipelineRunStartedCDEvent;
-import dev.cdevents.events.TaskRunFinishedCDEvent;
-import dev.cdevents.events.TaskRunStartedCDEvent;
+import dev.cdevents.constants.CDEventConstants.CDEventTypes;
 import dev.cdevents.exception.CDEventsException;
 import io.cloudevents.CloudEvent;
-import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +51,7 @@ public class CDEventsBuilderService {
         Optional.ofNullable(event.content)
             .map(e -> (Map) e.get("execution"))
             .map(e -> (String) e.get("id"))
-            .orElse(null);
+            .orElseThrow(FieldNotFoundException::new);
 
     String executionUrl =
         String.format(
@@ -72,142 +65,47 @@ public class CDEventsBuilderService {
         Optional.ofNullable(event.content)
             .map(e -> (Map) e.get("execution"))
             .map(e -> (String) e.get("name"))
-            .orElse(null);
+            .orElseThrow(FieldNotFoundException::new);
 
     String cdEventsType =
         Optional.ofNullable(preference)
             .map(p -> (String) p.get("cdEventsType"))
             .orElseThrow(FieldNotFoundException::new);
 
-    CloudEvent ceToSend =
-        buildCloudEventWithCDEventType(
-            cdEventsType, executionId, executionUrl, executionName, spinnakerUrl, status);
-    if (ceToSend == null) {
-      log.error("Failed to created CDEvent with type {} as CloudEvent", cdEventsType);
-      throw new CDEventsException("Failed to created CDEvent as CloudEvent");
-    }
-    return ceToSend;
-  }
-
-  private CloudEvent buildCloudEventWithCDEventType(
-      String cdEventsType,
-      String executionId,
-      String executionUrl,
-      String executionName,
-      String spinnakerUrl,
-      String status) {
-    CloudEvent ceToSend = null;
-    switch (cdEventsType) {
-      case "dev.cdevents.pipelinerun.queued":
-        ceToSend =
-            createPipelineRunQueuedEvent(executionId, executionUrl, executionName, spinnakerUrl);
+    log.info("Event type {} received to create CDEvent.", cdEventsType);
+    CDEventCreator cdEventCreator = null;
+    // This map can be added with more event types that Spinnaker needs to send
+    Map<String, CDEventCreator> cdEventsMap =
+        Map.of(
+            CDEventTypes.PipelineRunQueuedEvent.getEventType(),
+                new CDEventPipelineRunQueued(
+                    executionId, executionUrl, executionName, spinnakerUrl),
+            CDEventTypes.PipelineRunStartedEvent.getEventType(),
+                new CDEventPipelineRunStarted(
+                    executionId, executionUrl, executionName, spinnakerUrl),
+            CDEventTypes.PipelineRunFinishedEvent.getEventType(),
+                new CDEventPipelineRunFinished(
+                    executionId, executionUrl, executionName, spinnakerUrl, status),
+            CDEventTypes.TaskRunStartedEvent.getEventType(),
+                new CDEventTaskRunStarted(executionId, executionUrl, executionName, spinnakerUrl),
+            CDEventTypes.TaskRunFinishedEvent.getEventType(),
+                new CDEventTaskRunFinished(
+                    executionId, executionUrl, executionName, spinnakerUrl, status));
+    for (String keyType : cdEventsMap.keySet()) {
+      if (keyType.contains(cdEventsType)) {
+        cdEventCreator = cdEventsMap.get(keyType);
         break;
-      case "dev.cdevents.pipelinerun.started":
-        ceToSend =
-            createPipelineRunStartedEvent(executionId, executionUrl, executionName, spinnakerUrl);
-        break;
-      case "dev.cdevents.pipelinerun.finished":
-        ceToSend =
-            createPipelineRunFinishedEvent(
-                executionId, executionUrl, executionName, spinnakerUrl, status);
-        break;
-      case "dev.cdevents.taskrun.started":
-        ceToSend =
-            createTaskRunStartedEvent(executionId, executionUrl, executionName, spinnakerUrl);
-        break;
-      case "dev.cdevents.taskrun.finished":
-        ceToSend =
-            createTaskRunFinishedEvent(
-                executionId, executionUrl, executionName, spinnakerUrl, status);
-        break;
-      default:
-        throw new CDEventsException(
-            "Invalid CDEvents Type " + cdEventsType + " provided to create CDEvent");
-    }
-    return ceToSend;
-  }
-
-  private CloudEvent createTaskRunFinishedEvent(
-      String executionId,
-      String executionUrl,
-      String executionName,
-      String spinnakerUrl,
-      String status) {
-    TaskRunFinishedCDEvent cdEvent = new TaskRunFinishedCDEvent();
-    cdEvent.setSource(URI.create(spinnakerUrl));
-
-    cdEvent.setSubjectId(executionId);
-    cdEvent.setSubjectSource(URI.create(spinnakerUrl));
-    cdEvent.setSubjectTaskName(executionName);
-    cdEvent.setSubjectUrl(URI.create(executionUrl));
-    cdEvent.setSubjectErrors(status);
-    cdEvent.setSubjectPipelineRunId(executionId);
-    if (status.equals("complete")) {
-      cdEvent.setSubjectOutcome(CDEventConstants.Outcome.SUCCESS);
-    } else if (status.equals("failed")) {
-      cdEvent.setSubjectOutcome(CDEventConstants.Outcome.FAILURE);
-    }
-    return CDEvents.cdEventAsCloudEvent(cdEvent);
-  }
-
-  private CloudEvent createTaskRunStartedEvent(
-      String executionId, String executionUrl, String executionName, String spinnakerUrl) {
-    TaskRunStartedCDEvent cdEvent = new TaskRunStartedCDEvent();
-    cdEvent.setSource(URI.create(spinnakerUrl));
-
-    cdEvent.setSubjectId(executionId);
-    cdEvent.setSubjectSource(URI.create(spinnakerUrl));
-    cdEvent.setSubjectTaskName(executionName);
-    cdEvent.setSubjectUrl(URI.create(executionUrl));
-    cdEvent.setSubjectPipelineRunId(executionId);
-
-    return CDEvents.cdEventAsCloudEvent(cdEvent);
-  }
-
-  private CloudEvent createPipelineRunFinishedEvent(
-      String executionId,
-      String executionUrl,
-      String executionName,
-      String spinnakerUrl,
-      String status) {
-    PipelineRunFinishedCDEvent cdEvent = new PipelineRunFinishedCDEvent();
-    cdEvent.setSource(URI.create(spinnakerUrl));
-    cdEvent.setSubjectId(executionId);
-    cdEvent.setSubjectSource(URI.create(spinnakerUrl));
-    cdEvent.setSubjectPipelineName(executionName);
-    cdEvent.setSubjectUrl(URI.create(executionUrl));
-    cdEvent.setSubjectErrors(status);
-
-    if (status.equals("complete")) {
-      cdEvent.setSubjectOutcome(CDEventConstants.Outcome.SUCCESS);
-    } else if (status.equals("failed")) {
-      cdEvent.setSubjectOutcome(CDEventConstants.Outcome.FAILURE);
+      }
     }
 
-    return CDEvents.cdEventAsCloudEvent(cdEvent);
-  }
-
-  private CloudEvent createPipelineRunStartedEvent(
-      String executionId, String executionUrl, String executionName, String spinnakerUrl) {
-    PipelineRunStartedCDEvent cdEvent = new PipelineRunStartedCDEvent();
-    cdEvent.setSource(URI.create(spinnakerUrl));
-    cdEvent.setSubjectId(executionId);
-    cdEvent.setSubjectSource(URI.create(spinnakerUrl));
-    cdEvent.setSubjectPipelineName(executionName);
-    cdEvent.setSubjectUrl(URI.create(executionUrl));
-
-    return CDEvents.cdEventAsCloudEvent(cdEvent);
-  }
-
-  private CloudEvent createPipelineRunQueuedEvent(
-      String executionId, String executionUrl, String executionName, String spinnakerUrl) {
-    PipelineRunQueuedCDEvent cdEvent = new PipelineRunQueuedCDEvent();
-    cdEvent.setSource(URI.create(spinnakerUrl));
-    cdEvent.setSubjectId(executionId);
-    cdEvent.setSubjectSource(URI.create(spinnakerUrl));
-    cdEvent.setSubjectPipelineName(executionName);
-    cdEvent.setSubjectUrl(URI.create(executionUrl));
-
-    return CDEvents.cdEventAsCloudEvent(cdEvent);
+    if (cdEventCreator == null) {
+      log.error("No mapping event type found for {}", cdEventsType);
+      log.error(
+          "The event type should be an event or substring of an event from the list of event types {}",
+          cdEventsMap.keySet());
+      throw new CDEventsException("No mapping eventType found to create CDEvent");
+    } else {
+      return cdEventCreator.createCDEvent();
+    }
   }
 }

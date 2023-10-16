@@ -19,6 +19,7 @@ package com.netflix.spinnaker.echo.notification;
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.cdevents.CDEventsBuilderService;
 import com.netflix.spinnaker.echo.cdevents.CDEventsSenderService;
+import com.netflix.spinnaker.echo.exceptions.FieldNotFoundException;
 import io.cloudevents.CloudEvent;
 import java.util.Map;
 import java.util.Optional;
@@ -54,11 +55,15 @@ public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
         Optional.ofNullable(event.content)
             .map(e -> (Map) e.get("execution"))
             .map(e -> (String) e.get("id"))
-            .orElse(null);
+            .orElseThrow(FieldNotFoundException::new);
     String cdEventsType =
-        Optional.ofNullable(preference).map(p -> (String) p.get("cdEventsType")).orElse(null);
+        Optional.ofNullable(preference)
+            .map(p -> (String) p.get("cdEventsType"))
+            .orElseThrow(FieldNotFoundException::new);
     String eventsBrokerUrl =
-        Optional.ofNullable(preference).map(p -> (String) p.get("address")).orElse(null);
+        Optional.ofNullable(preference)
+            .map(p -> (String) p.get("address"))
+            .orElseThrow(FieldNotFoundException::new);
 
     CloudEvent cdEvent =
         cdEventsBuilderService.createCDEvent(
