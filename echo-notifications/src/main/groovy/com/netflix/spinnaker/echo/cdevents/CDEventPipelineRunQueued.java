@@ -20,31 +20,32 @@ import dev.cdevents.events.PipelineRunQueuedCDEvent;
 import io.cloudevents.CloudEvent;
 import java.net.URI;
 
-public class CDEventPipelineRunQueued implements CDEventCreator {
+public class CDEventPipelineRunQueued extends CDEventCreator {
 
-  private String source;
-  private String subjectId;
-  private String subjectSource;
   private String subjectPipelineName;
-  private String subjectUrl;
 
   public CDEventPipelineRunQueued(
       String executionId, String executionUrl, String executionName, String spinnakerUrl) {
-    this.source = spinnakerUrl;
-    this.subjectId = executionId;
-    this.subjectSource = spinnakerUrl;
+    super(spinnakerUrl, executionId, spinnakerUrl, executionUrl);
     this.subjectPipelineName = executionName;
-    this.subjectUrl = executionUrl;
+  }
+
+  public String getSubjectPipelineName() {
+    return subjectPipelineName;
+  }
+
+  public void setSubjectPipelineName(String subjectPipelineName) {
+    this.subjectPipelineName = subjectPipelineName;
   }
 
   @Override
   public CloudEvent createCDEvent() {
     PipelineRunQueuedCDEvent cdEvent = new PipelineRunQueuedCDEvent();
-    cdEvent.setSource(URI.create(source));
-    cdEvent.setSubjectId(subjectId);
-    cdEvent.setSubjectSource(URI.create(subjectSource));
-    cdEvent.setSubjectPipelineName(subjectPipelineName);
-    cdEvent.setSubjectUrl(URI.create(subjectUrl));
+    cdEvent.setSource(URI.create(getSource()));
+    cdEvent.setSubjectId(getSubjectId());
+    cdEvent.setSubjectSource(URI.create(getSubjectSource()));
+    cdEvent.setSubjectPipelineName(getSubjectPipelineName());
+    cdEvent.setSubjectUrl(URI.create(getSubjectUrl()));
 
     return CDEvents.cdEventAsCloudEvent(cdEvent);
   }

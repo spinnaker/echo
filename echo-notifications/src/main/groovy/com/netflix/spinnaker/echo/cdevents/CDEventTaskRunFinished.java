@@ -22,13 +22,9 @@ import dev.cdevents.events.TaskRunFinishedCDEvent;
 import io.cloudevents.CloudEvent;
 import java.net.URI;
 
-public class CDEventTaskRunFinished implements CDEventCreator {
+public class CDEventTaskRunFinished extends CDEventCreator {
 
-  private String source;
-  private String subjectId;
-  private String subjectSource;
   private String subjectTaskName;
-  private String subjectUrl;
   private String subjectPipelineRunId;
   private String subjectError;
 
@@ -38,29 +34,49 @@ public class CDEventTaskRunFinished implements CDEventCreator {
       String executionName,
       String spinnakerUrl,
       String status) {
-    this.source = spinnakerUrl;
-    this.subjectId = executionId;
-    this.subjectSource = spinnakerUrl;
+    super(spinnakerUrl, executionId, spinnakerUrl, executionUrl);
     this.subjectTaskName = executionName;
-    this.subjectUrl = executionUrl;
     this.subjectPipelineRunId = executionId;
     this.subjectError = status;
+  }
+
+  public String getSubjectTaskName() {
+    return subjectTaskName;
+  }
+
+  public void setSubjectTaskName(String subjectTaskName) {
+    this.subjectTaskName = subjectTaskName;
+  }
+
+  public String getSubjectPipelineRunId() {
+    return subjectPipelineRunId;
+  }
+
+  public void setSubjectPipelineRunId(String subjectPipelineRunId) {
+    this.subjectPipelineRunId = subjectPipelineRunId;
+  }
+
+  public String getSubjectError() {
+    return subjectError;
+  }
+
+  public void setSubjectError(String subjectError) {
+    this.subjectError = subjectError;
   }
 
   @Override
   public CloudEvent createCDEvent() {
     TaskRunFinishedCDEvent cdEvent = new TaskRunFinishedCDEvent();
-    cdEvent.setSource(URI.create(source));
-
-    cdEvent.setSubjectId(subjectId);
-    cdEvent.setSubjectSource(URI.create(source));
-    cdEvent.setSubjectTaskName(subjectTaskName);
-    cdEvent.setSubjectUrl(URI.create(subjectUrl));
-    cdEvent.setSubjectErrors(subjectError);
-    cdEvent.setSubjectPipelineRunId(subjectPipelineRunId);
-    if (subjectError.equals("complete")) {
+    cdEvent.setSource(URI.create(getSource()));
+    cdEvent.setSubjectId(getSubjectId());
+    cdEvent.setSubjectSource(URI.create(getSubjectSource()));
+    cdEvent.setSubjectTaskName(getSubjectTaskName());
+    cdEvent.setSubjectUrl(URI.create(getSubjectUrl()));
+    cdEvent.setSubjectErrors(getSubjectError());
+    cdEvent.setSubjectPipelineRunId(getSubjectPipelineRunId());
+    if (getSubjectError().equals("complete")) {
       cdEvent.setSubjectOutcome(CDEventConstants.Outcome.SUCCESS);
-    } else if (subjectError.equals("failed")) {
+    } else if (getSubjectError().equals("failed")) {
       cdEvent.setSubjectOutcome(CDEventConstants.Outcome.FAILURE);
     }
 

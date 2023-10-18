@@ -21,35 +21,44 @@ import dev.cdevents.events.TaskRunStartedCDEvent;
 import io.cloudevents.CloudEvent;
 import java.net.URI;
 
-public class CDEventTaskRunStarted implements CDEventCreator {
+public class CDEventTaskRunStarted extends CDEventCreator {
 
-  private String source;
-  private String subjectId;
-  private String subjectSource;
   private String subjectTaskName;
-  private String subjectUrl;
   private String subjectPipelineRunId;
 
   public CDEventTaskRunStarted(
       String executionId, String executionUrl, String executionName, String spinnakerUrl) {
-    this.source = spinnakerUrl;
-    this.subjectId = executionId;
-    this.subjectSource = spinnakerUrl;
+    super(spinnakerUrl, executionId, spinnakerUrl, executionUrl);
     this.subjectTaskName = executionName;
-    this.subjectUrl = executionUrl;
     this.subjectPipelineRunId = executionId;
+  }
+
+  public String getSubjectTaskName() {
+    return subjectTaskName;
+  }
+
+  public void setSubjectTaskName(String subjectTaskName) {
+    this.subjectTaskName = subjectTaskName;
+  }
+
+  public String getSubjectPipelineRunId() {
+    return subjectPipelineRunId;
+  }
+
+  public void setSubjectPipelineRunId(String subjectPipelineRunId) {
+    this.subjectPipelineRunId = subjectPipelineRunId;
   }
 
   @Override
   public CloudEvent createCDEvent() {
     TaskRunStartedCDEvent cdEvent = new TaskRunStartedCDEvent();
-    cdEvent.setSource(URI.create(source));
+    cdEvent.setSource(URI.create(getSource()));
 
-    cdEvent.setSubjectId(subjectId);
-    cdEvent.setSubjectSource(URI.create(subjectSource));
-    cdEvent.setSubjectTaskName(subjectTaskName);
-    cdEvent.setSubjectUrl(URI.create(subjectUrl));
-    cdEvent.setSubjectPipelineRunId(subjectPipelineRunId);
+    cdEvent.setSubjectId(getSubjectId());
+    cdEvent.setSubjectSource(URI.create(getSubjectSource()));
+    cdEvent.setSubjectTaskName(getSubjectTaskName());
+    cdEvent.setSubjectUrl(URI.create(getSubjectUrl()));
+    cdEvent.setSubjectPipelineRunId(getSubjectPipelineRunId());
 
     return CDEvents.cdEventAsCloudEvent(cdEvent);
   }

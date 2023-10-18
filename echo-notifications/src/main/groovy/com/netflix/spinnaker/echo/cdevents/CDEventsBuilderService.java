@@ -71,7 +71,6 @@ public class CDEventsBuilderService {
         Optional.ofNullable(preference)
             .map(p -> (String) p.get("cdEventsType"))
             .orElseThrow(FieldNotFoundException::new);
-
     log.info("Event type {} received to create CDEvent.", cdEventsType);
     CDEventCreator cdEventCreator = null;
     // This map can be added with more event types that Spinnaker needs to send

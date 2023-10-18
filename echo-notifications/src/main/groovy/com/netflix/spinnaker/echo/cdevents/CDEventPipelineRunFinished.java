@@ -22,14 +22,9 @@ import dev.cdevents.events.PipelineRunFinishedCDEvent;
 import io.cloudevents.CloudEvent;
 import java.net.URI;
 
-public class CDEventPipelineRunFinished implements CDEventCreator {
+public class CDEventPipelineRunFinished extends CDEventCreator {
 
-  private String source;
-  private String subjectId;
-  private String subjectSource;
   private String subjectPipelineName;
-  private String subjectUrl;
-
   private String subjectError;
 
   public CDEventPipelineRunFinished(
@@ -38,23 +33,36 @@ public class CDEventPipelineRunFinished implements CDEventCreator {
       String executionName,
       String spinnakerUrl,
       String status) {
-    this.source = spinnakerUrl;
-    this.subjectId = executionId;
-    this.subjectSource = spinnakerUrl;
+    super(spinnakerUrl, executionId, spinnakerUrl, executionUrl);
     this.subjectPipelineName = executionName;
-    this.subjectUrl = executionUrl;
     this.subjectError = status;
+  }
+
+  public String getSubjectPipelineName() {
+    return subjectPipelineName;
+  }
+
+  public void setSubjectPipelineName(String subjectPipelineName) {
+    this.subjectPipelineName = subjectPipelineName;
+  }
+
+  public String getSubjectError() {
+    return subjectError;
+  }
+
+  public void setSubjectError(String subjectError) {
+    this.subjectError = subjectError;
   }
 
   @Override
   public CloudEvent createCDEvent() {
     PipelineRunFinishedCDEvent cdEvent = new PipelineRunFinishedCDEvent();
-    cdEvent.setSource(URI.create(source));
-    cdEvent.setSubjectId(subjectId);
-    cdEvent.setSubjectSource(URI.create(subjectSource));
-    cdEvent.setSubjectPipelineName(subjectSource);
-    cdEvent.setSubjectUrl(URI.create(subjectUrl));
-    cdEvent.setSubjectErrors(subjectError);
+    cdEvent.setSource(URI.create(getSource()));
+    cdEvent.setSubjectId(getSubjectId());
+    cdEvent.setSubjectSource(URI.create(getSubjectSource()));
+    cdEvent.setSubjectPipelineName(getSubjectPipelineName());
+    cdEvent.setSubjectUrl(URI.create(getSubjectUrl()));
+    cdEvent.setSubjectErrors(getSubjectError());
 
     if (subjectError.equals("complete")) {
       cdEvent.setSubjectOutcome(CDEventConstants.Outcome.SUCCESS);
