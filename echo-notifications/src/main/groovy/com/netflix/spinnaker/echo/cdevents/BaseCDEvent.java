@@ -17,51 +17,20 @@
 package com.netflix.spinnaker.echo.cdevents;
 
 import io.cloudevents.CloudEvent;
+import lombok.Getter;
 
-public abstract class CDEventCreator {
+public abstract class BaseCDEvent {
   abstract CloudEvent createCDEvent();
 
-  private String source;
-  private String subjectId;
-  private String subjectSource;
-  private String subjectUrl;
+  @Getter private String source;
+  @Getter private String subjectId;
+  @Getter private String subjectSource;
+  @Getter private String subjectUrl;
 
-  public CDEventCreator(String source, String subjectId, String subjectSource, String subjectUrl) {
+  public BaseCDEvent(String source, String subjectId, String subjectSource, String subjectUrl) {
     this.source = source;
     this.subjectId = subjectId;
     this.subjectSource = subjectSource;
-    this.subjectUrl = subjectUrl;
-  }
-
-  public String getSource() {
-    return source;
-  }
-
-  public void setSource(String source) {
-    this.source = source;
-  }
-
-  public String getSubjectId() {
-    return subjectId;
-  }
-
-  public void setSubjectId(String subjectId) {
-    this.subjectId = subjectId;
-  }
-
-  public String getSubjectSource() {
-    return subjectSource;
-  }
-
-  public void setSubjectSource(String subjectSource) {
-    this.subjectSource = subjectSource;
-  }
-
-  public String getSubjectUrl() {
-    return subjectUrl;
-  }
-
-  public void setSubjectUrl(String subjectUrl) {
     this.subjectUrl = subjectUrl;
   }
 }

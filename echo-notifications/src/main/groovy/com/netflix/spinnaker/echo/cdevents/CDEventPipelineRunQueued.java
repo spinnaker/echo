@@ -19,23 +19,16 @@ import dev.cdevents.CDEvents;
 import dev.cdevents.events.PipelineRunQueuedCDEvent;
 import io.cloudevents.CloudEvent;
 import java.net.URI;
+import lombok.Getter;
 
-public class CDEventPipelineRunQueued extends CDEventCreator {
+public class CDEventPipelineRunQueued extends BaseCDEvent {
 
-  private String subjectPipelineName;
+  @Getter private String subjectPipelineName;
 
   public CDEventPipelineRunQueued(
       String executionId, String executionUrl, String executionName, String spinnakerUrl) {
     super(spinnakerUrl, executionId, spinnakerUrl, executionUrl);
     this.subjectPipelineName = executionName;
-  }
-
-  public String getSubjectPipelineName() {
-    return subjectPipelineName;
-  }
-
-  public void setSubjectPipelineName(String subjectPipelineName) {
-    this.subjectPipelineName = subjectPipelineName;
   }
 
   @Override

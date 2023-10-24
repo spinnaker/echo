@@ -72,9 +72,9 @@ public class CDEventsBuilderService {
             .map(p -> (String) p.get("cdEventsType"))
             .orElseThrow(FieldNotFoundException::new);
     log.info("Event type {} received to create CDEvent.", cdEventsType);
-    CDEventCreator cdEventCreator = null;
-    // This map can be added with more event types that Spinnaker needs to send
-    Map<String, CDEventCreator> cdEventsMap =
+    BaseCDEvent cdEvent = null;
+    // This map will be updated to add more event types that Spinnaker needs to send
+    Map<String, BaseCDEvent> cdEventsMap =
         Map.of(
             CDEventTypes.PipelineRunQueuedEvent.getEventType(),
                 new CDEventPipelineRunQueued(
@@ -92,19 +92,19 @@ public class CDEventsBuilderService {
                     executionId, executionUrl, executionName, spinnakerUrl, status));
     for (String keyType : cdEventsMap.keySet()) {
       if (keyType.contains(cdEventsType)) {
-        cdEventCreator = cdEventsMap.get(keyType);
+        cdEvent = cdEventsMap.get(keyType);
         break;
       }
     }
 
-    if (cdEventCreator == null) {
+    if (cdEvent == null) {
       log.error("No mapping event type found for {}", cdEventsType);
       log.error(
           "The event type should be an event or substring of an event from the list of event types {}",
           cdEventsMap.keySet());
       throw new CDEventsException("No mapping eventType found to create CDEvent");
     } else {
-      return cdEventCreator.createCDEvent();
+      return cdEvent.createCDEvent();
     }
   }
 }

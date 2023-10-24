@@ -21,11 +21,12 @@ import dev.cdevents.constants.CDEventConstants;
 import dev.cdevents.events.PipelineRunFinishedCDEvent;
 import io.cloudevents.CloudEvent;
 import java.net.URI;
+import lombok.Getter;
 
-public class CDEventPipelineRunFinished extends CDEventCreator {
+public class CDEventPipelineRunFinished extends BaseCDEvent {
 
-  private String subjectPipelineName;
-  private String subjectError;
+  @Getter private String subjectPipelineName;
+  @Getter private String subjectError;
 
   public CDEventPipelineRunFinished(
       String executionId,
@@ -36,22 +37,6 @@ public class CDEventPipelineRunFinished extends CDEventCreator {
     super(spinnakerUrl, executionId, spinnakerUrl, executionUrl);
     this.subjectPipelineName = executionName;
     this.subjectError = status;
-  }
-
-  public String getSubjectPipelineName() {
-    return subjectPipelineName;
-  }
-
-  public void setSubjectPipelineName(String subjectPipelineName) {
-    this.subjectPipelineName = subjectPipelineName;
-  }
-
-  public String getSubjectError() {
-    return subjectError;
-  }
-
-  public void setSubjectError(String subjectError) {
-    this.subjectError = subjectError;
   }
 
   @Override
