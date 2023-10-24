@@ -23,6 +23,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import retrofit.RequestInterceptor;
 import retrofit.RestAdapter;
@@ -50,7 +51,7 @@ public class CDEventsSenderService {
             request.addHeader("Ce-Specversion", cdEvent.getSpecVersion().V1.toString());
             request.addHeader("Ce-Source", cdEvent.getSource().toString());
             request.addHeader("Ce-Type", cdEvent.getType());
-            request.addHeader("Content-Type", "application/json");
+            request.addHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE);
           }
         };
 

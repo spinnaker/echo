@@ -17,7 +17,9 @@
 package com.netflix.spinnaker.echo.cdevents;
 
 import retrofit.client.Response;
-import retrofit.http.*;
+import retrofit.http.Body;
+import retrofit.http.POST;
+import retrofit.http.Path;
 
 public interface CDEventsSenderClient {
   @POST("/{brokerUrl}")

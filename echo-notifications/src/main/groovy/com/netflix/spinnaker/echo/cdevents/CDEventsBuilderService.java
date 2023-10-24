@@ -41,17 +41,17 @@ public class CDEventsBuilderService {
     String configType =
         Optional.ofNullable(config)
             .map(c -> (String) c.get("type"))
-            .orElseThrow(FieldNotFoundException::new);
+            .orElseThrow(() -> new FieldNotFoundException("type"));
     String configLink =
         Optional.ofNullable(config)
             .map(c -> (String) c.get("link"))
-            .orElseThrow(FieldNotFoundException::new);
+            .orElseThrow(() -> new FieldNotFoundException("link"));
 
     String executionId =
         Optional.ofNullable(event.content)
             .map(e -> (Map) e.get("execution"))
             .map(e -> (String) e.get("id"))
-            .orElseThrow(FieldNotFoundException::new);
+            .orElseThrow(() -> new FieldNotFoundException("execution.id"));
 
     String executionUrl =
         String.format(
@@ -65,14 +65,13 @@ public class CDEventsBuilderService {
         Optional.ofNullable(event.content)
             .map(e -> (Map) e.get("execution"))
             .map(e -> (String) e.get("name"))
-            .orElseThrow(FieldNotFoundException::new);
+            .orElseThrow(() -> new FieldNotFoundException("execution.name"));
 
     String cdEventsType =
         Optional.ofNullable(preference)
             .map(p -> (String) p.get("cdEventsType"))
-            .orElseThrow(FieldNotFoundException::new);
+            .orElseThrow(() -> new FieldNotFoundException("notifications.cdEventsType"));
     log.info("Event type {} received to create CDEvent.", cdEventsType);
-    BaseCDEvent cdEvent = null;
     // This map will be updated to add more event types that Spinnaker needs to send
     Map<String, BaseCDEvent> cdEventsMap =
         Map.of(
@@ -90,21 +89,21 @@ public class CDEventsBuilderService {
             CDEventTypes.TaskRunFinishedEvent.getEventType(),
                 new CDEventTaskRunFinished(
                     executionId, executionUrl, executionName, spinnakerUrl, status));
-    for (String keyType : cdEventsMap.keySet()) {
-      if (keyType.contains(cdEventsType)) {
-        cdEvent = cdEventsMap.get(keyType);
-        break;
-      }
-    }
 
-    if (cdEvent == null) {
-      log.error("No mapping event type found for {}", cdEventsType);
-      log.error(
-          "The event type should be an event or substring of an event from the list of event types {}",
-          cdEventsMap.keySet());
-      throw new CDEventsException("No mapping eventType found to create CDEvent");
-    } else {
-      return cdEvent.createCDEvent();
-    }
+    BaseCDEvent cdEvent =
+        cdEventsMap.keySet().stream()
+            .filter(keyType -> keyType.contains(cdEventsType))
+            .map(cdEventsMap::get)
+            .findFirst()
+            .orElseThrow(
+                () -> {
+                  log.error("No mapping event type found for {}", cdEventsType);
+                  log.error(
+                      "The event type should be an event or substring of an event from the list of event types {}",
+                      cdEventsMap.keySet());
+                  return new CDEventsException("No mapping eventType found to create CDEvent");
+                });
+
+    return cdEvent.createCDEvent();
   }
 }

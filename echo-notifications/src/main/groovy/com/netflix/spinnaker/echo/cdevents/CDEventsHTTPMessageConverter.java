@@ -29,6 +29,7 @@ import io.cloudevents.jackson.JsonFormat;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
+import org.springframework.http.MediaType;
 import retrofit.converter.ConversionException;
 import retrofit.converter.Converter;
 import retrofit.mime.TypedByteArray;
@@ -38,8 +39,6 @@ import retrofit.mime.TypedOutput;
 public class CDEventsHTTPMessageConverter implements Converter {
 
   private final ObjectMapper objectMapper;
-
-  private static final String MIME_TYPE = "application/json";
 
   public CDEventsHTTPMessageConverter(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
@@ -65,9 +64,7 @@ public class CDEventsHTTPMessageConverter implements Converter {
     try {
       JavaType javaType = objectMapper.getTypeFactory().constructType(type);
       return objectMapper.readValue(body.in(), javaType);
-    } catch (JsonParseException e) {
-      throw new ConversionException(e);
-    } catch (JsonMappingException e) {
+    } catch (JsonParseException | JsonMappingException e) {
       throw new ConversionException(e);
     } catch (IOException e) {
       throw new ConversionException(e);
@@ -78,7 +75,7 @@ public class CDEventsHTTPMessageConverter implements Converter {
   public TypedOutput toBody(Object object) {
     try {
       String json = objectMapper.writeValueAsString(object);
-      return new TypedByteArray(MIME_TYPE, json.getBytes("UTF-8"));
+      return new TypedByteArray(MediaType.APPLICATION_JSON_VALUE, json.getBytes("UTF-8"));
     } catch (JsonProcessingException e) {
       throw new AssertionError(e);
     } catch (UnsupportedEncodingException e) {

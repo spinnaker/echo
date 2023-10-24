@@ -20,9 +20,18 @@ import io.cloudevents.CloudEvent;
 import lombok.Getter;
 
 public abstract class BaseCDEvent {
+  /**
+   * This method can be implemented to create various types of CDEvents that can return a specific
+   * type of CDEvents in a CloudEvent format, more details on CDEvent types can be found in
+   * Documentation at https://cdevents.dev
+   *
+   * @return cdEvent
+   */
   abstract CloudEvent createCDEvent();
 
+  /** Common properties used in most of the CDEvents */
   @Getter private String source;
+
   @Getter private String subjectId;
   @Getter private String subjectSource;
   @Getter private String subjectUrl;

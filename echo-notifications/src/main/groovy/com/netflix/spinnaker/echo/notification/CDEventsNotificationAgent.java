@@ -55,15 +55,15 @@ public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
         Optional.ofNullable(event.content)
             .map(e -> (Map) e.get("execution"))
             .map(e -> (String) e.get("id"))
-            .orElseThrow(FieldNotFoundException::new);
+            .orElseThrow(() -> new FieldNotFoundException("execution.id"));
     String cdEventsType =
         Optional.ofNullable(preference)
             .map(p -> (String) p.get("cdEventsType"))
-            .orElseThrow(FieldNotFoundException::new);
+            .orElseThrow(() -> new FieldNotFoundException("notifications.cdEventsType"));
     String eventsBrokerUrl =
         Optional.ofNullable(preference)
             .map(p -> (String) p.get("address"))
-            .orElseThrow(FieldNotFoundException::new);
+            .orElseThrow(() -> new FieldNotFoundException("notifications.address"));
 
     CloudEvent cdEvent =
         cdEventsBuilderService.createCDEvent(
