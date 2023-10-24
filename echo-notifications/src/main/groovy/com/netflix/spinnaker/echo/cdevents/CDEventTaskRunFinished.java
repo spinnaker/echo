@@ -51,9 +51,9 @@ public class CDEventTaskRunFinished extends BaseCDEvent {
     cdEvent.setSubjectUrl(URI.create(getSubjectUrl()));
     cdEvent.setSubjectErrors(getSubjectError());
     cdEvent.setSubjectPipelineRunId(getSubjectPipelineRunId());
-    if (getSubjectError().equals("complete")) {
+    if ("complete".equals(getSubjectError())) {
       cdEvent.setSubjectOutcome(CDEventConstants.Outcome.SUCCESS);
-    } else if (getSubjectError().equals("failed")) {
+    } else if ("failed".equals(getSubjectError())) {
       cdEvent.setSubjectOutcome(CDEventConstants.Outcome.FAILURE);
     }
 

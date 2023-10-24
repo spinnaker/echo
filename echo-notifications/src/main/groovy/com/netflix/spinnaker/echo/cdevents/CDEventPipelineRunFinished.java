@@ -49,9 +49,9 @@ public class CDEventPipelineRunFinished extends BaseCDEvent {
     cdEvent.setSubjectUrl(URI.create(getSubjectUrl()));
     cdEvent.setSubjectErrors(getSubjectError());
 
-    if (subjectError.equals("complete")) {
+    if ("complete".equals(getSubjectError())) {
       cdEvent.setSubjectOutcome(CDEventConstants.Outcome.SUCCESS);
-    } else if (subjectError.equals("failed")) {
+    } else if ("failed".equals(getSubjectError())) {
       cdEvent.setSubjectOutcome(CDEventConstants.Outcome.FAILURE);
     }
 

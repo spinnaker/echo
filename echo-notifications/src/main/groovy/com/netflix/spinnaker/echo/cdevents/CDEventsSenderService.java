@@ -77,11 +77,10 @@ public class CDEventsSenderService {
           url.getPort() != -1
               ? url.getProtocol() + "://" + url.getHost() + ":" + url.getPort()
               : url.getProtocol() + "://" + url.getHost();
-      log.info("endpoint Url to send CDEvent {} ", endPointURL);
+      log.info("Endpoint Url to send CDEvent {} ", endPointURL);
       return endPointURL;
     } catch (MalformedURLException e) {
-      throw new InvalidRequestException(
-          "Unable to determine base URL from Microsoft Teams webhook URL.", e);
+      throw new InvalidRequestException("Unable to determine CloudEvents broker address.", e);
     }
   }
 
@@ -97,7 +96,7 @@ public class CDEventsSenderService {
       }
     } catch (MalformedURLException e) {
       throw new InvalidRequestException(
-          "Unable to determine relative path from Microsoft Teams webhook URL.", e);
+          "Unable to determine URL from CloudEvents broker address.", e);
     }
 
     // Remove slash from beginning of path as the client will prefix the string with a slash
