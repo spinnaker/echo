@@ -138,13 +138,12 @@ class WebhooksController {
                                     @RequestBody CloudEvent cdevent,
                                     @RequestHeader HttpHeaders headers) {
     log.info("CDEvents Webhook received with source ${source} and with event type ${cdevent.getType()}")
-
     String ceDataJsonString  = headers.get("Ce-Data").get(0)
     log.info("CDEvent received with in the CloudEvent data request {}", ceDataJsonString)
     Map postedEvent
     try {
       postedEvent = mapper.readValue(ceDataJsonString, Map) ?: [:]
-      if (!postedEvent.get("customData") || !postedEvent.get("context") || !postedEvent.get("subject")) {
+      if (postedEvent.get("customData") == null || !postedEvent.get("context") || !postedEvent.get("subject")) {
         throw new RuntimeException("Invalid CDEvent data posted with the CloudEvent RequestBody - " + postedEvent);
       }
     } catch (Exception e) {

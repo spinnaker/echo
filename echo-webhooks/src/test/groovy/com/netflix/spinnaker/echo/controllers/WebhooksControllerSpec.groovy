@@ -29,7 +29,8 @@ import com.netflix.spinnaker.echo.scm.bitbucket.server.BitbucketServerEventHandl
 import org.springframework.http.HttpHeaders
 import spock.lang.Specification
 import io.cloudevents.CloudEvent
-import io.cloudevents.core.builder.CloudEventBuilder;
+import io.cloudevents.core.builder.CloudEventBuilder
+import com.fasterxml.jackson.databind.ObjectMapper
 
 
 import java.nio.charset.StandardCharsets
@@ -828,19 +829,49 @@ class WebhooksControllerSpec extends Specification {
     WebhooksController controller = new WebhooksController(mapper: EchoObjectMapper.getInstance(), scmWebhookHandler: scmWebhookHandler)
     controller.propagator = Mock(EventPropagator)
 
+    String cdEventData = "{\n" +
+      "  \"context\": {\n" +
+      "    \"id\": \"5fb38d7d-28dd-47e4-ade2-cb21153cc8dc\",\n" +
+      "    \"type\": \"dev.cdevents.artifact.published.0.1.0\",\n" +
+      "    \"source\": \"https://ci-build.est.tech/\",\n" +
+      "    \"version\": \"0.1.2\"\n" +
+      "  },\n" +
+      "  \"customData\": {\n" +
+      "    \"artifacts\": [\n" +
+      "      {\n" +
+      "        \"type\": \"custom/object\",\n" +
+      "        \"name\": \"image-cdevents\",\n" +
+      "        \"version\": \"1.0.1\",\n" +
+      "        \"reference\": \"custom/object/artifact\"\n" +
+      "      }\n" +
+      "    ],\n" +
+      "    \"parameters\": {\n" +
+      "      \"stack\": \"prod\"\n" +
+      "    }\n" +
+      "  },\n" +
+      "  \"customDataContentType\": \"application/json\",\n" +
+      "  \"subject\": {\n" +
+      "    \"type\": \"ARTIFACT\",\n" +
+      "    \"content\": {\n" +
+      "      \"pipelineName\": \"test-1\",\n" +
+      "      \"outcome\": \"SUCCESS\"\n" +
+      "    }\n" +
+      "  }\n" +
+      "}"
     HttpHeaders headers = new HttpHeaders();
     headers.add("Ce-Id", "1234")
     headers.add("Ce-Specversion", "1.0")
     headers.add("Ce-Type", "dev.cdevents.artifact.packaged")
+    headers.add("Ce-Data", cdEventData)
 
-    String eventData = "{\"id\": \"1234\", \"subject\": \"event\"}";
-    CloudEvent cdevent = CloudEventBuilder.v1() //
-      .withId("12345") //
-      .withType("dev.cdevents.artifact.packaged") //
-      .withSource(URI.create("https://cdevents.dev")) //
-      .withData(eventData.getBytes(StandardCharsets.UTF_8)) //
+    CloudEvent cdevent = CloudEventBuilder.v1()
+      .withId("12345")
+      .withType("dev.cdevents.artifact.packaged")
+      .withSource(URI.create("https://cdevents.dev"))
       .build();
 
+    Map dataMap = new ObjectMapper().readValue(cdEventData, Map) ?: [:]
+    Map customDataMap = new HashMap(dataMap.get("customData"))
     when:
     def response = controller.forwardEvent("artifactPackaged",cdevent, headers)
 
@@ -851,9 +882,37 @@ class WebhooksControllerSpec extends Specification {
 
     event.details.type == "cdevents"
     event.details.source == "artifactPackaged"
-    event.rawContent == eventData
+    event.rawContent == cdEventData
     event.details.requestHeaders.get("Ce-Type")[0] == "dev.cdevents.artifact.packaged"
     event.details.requestHeaders.get("Ce-Id")[0] == "1234"
+    event.content.artifacts == customDataMap.get("artifacts")
+    event.content.parameters == customDataMap.get("parameters")
+
+  }
+
+  void "handles RuntimeException with invalid CDEvents Webhook Event"() {
+    given:
+    WebhooksController controller = new WebhooksController(mapper: EchoObjectMapper.getInstance(), scmWebhookHandler: scmWebhookHandler)
+    controller.propagator = Mock(EventPropagator)
+    String cdEventData = "{\"id\": \"1234\", \"subject\": \"event\"}"
+    HttpHeaders headers = new HttpHeaders()
+    headers.add("Ce-Id", "1234")
+    headers.add("Ce-Specversion", "1.0")
+    headers.add("Ce-Type", "dev.cdevents.artifact.packaged")
+    headers.add("Ce-Data", cdEventData)
+
+    CloudEvent cdevent = CloudEventBuilder.v1()
+      .withId("12345")
+      .withType("dev.cdevents.artifact.packaged")
+      .withSource(URI.create("https://cdevents.dev"))
+      .build();
+    Map dataMap = new ObjectMapper().readValue(cdEventData, Map) ?: [:]
+
+    when:
+    def response = controller.forwardEvent("artifactPackaged",cdevent, headers)
+    then:
+    def exception = thrown(RuntimeException)
+    exception.message == "Invalid CDEvent data posted with the CloudEvent RequestBody - $dataMap"
 
   }
 }
