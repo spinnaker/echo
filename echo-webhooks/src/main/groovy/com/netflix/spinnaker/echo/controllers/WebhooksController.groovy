@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.echo.api.events.Event
 import com.netflix.spinnaker.echo.api.events.Metadata
 import com.netflix.spinnaker.echo.artifacts.ArtifactExtractor
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.echo.events.EventPropagator
 import com.netflix.spinnaker.echo.scm.GitWebhookHandler
 import com.netflix.spinnaker.echo.scm.ScmWebhookHandler
@@ -144,7 +145,7 @@ class WebhooksController {
     try {
       postedEvent = mapper.readValue(ceDataJsonString, Map) ?: [:]
       if (postedEvent.get("customData") == null || !postedEvent.get("context") || !postedEvent.get("subject")) {
-        throw new RuntimeException("Invalid CDEvent data posted with the CloudEvent RequestBody - " + postedEvent);
+        throw new InvalidRequestException("Invalid CDEvent data posted with the CloudEvent RequestBody - " + postedEvent);
       }
     } catch (Exception e) {
       log.error("Failed to parse payload ceDataJsonString: {}", ceDataJsonString, e);
