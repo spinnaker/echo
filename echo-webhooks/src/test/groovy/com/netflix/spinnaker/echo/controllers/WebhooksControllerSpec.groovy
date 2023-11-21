@@ -31,6 +31,7 @@ import spock.lang.Specification
 import io.cloudevents.CloudEvent
 import io.cloudevents.core.builder.CloudEventBuilder
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 
 
 import java.nio.charset.StandardCharsets
@@ -890,7 +891,7 @@ class WebhooksControllerSpec extends Specification {
 
   }
 
-  void "handles RuntimeException with invalid CDEvents Webhook Event"() {
+  void "handles invalid CDEvents Webhook Event"() {
     given:
     WebhooksController controller = new WebhooksController(mapper: EchoObjectMapper.getInstance(), scmWebhookHandler: scmWebhookHandler)
     controller.propagator = Mock(EventPropagator)
@@ -911,7 +912,7 @@ class WebhooksControllerSpec extends Specification {
     when:
     def response = controller.forwardEvent("artifactPackaged",cdevent, headers)
     then:
-    def exception = thrown(RuntimeException)
+    def exception = thrown(InvalidRequestException)
     exception.message == "Invalid CDEvent data posted with the CloudEvent RequestBody - $dataMap"
 
   }
