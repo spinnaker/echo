@@ -48,6 +48,17 @@ subprojects {
      }
     }
 
+    tasks.withType(JavaCompile).configureEach {
+      javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(11)
+      }
+    }
+    tasks.withType(Test).configureEach {
+      javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+      }
+    }
+
     tasks.withType(JavaExec) {
       if (System.getProperty('DEBUG', 'false') == 'true') {
         jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8189'
@@ -57,7 +68,7 @@ subprojects {
 
   if (name != "echo-bom" && name != "echo-api") {
     jacoco {
-      toolVersion = '0.8.3'
+      toolVersion = '0.8.7'
     }
 
     dependencies {
