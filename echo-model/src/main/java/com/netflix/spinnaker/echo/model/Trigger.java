@@ -178,7 +178,7 @@ public class Trigger {
   String artifactName;
 
   /** Properties that are bound at run-time */
-  Integer buildNumber;
+  String buildNumber;
 
   String hash;
   Map<String, Object> buildInfo;
@@ -217,7 +217,7 @@ public class Trigger {
     return UUID.nameUUIDFromBytes(this.toString().getBytes()).toString();
   }
 
-  public Trigger atBuildNumber(final int buildNumber) {
+  public Trigger atBuildNumber(final String buildNumber) {
     return this.toBuilder().buildNumber(buildNumber).hash(null).tag(null).build();
   }
 

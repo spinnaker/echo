@@ -48,7 +48,7 @@ public class BuildInfoService {
   // to pass a trigger and
   // an event as with other triggers, but for now we'll see whether we can extract a build event
   // from the trigger.
-  public BuildEvent getBuildEvent(String master, String job, int buildNumber) {
+  public BuildEvent getBuildEvent(String master, String job, String buildNumber) {
     Map<String, Object> rawBuild = retry(() -> igorService.getBuild(buildNumber, master, job));
     BuildEvent.Build build = objectMapper.convertValue(rawBuild, BuildEvent.Build.class);
     BuildEvent.Project project = new BuildEvent.Project(job, build);
@@ -61,7 +61,7 @@ public class BuildInfoService {
   public Map<String, Object> getBuildInfo(BuildEvent event) {
     String master = event.getContent().getMaster();
     String job = event.getContent().getProject().getName();
-    int buildNumber = event.getBuildNumber();
+    String buildNumber = event.getBuildNumber();
 
     if (StringUtils.isNoneEmpty(master, job)) {
       return retry(() -> igorService.getBuild(buildNumber, master, job));
@@ -72,7 +72,7 @@ public class BuildInfoService {
   public Map<String, Object> getProperties(BuildEvent event, String propertyFile) {
     String master = event.getContent().getMaster();
     String job = event.getContent().getProject().getName();
-    int buildNumber = event.getBuildNumber();
+    String buildNumber = event.getBuildNumber();
 
     if (StringUtils.isEmpty(propertyFile) && master.contains("travis")) {
       propertyFile = "travis";
@@ -87,7 +87,7 @@ public class BuildInfoService {
   private List<Artifact> getArtifactsFromPropertyFile(BuildEvent event, String propertyFile) {
     String master = event.getContent().getMaster();
     String job = event.getContent().getProject().getName();
-    int buildNumber = event.getBuildNumber();
+    String buildNumber = event.getBuildNumber();
     if (StringUtils.isNoneEmpty(master, job, propertyFile)) {
       return retry(() -> igorService.getArtifacts(buildNumber, propertyFile, master, job));
     }

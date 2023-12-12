@@ -26,20 +26,20 @@ import retrofit.mime.TypedInput;
 public interface IgorService {
   @GET("/builds/status/{buildNumber}/{master}/{job}")
   Map<String, Object> getBuild(
-      @Path("buildNumber") Integer buildNumber,
+      @Path("buildNumber") String buildNumber,
       @Path("master") String master,
       @Path(value = "job", encode = false) String job);
 
   @GET("/builds/properties/{buildNumber}/{fileName}/{master}/{job}")
   Map<String, Object> getPropertyFile(
-      @Path("buildNumber") Integer buildNumber,
+      @Path("buildNumber") String buildNumber,
       @Path("fileName") String fileName,
       @Path("master") String master,
       @Path(value = "job", encode = false) String job);
 
   @GET("/builds/artifacts/{buildNumber}/{master}/{job}")
   List<Artifact> getArtifacts(
-      @Path("buildNumber") Integer buildNumber,
+      @Path("buildNumber") String buildNumber,
       @Query("propertyFile") String propertyFile,
       @Path("master") String master,
       @Path(value = "job", encode = false) String job);

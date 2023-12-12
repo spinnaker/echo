@@ -199,7 +199,7 @@ public class ManualEventHandler implements TriggerEventHandler<ManualEvent> {
     List<Artifact> artifacts = new ArrayList<>();
     String master = manualTrigger.getMaster();
     String job = manualTrigger.getJob();
-    Integer buildNumber = manualTrigger.getBuildNumber();
+    String buildNumber = manualTrigger.getBuildNumber();
 
     ArrayList<String> pipelineErrors = new ArrayList<>();
 
