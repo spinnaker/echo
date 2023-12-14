@@ -20,17 +20,12 @@ dependencies {
   implementation "org.springframework.boot:spring-boot-starter-web"
   implementation "io.spinnaker.kork:kork-artifacts"
   implementation "javax.validation:validation-api"
+  implementation "io.cloudevents:cloudevents-spring:2.5.0"
+  implementation "io.cloudevents:cloudevents-json-jackson:2.5.0"
+  implementation "io.cloudevents:cloudevents-http-basic:2.5.0"
 
   testImplementation "org.junit.jupiter:junit-jupiter-api"
   testImplementation "org.assertj:assertj-core"
 
   testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-  testRuntimeOnly "org.junit.platform:junit-platform-launcher"
-  testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
-}
-
-test {
-  useJUnitPlatform {
-    includeEngines "junit-vintage", "junit-jupiter"
-  }
 }

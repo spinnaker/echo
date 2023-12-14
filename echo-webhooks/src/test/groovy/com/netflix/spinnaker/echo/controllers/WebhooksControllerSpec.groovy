@@ -28,6 +28,11 @@ import com.netflix.spinnaker.echo.scm.StashWebhookEventHandler
 import com.netflix.spinnaker.echo.scm.bitbucket.server.BitbucketServerEventHandler
 import org.springframework.http.HttpHeaders
 import spock.lang.Specification
+import io.cloudevents.CloudEvent
+import io.cloudevents.core.builder.CloudEventBuilder;
+
+
+import java.nio.charset.StandardCharsets
 
 class WebhooksControllerSpec extends Specification {
 
@@ -462,6 +467,56 @@ class WebhooksControllerSpec extends Specification {
     event.content.draft == "false"
   }
 
+  void 'gracefully handle Github PR Webhook Event With no Action'() {
+    def event
+
+    given:
+    WebhooksController controller = new WebhooksController(mapper: EchoObjectMapper.getInstance(), scmWebhookHandler: scmWebhookHandler)
+    controller.propagator = Mock(EventPropagator)
+    controller.artifactExtractor = Mock(ArtifactExtractor)
+    controller.artifactExtractor.extractArtifacts(_, _, _) >> []
+
+    when:
+    def response = controller.forwardEvent(
+      "git",
+      "github",
+      """{
+          "action": null,
+          "pull_request": {
+            "number": 42,
+            "head": {
+              "ref": "simple-tag",
+              "sha": "0000000000000000000000000000000000000000"
+            },
+            "title": "Very nice Pull Request",
+            "draft": false,
+            "state": "open"
+          },
+          "repository": {
+            "name": "Hello-World",
+            "owner": {
+              "login": "Codertocat"
+            }
+          }
+        }
+        """, new HttpHeaders())
+
+    then:
+    1 * controller.propagator.processEvent(_) >> {
+      event = it[0]
+    }
+
+    event.content.hash == "0000000000000000000000000000000000000000"
+    event.content.repoProject == "Codertocat"
+    event.content.slug == "Hello-World"
+    event.content.branch == "simple-tag"
+    event.content.action == "pull_request:"
+    event.content.number == "42"
+    event.content.title == "Very nice Pull Request"
+    event.content.state == "open"
+    event.content.draft == "false"
+  }
+
   void 'handles non-push Github Webhook Event gracefully'() {
     def event
 
@@ -615,6 +670,54 @@ class WebhooksControllerSpec extends Specification {
     event.content.action == "pullrequest:fulfilled"
   }
 
+  void "handles Bitbucket Cloud Webhook PR Event with Project key"() {
+    def event
+
+    given:
+    WebhooksController controller = new WebhooksController(mapper: EchoObjectMapper.getInstance(), scmWebhookHandler: scmWebhookHandler)
+    controller.propagator = Mock(EventPropagator)
+    controller.artifactExtractor = Mock(ArtifactExtractor)
+    controller.artifactExtractor.extractArtifacts(_, _, _) >> []
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("X-Event-Key", "pullrequest:fulfilled")
+
+    when:
+    def response = controller.forwardEvent(
+      "git",
+      "bitbucket",
+      """{
+          "repository": {
+            "full_name": "echo",
+            "owner": {
+              "display_name": "spinnaker"
+            },
+            "project": {
+                "key": "ECH"
+            }
+          },
+          "pullrequest": {
+            "merge_commit": {
+              "hash": "firstHash"
+             },
+             "destination": {
+              "branch": {"name": "master"}
+             }
+          }
+        }
+        """,headers)
+
+    then:
+    1 * controller.propagator.processEvent(_) >> {
+      event = it[0]
+    }
+
+    event.content.hash == "firstHash"
+    event.content.repoProject == "ECH"
+    event.content.slug == "echo"
+    event.content.branch == "master"
+    event.content.action == "pullrequest:fulfilled"
+  }
+
   void "handles Bitbucket Cloud Webhook Push Event"() {
     def event
 
@@ -663,5 +766,94 @@ class WebhooksControllerSpec extends Specification {
     event.content.slug == "echo"
     event.content.branch == "master"
     event.content.action == "repo:push"
+  }
+
+  void "handles Bitbucket Cloud Webhook Push Event with Project key"() {
+    def event
+
+    given:
+    WebhooksController controller = new WebhooksController(mapper: EchoObjectMapper.getInstance(), scmWebhookHandler: scmWebhookHandler)
+    controller.propagator = Mock(EventPropagator)
+    controller.artifactExtractor = Mock(ArtifactExtractor)
+    controller.artifactExtractor.extractArtifacts(_, _, _) >> []
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("X-Event-Key", "repo:push")
+
+    when:
+    def response = controller.forwardEvent(
+      "git",
+      "bitbucket",
+      """{
+          "repository": {
+            "full_name": "echo",
+            "owner": {"display_name": "spinnaker"},
+            "project": {
+                "key": "ECH"
+            }
+          },
+          "push": {
+            "changes": [
+              {
+                "new": {
+                  "type": "branch",
+                  "name": "master"
+                },
+                "commits": [
+                  {
+                   "hash": "firstHash"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        """,headers)
+
+    then:
+    1 * controller.propagator.processEvent(_) >> {
+      event = it[0]
+    }
+
+    event.content.hash == "firstHash"
+    event.content.repoProject == "ECH"
+    event.content.slug == "echo"
+    event.content.branch == "master"
+    event.content.action == "repo:push"
+  }
+
+  void "handles CDEvents Webhook Event"() {
+    def event
+
+    given:
+    WebhooksController controller = new WebhooksController(mapper: EchoObjectMapper.getInstance(), scmWebhookHandler: scmWebhookHandler)
+    controller.propagator = Mock(EventPropagator)
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("Ce-Id", "1234")
+    headers.add("Ce-Specversion", "1.0")
+    headers.add("Ce-Type", "dev.cdevents.artifact.packaged")
+
+    String eventData = "{\"id\": \"1234\", \"subject\": \"event\"}";
+    CloudEvent cdevent = CloudEventBuilder.v1() //
+      .withId("12345") //
+      .withType("dev.cdevents.artifact.packaged") //
+      .withSource(URI.create("https://cdevents.dev")) //
+      .withData(eventData.getBytes(StandardCharsets.UTF_8)) //
+      .build();
+
+    when:
+    def response = controller.forwardEvent("artifactPackaged",cdevent, headers)
+
+    then:
+    1 * controller.propagator.processEvent(_) >> {
+      event = it[0]
+    }
+
+    event.details.type == "cdevents"
+    event.details.source == "artifactPackaged"
+    event.rawContent == eventData
+    event.details.requestHeaders.get("Ce-Type")[0] == "dev.cdevents.artifact.packaged"
+    event.details.requestHeaders.get("Ce-Id")[0] == "1234"
+
   }
 }
