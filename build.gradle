@@ -43,9 +43,18 @@ subprojects {
       testLogging {
         exceptionFormat = 'full'
       }
-     useJUnitPlatform {
-       includeEngines "junit-vintage", "junit-jupiter"
-     }
+     useJUnitPlatform()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+      javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(11)
+      }
+    }
+    tasks.withType(Test).configureEach {
+      javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+      }
     }
 
     tasks.withType(JavaExec) {
@@ -57,7 +66,7 @@ subprojects {
 
   if (name != "echo-bom" && name != "echo-api") {
     jacoco {
-      toolVersion = '0.8.3'
+      toolVersion = '0.8.7'
     }
 
     dependencies {
@@ -84,7 +93,7 @@ subprojects {
       testImplementation "org.springframework:spring-test"
       testImplementation "org.hamcrest:hamcrest-core"
       testRuntimeOnly "cglib:cglib-nodep"
-      testRuntimeOnly "org.junit.vintage:junit-vintage-engine"
+      testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
       testRuntimeOnly "org.objenesis:objenesis"
     }
   }
