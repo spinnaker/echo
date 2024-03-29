@@ -12,7 +12,7 @@ front50:
 
 services:
   fiat:
-    enabled: ${services.fiat.enabled:false}
+    enabled: false
     baseUrl: ${services.fiat.baseUrl:http://localhost:8089}
 
 igor:
