@@ -49,11 +49,11 @@ class CDEventsNotificationAgentSpec extends Specification {
 
     where:
     cdEventsType      || expectedType || status
-    "dev.cdevents.pipelinerun.queued" || /dev.cdevents.pipelinerun.queued.0.1.0/ || /starting/
-    "dev.cdevents.pipelinerun.started" || /dev.cdevents.pipelinerun.started.0.1.0/ || /started/
-    "dev.cdevents.pipelinerun.finished" || /dev.cdevents.pipelinerun.finished.0.1.0/ || /complete/
-    "dev.cdevents.taskrun.started" || /dev.cdevents.taskrun.started.0.1.0/ || /started/
-    "dev.cdevents.taskrun.finished" || /dev.cdevents.taskrun.finished.0.1.0/ || /complete/
+    "dev.cdevents.pipelinerun.queued" || /dev.cdevents.pipelinerun.queued.0.1.1/ || /starting/
+    "dev.cdevents.pipelinerun.started" || /dev.cdevents.pipelinerun.started.0.1.1/ || /started/
+    "dev.cdevents.pipelinerun.finished" || /dev.cdevents.pipelinerun.finished.0.1.1/ || /complete/
+    "dev.cdevents.taskrun.started" || /dev.cdevents.taskrun.started.0.1.1/ || /started/
+    "dev.cdevents.taskrun.finished" || /dev.cdevents.taskrun.finished.0.1.1/ || /complete/
 
 
     brokerURL = "http://dev.cdevents.server/default/events-broker"
