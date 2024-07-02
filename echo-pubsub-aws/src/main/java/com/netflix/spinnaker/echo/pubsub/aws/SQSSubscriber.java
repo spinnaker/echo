@@ -31,6 +31,7 @@ import com.netflix.spinnaker.echo.model.pubsub.PubsubSystem;
 import com.netflix.spinnaker.echo.pubsub.PubsubMessageHandler;
 import com.netflix.spinnaker.echo.pubsub.model.PubsubSubscriber;
 import com.netflix.spinnaker.echo.pubsub.utils.NodeIdentity;
+import com.netflix.spinnaker.kork.annotations.VisibleForTesting;
 import com.netflix.spinnaker.kork.aws.ARN;
 import com.netflix.spinnaker.kork.pubsub.aws.PubSubUtils;
 import java.io.IOException;
@@ -47,7 +48,8 @@ import org.slf4j.LoggerFactory;
  */
 public class SQSSubscriber implements Runnable, PubsubSubscriber {
 
-  private static final Logger log = LoggerFactory.getLogger(SQSSubscriber.class);
+  @VisibleForTesting
+  static final Logger log = LoggerFactory.getLogger(SQSSubscriber.class);
 
   private static final int AWS_MAX_NUMBER_OF_MESSAGES = 10;
   private static final PubsubSystem pubsubSystem = PubsubSystem.AMAZON;
@@ -211,7 +213,8 @@ public class SQSSubscriber implements Runnable, PubsubSubscriber {
     }
   }
 
-  private String unmarshalMessageBody(String messageBody) {
+  @VisibleForTesting
+  String unmarshalMessageBody(String messageBody) {
     String messagePayload = messageBody;
     try {
       NotificationMessageWrapper wrapper =
