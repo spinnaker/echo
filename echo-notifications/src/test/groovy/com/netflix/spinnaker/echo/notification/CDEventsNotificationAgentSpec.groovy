@@ -70,7 +70,7 @@ class CDEventsNotificationAgentSpec extends Specification {
   }
 
   @Unroll
-  def "sends cdEvent with customData set"() {
+  def "sends cdEvent with customData #customData"() {
 
     given:
     def cdevent = new BlockingVariable<CloudEvent>()
