@@ -28,8 +28,6 @@ trait RetrofitStubs {
   final Trigger enabledJenkinsTriggerWithRunAsUser = enabledJenkinsTrigger.withRunAsUser("user@managed-service-account")
   final Trigger enabledTravisTrigger = Trigger.builder().enabled(true).type('travis').master('master').job('job').build()
   final Trigger disabledTravisTrigger = Trigger.builder().enabled(false).type('travis').master('master').job('job').build()
-  final Trigger enabledWerckerTrigger = Trigger.builder().enabled(true).type('wercker').master('master').job('job').build()
-  final Trigger disabledWerckerTrigger = Trigger.builder().enabled(false).type('wercker').master('master').job('job').build()
   final Trigger enabledConcourseTrigger = Trigger.builder().enabled(true).type('concourse').master('master').job('job').build()
   final Trigger disabledConcourseTrigger = Trigger.builder().enabled(false).type('concourse').master('master').job('job').build()
   final Trigger nonJenkinsTrigger = Trigger.builder().enabled(true).type('not jenkins').master('master').job('job').build()
