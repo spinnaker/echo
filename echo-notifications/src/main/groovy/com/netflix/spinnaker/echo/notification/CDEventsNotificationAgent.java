@@ -21,14 +21,15 @@ import com.netflix.spinnaker.echo.cdevents.CDEventsBuilderService;
 import com.netflix.spinnaker.echo.cdevents.CDEventsSenderService;
 import com.netflix.spinnaker.echo.exceptions.FieldNotFoundException;
 import io.cloudevents.CloudEvent;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.ResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import retrofit.client.Response;
-import retrofit.mime.TypedByteArray;
+import retrofit2.Response;
 
 @Slf4j
 @ConditionalOnProperty("cdevents.enabled")
@@ -70,16 +71,22 @@ public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
             preference, application, event, config, status, getSpinnakerUrl());
     log.info(
         "Sending CDEvent {} notification to events broker url {}", cdEventsType, eventsBrokerUrl);
-    Response response = cdEventsSenderService.sendCDEvent(cdEvent, eventsBrokerUrl);
+    Response<ResponseBody> response = cdEventsSenderService.sendCDEvent(cdEvent, eventsBrokerUrl);
     if (response != null) {
-      log.info(
-          "Received response from events broker : {} {} for execution id {}. {}",
-          response.getStatus(),
-          response.getReason(),
-          executionId,
-          response.getBody() != null
-              ? new String(((TypedByteArray) response.getBody()).getBytes())
-              : "");
+      try {
+        log.info(
+            "Received response from events broker : {} {} for execution id {}. {}",
+            response.code(),
+            response.message(),
+            executionId,
+            response.body() != null ? response.body().string() : "");
+      } catch (IOException e) {
+        log.info(
+            "Received response from events broker : {} {} for execution id {}",
+            response.code(),
+            response.message(),
+            executionId);
+      }
     }
   }
 }

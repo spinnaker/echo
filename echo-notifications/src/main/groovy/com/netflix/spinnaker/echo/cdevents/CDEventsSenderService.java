@@ -16,58 +16,50 @@
 
 package com.netflix.spinnaker.echo.cdevents;
 
+import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
+import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
-import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import io.cloudevents.CloudEvent;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Interceptor;
+import okhttp3.Request;
+import okhttp3.ResponseBody;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import retrofit.RequestInterceptor;
-import retrofit.RestAdapter;
-import retrofit.client.Client;
-import retrofit.client.Response;
+import retrofit2.Response;
+import retrofit2.Retrofit;
 
 @Slf4j
 @Component
 public class CDEventsSenderService {
-  private Client retrofitClient;
-  private RestAdapter.LogLevel retrofitLogLevel;
+  private OkHttp3ClientConfiguration okHttpClientConfig;
 
-  public CDEventsSenderService(Client retrofitClient, RestAdapter.LogLevel retrofitLogLevel) {
-    this.retrofitClient = retrofitClient;
-    this.retrofitLogLevel = retrofitLogLevel;
+  public CDEventsSenderService(OkHttp3ClientConfiguration okHttpClientConfig) {
+    this.okHttpClientConfig = okHttpClientConfig;
   }
 
-  public Response sendCDEvent(CloudEvent cdEvent, String eventsBrokerUrl) {
-    CDEventsHTTPMessageConverter converterFactory = CDEventsHTTPMessageConverter.create();
-    RequestInterceptor authInterceptor =
-        new RequestInterceptor() {
-          @Override
-          public void intercept(RequestInterceptor.RequestFacade request) {
-            request.addHeader("Ce-Id", cdEvent.getId());
-            request.addHeader("Ce-Specversion", cdEvent.getSpecVersion().V1.toString());
-            request.addHeader("Ce-Source", cdEvent.getSource().toString());
-            request.addHeader("Ce-Type", cdEvent.getType());
-            request.addHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE);
-          }
-        };
+  public Response<ResponseBody> sendCDEvent(CloudEvent cdEvent, String eventsBrokerUrl) {
+    CDEventsConverterFactory converterFactory = CDEventsConverterFactory.create();
+
+    RequestInterceptor authInterceptor = new RequestInterceptor(cdEvent);
 
     CDEventsSenderClient cdEventsSenderClient =
-        new RestAdapter.Builder()
-            .setConverter(converterFactory)
-            .setClient(retrofitClient)
-            .setEndpoint(getEndpointUrl(eventsBrokerUrl))
-            .setRequestInterceptor(authInterceptor)
-            .setLogLevel(retrofitLogLevel)
-            .setLog(new Slf4jRetrofitLogger(CDEventsSenderClient.class))
+        new Retrofit.Builder()
+            .baseUrl(getEndpointUrl(eventsBrokerUrl))
+            .client(okHttpClientConfig.createForRetrofit2().addInterceptor(authInterceptor).build())
+            .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
+            .addConverterFactory(converterFactory)
             .build()
             .create(CDEventsSenderClient.class);
     String jsonEvent = converterFactory.convertCDEventToJson(cdEvent);
     log.info("Sending CDEvent Json {} ", jsonEvent);
-    return cdEventsSenderClient.sendCDEvent(jsonEvent, getRelativePath(eventsBrokerUrl));
+    return Retrofit2SyncCall.execute(
+        cdEventsSenderClient.sendCDEvent(jsonEvent, getRelativePath(eventsBrokerUrl)));
   }
 
   private String getEndpointUrl(String webhookUrl) {
@@ -105,5 +97,28 @@ public class CDEventsSenderService {
     }
 
     return relativePath;
+  }
+
+  private static class RequestInterceptor implements Interceptor {
+
+    private CloudEvent cdEvent;
+
+    public RequestInterceptor(CloudEvent cdEvent) {
+      this.cdEvent = cdEvent;
+    }
+
+    public okhttp3.Response intercept(Chain chain) throws IOException {
+      Request request =
+          chain
+              .request()
+              .newBuilder()
+              .addHeader("Ce-Id", cdEvent.getId())
+              .addHeader("Ce-Specversion", cdEvent.getSpecVersion().V1.toString())
+              .addHeader("Ce-Source", cdEvent.getSource().toString())
+              .addHeader("Ce-Type", cdEvent.getType())
+              .addHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+              .build();
+      return chain.proceed(request);
+    }
   }
 }
