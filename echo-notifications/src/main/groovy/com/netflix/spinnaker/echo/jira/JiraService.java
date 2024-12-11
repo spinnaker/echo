@@ -20,26 +20,27 @@ import com.netflix.spinnaker.echo.controller.EchoResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import retrofit.client.Response;
-import retrofit.http.Body;
-import retrofit.http.GET;
-import retrofit.http.POST;
-import retrofit.http.Path;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.GET;
+import retrofit2.http.POST;
+import retrofit2.http.Path;
 
 public interface JiraService {
   @POST("/rest/api/2/issue/")
-  CreateIssueResponse createIssue(@Body CreateIssueRequest createIssueRequest);
+  Call<CreateIssueResponse> createIssue(@Body CreateIssueRequest createIssueRequest);
 
   @GET("/rest/api/2/issue/{issueIdOrKey}/transitions")
-  IssueTransitions getIssueTransitions(@Path("issueIdOrKey") String issueIdOrKey);
+  Call<IssueTransitions> getIssueTransitions(@Path("issueIdOrKey") String issueIdOrKey);
 
   @POST("/rest/api/2/issue/{issueIdOrKey}/transitions")
-  Response transitionIssue(
+  Call<ResponseBody> transitionIssue(
       @Path("issueIdOrKey") String issueIdOrKey,
       @Body TransitionIssueRequest transitionIssueRequest);
 
   @POST("/rest/api/2/issue/{issueIdOrKey}/comment")
-  Response addComment(
+  Call<ResponseBody> addComment(
       @Path("issueIdOrKey") String issueIdOrKey, @Body CommentIssueRequest commentIssueRequest);
 
   class CreateIssueRequest extends HashMap<String, Object> {

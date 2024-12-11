@@ -16,13 +16,15 @@
 
 package com.netflix.spinnaker.echo.config;
 
-import static retrofit.Endpoints.newFixedEndpoint;
-
-import com.jakewharton.retrofit.Ok3Client;
-import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
+import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import com.netflix.spinnaker.echo.jira.JiraProperties;
 import com.netflix.spinnaker.echo.jira.JiraService;
-import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
+import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
+import java.io.IOException;
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +33,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import retrofit.RestAdapter;
-import retrofit.client.Client;
-import retrofit.converter.JacksonConverter;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 @Configuration
 @ConditionalOnProperty("jira.enabled")
@@ -42,36 +43,51 @@ public class JiraConfig {
   private static Logger LOGGER = LoggerFactory.getLogger(JiraConfig.class);
 
   @Autowired(required = false)
-  private Ok3Client x509ConfiguredClient;
+  private OkHttpClient x509ConfiguredClient;
 
   @Bean
   JiraService jiraService(
-      JiraProperties jiraProperties, Client retrofitClient, RestAdapter.LogLevel retrofitLogLevel) {
+      JiraProperties jiraProperties, OkHttp3ClientConfiguration okHttpClientConfig) {
+    OkHttpClient okHttpClient;
     if (x509ConfiguredClient != null) {
       LOGGER.info("Using X509 Cert for Jira Client");
-      retrofitClient = x509ConfiguredClient;
-    }
-
-    RestAdapter.Builder builder =
-        new RestAdapter.Builder()
-            .setEndpoint(newFixedEndpoint(jiraProperties.getBaseUrl()))
-            .setConverter(new JacksonConverter(EchoObjectMapper.getInstance()))
-            .setClient(retrofitClient)
-            .setLogLevel(retrofitLogLevel)
-            .setLog(new Slf4jRetrofitLogger(JiraService.class));
-
-    if (x509ConfiguredClient == null) {
+      okHttpClient = x509ConfiguredClient;
+    } else {
       String credentials =
           String.format("%s:%s", jiraProperties.getUsername(), jiraProperties.getPassword());
       final String basic =
           String.format("Basic %s", Base64.encodeBase64String(credentials.getBytes()));
-      builder.setRequestInterceptor(
-          request -> {
-            request.addHeader("Authorization", basic);
-            request.addHeader("Accept", "application/json");
-          });
+      BasicAuthRequestInterceptor interceptor = new BasicAuthRequestInterceptor(basic);
+      okHttpClient = okHttpClientConfig.createForRetrofit2().addInterceptor(interceptor).build();
     }
 
-    return builder.build().create(JiraService.class);
+    return new Retrofit.Builder()
+        .baseUrl(jiraProperties.getBaseUrl())
+        .client(okHttpClient)
+        .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
+        .addConverterFactory(JacksonConverterFactory.create())
+        .build()
+        .create(JiraService.class);
+  }
+
+  private static class BasicAuthRequestInterceptor implements Interceptor {
+
+    private final String basic;
+
+    public BasicAuthRequestInterceptor(String basic) {
+      this.basic = basic;
+    }
+
+    @Override
+    public Response intercept(Chain chain) throws IOException {
+      Request request =
+          chain
+              .request()
+              .newBuilder()
+              .addHeader("Authorization", basic)
+              .addHeader("Accept", "application/json")
+              .build();
+      return chain.proceed(request);
+    }
   }
 }

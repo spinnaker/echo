@@ -30,11 +30,13 @@ import com.netflix.spinnaker.echo.jira.JiraService.IssueTransitions;
 import com.netflix.spinnaker.echo.jira.JiraService.TransitionIssueRequest;
 import com.netflix.spinnaker.echo.notification.NotificationService;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +45,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import retrofit.RetrofitError;
-import retrofit.client.Response;
 
 @Component
 @ConditionalOnProperty("jira.enabled")
@@ -151,21 +152,27 @@ public class JiraNotificationService implements NotificationService {
   }
 
   private Supplier<IssueTransitions> getIssueTransitions(String issueIdOrKey) {
-    return () -> jiraService.getIssueTransitions(issueIdOrKey);
+    return () -> Retrofit2SyncCall.execute(jiraService.getIssueTransitions(issueIdOrKey));
   }
 
-  private Supplier<Response> transitionIssue(
+  private Supplier<ResponseBody> transitionIssue(
       String issueIdOrKey, Map<String, Object> transitionDetails) {
     return () ->
-        jiraService.transitionIssue(issueIdOrKey, new TransitionIssueRequest(transitionDetails));
+        Retrofit2SyncCall.execute(
+            jiraService.transitionIssue(
+                issueIdOrKey, new TransitionIssueRequest(transitionDetails)));
   }
 
-  private Supplier<Response> addComment(String issueIdOrKey, String comment) {
-    return () -> jiraService.addComment(issueIdOrKey, new CommentIssueRequest(comment));
+  private Supplier<ResponseBody> addComment(String issueIdOrKey, String comment) {
+    return () ->
+        Retrofit2SyncCall.execute(
+            jiraService.addComment(issueIdOrKey, new CommentIssueRequest(comment)));
   }
 
   private Supplier<CreateIssueResponse> createIssue(Map<String, Object> issueRequestBody) {
-    return () -> jiraService.createIssue(new CreateIssueRequest(issueRequestBody));
+    return () ->
+        Retrofit2SyncCall.execute(
+            jiraService.createIssue(new CreateIssueRequest(issueRequestBody)));
   }
 
   private Map<String, Object> issueRequestBody(Notification notification) {
