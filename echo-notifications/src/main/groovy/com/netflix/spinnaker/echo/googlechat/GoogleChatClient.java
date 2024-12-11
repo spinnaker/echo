@@ -16,13 +16,14 @@
 
 package com.netflix.spinnaker.echo.googlechat;
 
-import retrofit.client.Response;
-import retrofit.http.Body;
-import retrofit.http.POST;
-import retrofit.http.Path;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.POST;
+import retrofit2.http.Path;
 
 public interface GoogleChatClient {
   @POST("/v1/spaces/{address}")
-  Response sendMessage(
-      @Path(value = "address", encode = false) String webhook, @Body GoogleChatMessage message);
+  Call<ResponseBody> sendMessage(
+      @Path(value = "address") String webhook, @Body GoogleChatMessage message);
 }

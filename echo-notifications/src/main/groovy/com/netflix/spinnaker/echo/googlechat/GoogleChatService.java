@@ -16,8 +16,9 @@
 
 package com.netflix.spinnaker.echo.googlechat;
 
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import groovy.transform.Canonical;
-import retrofit.client.Response;
+import okhttp3.ResponseBody;
 
 @Canonical
 public class GoogleChatService {
@@ -27,7 +28,7 @@ public class GoogleChatService {
     this.googleChatClient = googleChatClient;
   }
 
-  Response sendMessage(String webhook, GoogleChatMessage message) {
-    return googleChatClient.sendMessage(webhook, message);
+  ResponseBody sendMessage(String webhook, GoogleChatMessage message) {
+    return Retrofit2SyncCall.execute(googleChatClient.sendMessage(webhook, message));
   }
 }
