@@ -16,16 +16,14 @@
 
 package com.netflix.spinnaker.echo.notification;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.exceptions.FieldNotFoundException;
 import com.netflix.spinnaker.echo.github.GithubCommit;
 import com.netflix.spinnaker.echo.github.GithubService;
 import com.netflix.spinnaker.echo.github.GithubStatus;
-import com.netflix.spinnaker.echo.jackson.EchoObjectMapper;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import java.io.IOException;
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -35,7 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import retrofit.client.Response;
 
 @Slf4j
 @ConditionalOnProperty("github-status.enabled")
@@ -115,7 +112,9 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
     try {
       final String repo = content.getRepo();
       retrySupport.retry(
-          () -> githubService.updateCheck("token " + token, repo, branchCommit, githubStatus),
+          () ->
+              Retrofit2SyncCall.execute(
+                  githubService.updateCheck("token " + token, repo, branchCommit, githubStatus)),
           MAX_RETRY,
           RETRY_BACKOFF,
           false);
@@ -128,14 +127,8 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
   }
 
   private String getBranchCommit(String repo, String sha) {
-    Response response = githubService.getCommit("token " + token, repo, sha);
-    ObjectMapper objectMapper = EchoObjectMapper.getInstance();
-    GithubCommit message = null;
-    try {
-      message = objectMapper.readValue(response.getBody().in(), GithubCommit.class);
-    } catch (IOException e) {
-      return sha;
-    }
+    GithubCommit message =
+        Retrofit2SyncCall.execute(githubService.getCommit("token " + token, repo, sha));
 
     Pattern pattern =
         Pattern.compile(

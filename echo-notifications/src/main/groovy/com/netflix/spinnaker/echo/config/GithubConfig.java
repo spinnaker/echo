@@ -16,47 +16,38 @@
 
 package com.netflix.spinnaker.echo.config;
 
+import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import com.netflix.spinnaker.echo.github.GithubService;
-import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
+import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import retrofit.Endpoint;
-import retrofit.Endpoints;
-import retrofit.RestAdapter;
-import retrofit.client.Client;
-import retrofit.converter.JacksonConverter;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 @Configuration
 @ConditionalOnProperty("github-status.enabled")
 @Slf4j
 public class GithubConfig {
 
-  @Value("${github-status.endpoint:https://api.github.com}")
-  private String endpoint;
+  private final String endpoint;
 
-  @Bean
-  public Endpoint githubEndpoint() {
-    return Endpoints.newFixedEndpoint(endpoint);
+  public GithubConfig(@Value("${github-status.endpoint:https://api.github.com}") String endpoint) {
+    this.endpoint = endpoint;
   }
 
   @Bean
-  public GithubService githubService(
-      Endpoint githubEndpoint, Client retrofitClient, RestAdapter.LogLevel retrofitLogLevel) {
+  public GithubService githubService(OkHttp3ClientConfiguration okHttpClientConfig) {
     log.info("Github service loaded");
 
-    GithubService githubClient =
-        new RestAdapter.Builder()
-            .setEndpoint(githubEndpoint)
-            .setConverter(new JacksonConverter())
-            .setClient(retrofitClient)
-            .setLogLevel(retrofitLogLevel != null ? retrofitLogLevel : RestAdapter.LogLevel.BASIC)
-            .setLog(new Slf4jRetrofitLogger(GithubService.class))
-            .build()
-            .create(GithubService.class);
-
-    return githubClient;
+    return new Retrofit.Builder()
+        .baseUrl(endpoint)
+        .client(okHttpClientConfig.createForRetrofit2().build())
+        .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
+        .addConverterFactory(JacksonConverterFactory.create())
+        .build()
+        .create(GithubService.class);
   }
 }
