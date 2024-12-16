@@ -115,11 +115,11 @@ class SlackConfigSpec extends Specification {
     appConfig.signingSecret == "signing-secret"
   }
 
-//  def 'legacy and new app services use different configs and clients'() {
-//    expect:
-//    slackAppService.config != slackLegacyService.config
-//    slackAppService.slackClient != slackLegacyService.slackClient
-//  }
+  def 'legacy and new app services use different configs and clients'() {
+    expect:
+    slackAppService.config != slackLegacyService.config
+    slackAppService.slackClient != slackLegacyService.slackClient
+  }
 
 }
 

@@ -22,6 +22,7 @@ import com.netflix.spinnaker.echo.controller.EchoResponse
 import com.netflix.spinnaker.echo.notification.NotificationService
 import com.netflix.spinnaker.echo.notification.NotificationTemplateEngine
 import groovy.util.logging.Slf4j
+import okhttp3.ResponseBody
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
@@ -62,8 +63,7 @@ class SlackNotificationService implements NotificationService {
           new SlackAttachment(subject, text, (InteractiveActions)notification.interactiveActions),
           address, true)
       }
-      log.trace("Received response from Slack: {} {} for message '{}'. {}",
-        response?.status, response?.reason, text, response?.body)
+      log.trace("Received response from Slack: {}", response?.string())
     }
 
     new EchoResponse.Void()

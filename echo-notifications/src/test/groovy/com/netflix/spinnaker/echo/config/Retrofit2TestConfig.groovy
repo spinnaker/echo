@@ -11,24 +11,13 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.springframework.beans.factory.ObjectFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import retrofit.RestAdapter
-import retrofit.client.Client
 
 @Configuration
 class Retrofit2TestConfig {
   @Autowired
   ObjectFactory<OkHttpClient.Builder> httpClientBuilderFactory
-
-  @MockBean
-  Client client
-
-  @Bean
-  RestAdapter.LogLevel getRetrofitLogLevel() {
-    return RestAdapter.LogLevel.BASIC
-  }
 
   @Bean
   OkHttpClientConfigurationProperties okHttpClientConfigurationProperties() {
