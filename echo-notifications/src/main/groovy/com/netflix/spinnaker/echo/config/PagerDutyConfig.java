@@ -16,41 +16,39 @@
 
 package com.netflix.spinnaker.echo.config;
 
-import static retrofit.Endpoints.newFixedEndpoint;
-
+import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import com.netflix.spinnaker.echo.pagerduty.PagerDutyService;
-import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
+import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import retrofit.Endpoint;
-import retrofit.RestAdapter;
-import retrofit.client.Client;
-import retrofit.converter.JacksonConverter;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 @Configuration
 @ConditionalOnProperty("pager-duty.enabled")
 public class PagerDutyConfig {
   private static final Logger log = LoggerFactory.getLogger(PagerDutyConfig.class);
 
-  @Bean
-  Endpoint pagerDutyEndpoint() {
-    return newFixedEndpoint("https://events.pagerduty.com");
+  private final String endpoint;
+
+  public PagerDutyConfig(
+      @Value("${pager-duty.endpoint:https://events.pagerduty.com}") String endpoint) {
+    this.endpoint = endpoint;
   }
 
   @Bean
-  PagerDutyService pagerDutyService(
-      Endpoint pagerDutyEndpoint, Client retrofitClient, RestAdapter.LogLevel retrofitLogLevel) {
+  PagerDutyService pagerDutyService(OkHttp3ClientConfiguration okHttpClientConfig) {
     log.info("Pager Duty service loaded");
 
-    return new RestAdapter.Builder()
-        .setEndpoint(pagerDutyEndpoint)
-        .setConverter(new JacksonConverter())
-        .setClient(retrofitClient)
-        .setLogLevel(retrofitLogLevel)
-        .setLog(new Slf4jRetrofitLogger(PagerDutyService.class))
+    return new Retrofit.Builder()
+        .baseUrl(endpoint)
+        .client(okHttpClientConfig.createForRetrofit2().build())
+        .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
+        .addConverterFactory(JacksonConverterFactory.create())
         .build()
         .create(PagerDutyService.class);
   }

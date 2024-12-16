@@ -22,6 +22,8 @@ import com.netflix.spinnaker.echo.api.Notification
 import com.netflix.spinnaker.echo.controller.EchoResponse
 import com.netflix.spinnaker.echo.notification.NotificationService
 import com.netflix.spinnaker.echo.services.Front50Service
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import groovy.transform.InheritConstructors
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
@@ -30,9 +32,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.ResponseStatus
-import retrofit.RetrofitError
-import retrofit.mime.TypedByteArray
-import retrofit.mime.TypedInput
 
 import static net.logstash.logback.argument.StructuredArguments.kv
 
@@ -65,7 +64,7 @@ class PagerDutyNotificationService implements NotificationService {
 
     notification.to.each { serviceKey ->
       try {
-        Map response = pagerDuty.createEvent(
+        Map response = Retrofit2SyncCall.execute(pagerDuty.createEvent(
           "Token token=${token}",
           new PagerDutyService.PagerDutyCreateEvent(
             service_key: serviceKey,
@@ -73,7 +72,7 @@ class PagerDutyNotificationService implements NotificationService {
             description: notification.additionalContext.message,
             details: notification.additionalContext.details as Map
           )
-        )
+        ))
 
         if ("success".equals(response.status)) {
           // Page successful
@@ -82,24 +81,13 @@ class PagerDutyNotificationService implements NotificationService {
         } else {
           pdErrors.put(serviceKey, response.message)
         }
-      } catch (RetrofitError error) {
-        String errorMessage = error.response.reason
-        TypedInput responseBody = error.response.getBody()
-        if (responseBody != null) {
-          PagerDutyErrorResponseBody errorResponse = mapper.readValue(
-            new String(((TypedByteArray)responseBody).getBytes()),
-            PagerDutyErrorResponseBody
-          )
-          if (errorResponse.errors && errorResponse.errors.size() > 0) {
-            errorMessage = errorResponse.errors.join(", ")
-          }
-        }
+      } catch (SpinnakerServerException e){
         log.error('Failed to send page {} {} {}',
           kv('serviceKey', serviceKey), kv('message',
           notification.additionalContext.message),
-          kv('error', errorMessage)
+          kv('error', e.message)
         )
-        errors.put(serviceKey, errorMessage)
+        errors.put(serviceKey, e.message)
       }
     }
 
@@ -127,12 +115,6 @@ class PagerDutyNotificationService implements NotificationService {
 
     new EchoResponse.Void()
   }
-}
-
-class PagerDutyErrorResponseBody {
-  String status
-  String message
-  List<String> errors
 }
 
 @ResponseStatus(value = HttpStatus.BAD_REQUEST)
