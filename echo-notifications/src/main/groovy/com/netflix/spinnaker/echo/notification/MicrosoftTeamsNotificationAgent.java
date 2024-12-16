@@ -20,15 +20,15 @@ import com.netflix.spinnaker.echo.api.events.Event;
 import com.netflix.spinnaker.echo.microsoftteams.MicrosoftTeamsMessage;
 import com.netflix.spinnaker.echo.microsoftteams.MicrosoftTeamsService;
 import com.netflix.spinnaker.echo.microsoftteams.api.MicrosoftTeamsSection;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.ResponseBody;
 import org.apache.commons.lang3.text.WordUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import retrofit.client.Response;
-import retrofit.mime.TypedByteArray;
 
 @Slf4j
 @ConditionalOnProperty("microsoftteams.enabled")
@@ -141,13 +141,17 @@ public class MicrosoftTeamsNotificationAgent extends AbstractEventNotificationAg
     String webhookUrl =
         Optional.ofNullable(preference).map(p -> (String) p.get("address")).orElse(null);
 
-    Response response = teamsService.sendMessage(webhookUrl, teamsMessage);
+    ResponseBody response = teamsService.sendMessage(webhookUrl, teamsMessage);
 
-    log.info(
-        "Received response from Microsoft Teams Webhook  : {} {} for execution id {}. {}",
-        response.getStatus(),
-        response.getReason(),
-        executionId,
-        new String(((TypedByteArray) response.getBody()).getBytes()));
+    try {
+      log.info(
+          "Received response from Microsoft Teams Webhook for execution id {}. {}",
+          executionId,
+          response.string());
+    } catch (IOException e) {
+      log.info(
+          "Received response from Microsoft Teams Webhook  for execution id {} but failed to deserialize",
+          executionId);
+    }
   }
 }

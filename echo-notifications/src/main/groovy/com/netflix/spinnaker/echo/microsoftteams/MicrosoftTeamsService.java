@@ -16,51 +16,38 @@
 
 package com.netflix.spinnaker.echo.microsoftteams;
 
+import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
-import com.netflix.spinnaker.retrofit.Slf4jRetrofitLogger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.ResponseBody;
 import org.apache.commons.lang3.StringUtils;
-import retrofit.RestAdapter;
-import retrofit.client.Client;
-import retrofit.client.Response;
-import retrofit.converter.JacksonConverter;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 @Slf4j
 public class MicrosoftTeamsService {
-  private Client retrofitClient;
-  private RestAdapter.LogLevel retrofitLogLevel;
+  private final OkHttp3ClientConfiguration okHttp3ClientConfiguration;
 
-  public MicrosoftTeamsService(Client retrofitClient, RestAdapter.LogLevel retrofitLogLevel) {
-    this.retrofitClient = retrofitClient;
-    this.retrofitLogLevel = retrofitLogLevel;
+  public MicrosoftTeamsService(OkHttp3ClientConfiguration okHttp3ClientConfiguration) {
+    this.okHttp3ClientConfiguration = okHttp3ClientConfiguration;
   }
 
-  public Response sendMessage(String webhookUrl, MicrosoftTeamsMessage message) {
+  public ResponseBody sendMessage(String webhookUrl, MicrosoftTeamsMessage message) {
     // The RestAdapter instantiation needs to occur for each message to be sent as
     // the incoming webhook base URL and path may be different for each Teams channel
     MicrosoftTeamsClient microsoftTeamsClient =
-        new RestAdapter.Builder()
-            .setConverter(new JacksonConverter())
-            .setClient(retrofitClient)
-            .setEndpoint(getEndpointUrl(webhookUrl))
-            .setLogLevel(retrofitLogLevel)
-            .setLog(new Slf4jRetrofitLogger(MicrosoftTeamsClient.class))
+        new Retrofit.Builder()
+            .baseUrl(webhookUrl)
+            .client(okHttp3ClientConfiguration.createForRetrofit2().build())
+            .addConverterFactory(JacksonConverterFactory.create())
             .build()
             .create(MicrosoftTeamsClient.class);
 
-    return microsoftTeamsClient.sendMessage(getRelativePath(webhookUrl), message);
-  }
-
-  private String getEndpointUrl(String webhookUrl) {
-    try {
-      URL url = new URL(webhookUrl);
-      return url.getProtocol() + "://" + url.getHost();
-    } catch (MalformedURLException e) {
-      throw new InvalidRequestException(
-          "Unable to determine base URL from Microsoft Teams webhook URL.", e);
-    }
+    return Retrofit2SyncCall.execute(
+        microsoftTeamsClient.sendMessage(getRelativePath(webhookUrl), message));
   }
 
   private String getRelativePath(String webhookUrl) {

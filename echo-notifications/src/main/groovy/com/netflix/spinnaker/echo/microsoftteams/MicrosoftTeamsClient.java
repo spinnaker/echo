@@ -16,14 +16,14 @@
 
 package com.netflix.spinnaker.echo.microsoftteams;
 
-import retrofit.client.Response;
-import retrofit.http.Body;
-import retrofit.http.POST;
-import retrofit.http.Path;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.POST;
+import retrofit2.http.Path;
 
 public interface MicrosoftTeamsClient {
   @POST("/{webhookUrl}")
-  Response sendMessage(
-      @Path(value = "webhookUrl", encode = false) String webhook,
-      @Body MicrosoftTeamsMessage message);
+  Call<ResponseBody> sendMessage(
+      @Path(value = "webhookUrl") String webhook, @Body MicrosoftTeamsMessage message);
 }
