@@ -19,6 +19,7 @@ dependencies {
   implementation project(':echo-model')
   implementation project(':echo-pipelinetriggers')
   implementation "io.spinnaker.kork:kork-artifacts"
+  implementation "io.spinnaker.kork:kork-web"
   implementation "com.squareup.retrofit:retrofit"
   implementation "com.squareup.retrofit:converter-jackson"
 }

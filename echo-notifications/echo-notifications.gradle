@@ -18,6 +18,7 @@ dependencies {
   implementation project(':echo-core')
   implementation project(':echo-model')
   implementation project(":echo-pipelinetriggers")
+  implementation project(":echo-test")
   implementation "org.springframework.boot:spring-boot-starter-web"
   implementation "com.squareup.retrofit2:retrofit"
   implementation "com.squareup.retrofit2:converter-jackson"

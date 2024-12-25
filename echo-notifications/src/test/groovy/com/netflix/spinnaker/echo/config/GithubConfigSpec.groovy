@@ -5,6 +5,10 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
 import com.netflix.spinnaker.echo.github.GithubService
+import com.netflix.spinnaker.echo.test.config.Retrofit2BasicLogTestConfig
+import com.netflix.spinnaker.echo.test.config.Retrofit2HeadersLogTestConfig
+import com.netflix.spinnaker.echo.test.config.Retrofit2NoneLogTestConfig
+import com.netflix.spinnaker.echo.test.config.Retrofit2TestConfig
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
