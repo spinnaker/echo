@@ -29,6 +29,7 @@ import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator;
 import com.netflix.spinnaker.fiat.shared.FiatStatus;
 import com.netflix.spinnaker.kork.discovery.DiscoveryStatusListener;
 import com.netflix.spinnaker.kork.dynamicconfig.DynamicConfigService;
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.util.Collection;
 import java.util.Collections;
@@ -115,7 +116,7 @@ public class PipelineInitiator {
   }
 
   public void recordPipelineFailure(Pipeline pipeline) {
-    orca.recordFailure(pipeline);
+    Retrofit2SyncCall.execute(orca.recordFailure(pipeline));
   }
 
   public void startPipeline(Pipeline pipeline, TriggerSource triggerSource) {
@@ -174,7 +175,8 @@ public class PipelineInitiator {
             try {
               Map pipelineToPlan = objectMapper.convertValue(pipeline, Map.class);
               Map resolvedPipelineMap =
-                  AuthenticatedRequest.allowAnonymous(() -> orca.plan(pipelineToPlan, true));
+                  AuthenticatedRequest.allowAnonymous(
+                      () -> Retrofit2SyncCall.execute(orca.plan(pipelineToPlan, true)));
               pipeline = objectMapper.convertValue(resolvedPipelineMap, Pipeline.class);
             } catch (RetrofitError e) {
               String orcaResponse = "N/A";
@@ -296,7 +298,7 @@ public class PipelineInitiator {
     while (true) {
       try {
         attempts++;
-        return orca.trigger(pipeline);
+        return Retrofit2SyncCall.execute(orca.trigger(pipeline));
       } catch (RetrofitError e) {
         if ((attempts >= retryCount) || !isRetryableError(e)) {
           throw e;

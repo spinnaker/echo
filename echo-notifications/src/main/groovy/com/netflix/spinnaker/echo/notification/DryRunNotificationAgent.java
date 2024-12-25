@@ -26,6 +26,7 @@ import com.netflix.spinnaker.echo.model.Pipeline;
 import com.netflix.spinnaker.echo.model.Trigger;
 import com.netflix.spinnaker.echo.pipelinetriggers.orca.OrcaService;
 import com.netflix.spinnaker.echo.services.Front50Service;
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,13 +83,14 @@ public class DryRunNotificationAgent extends AbstractEventNotificationAgent {
               .lastSuccessfulExecution(execution)
               .build();
       OrcaService.TriggerResponse response =
-          orca.trigger(
-              pipeline
-                  .withName(format("%s (dry run)", pipeline.getName()))
-                  .withId(null)
-                  .withTrigger(trigger)
-                  .withNotifications(
-                      mapper.convertValue(properties.getNotifications(), List.class)));
+          Retrofit2SyncCall.execute(
+              orca.trigger(
+                  pipeline
+                      .withName(format("%s (dry run)", pipeline.getName()))
+                      .withId(null)
+                      .withTrigger(trigger)
+                      .withNotifications(
+                          mapper.convertValue(properties.getNotifications(), List.class))));
       log.info("Pipeline triggered: {}", response);
     } catch (Exception ex) {
       log.error("Error triggering dry run of {}", pipelineConfigId, ex);

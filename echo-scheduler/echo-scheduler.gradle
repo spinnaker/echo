@@ -24,6 +24,7 @@ dependencies {
 
   implementation "com.netflix.spectator:spectator-api"
   implementation "io.spinnaker.kork:kork-artifacts"
+  implementation "io.spinnaker.kork:kork-retrofit"
   implementation "io.spinnaker.kork:kork-sql"
 
   if (!rootProject.hasProperty("excludeSqlDrivers")) {
@@ -34,4 +35,6 @@ dependencies {
   implementation ("org.quartz-scheduler:quartz") {
     exclude group: 'com.zaxxer', module: 'HikariCP-java7'
   }
+
+  testImplementation "com.squareup.retrofit2:retrofit-mock"
 }
