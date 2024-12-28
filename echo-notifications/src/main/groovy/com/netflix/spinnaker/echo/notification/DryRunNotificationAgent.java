@@ -65,7 +65,7 @@ public class DryRunNotificationAgent extends AbstractEventNotificationAgent {
     }
     log.info("Received dry run notification for {}", pipelineConfigId);
     Optional<Pipeline> match =
-        front50.getPipelines(application).stream()
+        Retrofit2SyncCall.execute(front50.getPipelines(application)).stream()
             .filter(pipeline -> pipeline.getId().equals(pipelineConfigId))
             .findFirst();
 
