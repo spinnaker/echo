@@ -31,6 +31,7 @@ import com.netflix.spinnaker.echo.jira.JiraService.TransitionIssueRequest;
 import com.netflix.spinnaker.echo.notification.NotificationService;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -44,7 +45,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import retrofit.RetrofitError;
 
 @Component
 @ConditionalOnProperty("jira.enabled")
@@ -188,10 +188,9 @@ public class JiraNotificationService implements NotificationService {
   }
 
   private Map errors(Exception exception) {
-    if (exception instanceof RetrofitError) {
+    if (exception instanceof SpinnakerHttpException) {
       try {
-        return mapper.readValue(
-            ((RetrofitError) exception).getResponse().getBody().in(), Map.class);
+        return ((SpinnakerHttpException) exception).getResponseBody();
       } catch (Exception e) {
         LOGGER.warn("failed retrieving error messages {}", e.getMessage());
       }
