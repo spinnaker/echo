@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import static com.netflix.spinnaker.echo.model.trigger.BuildEvent.Result.BUILDING
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE
-import static retrofit.RetrofitError.httpError
 
 trait RetrofitStubs {
 
