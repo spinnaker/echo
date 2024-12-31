@@ -1,11 +1,11 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2024 OpsMx, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-dependencies {
-  implementation project(':echo-core')
-  implementation project(':echo-model')
-  implementation project(':echo-pipelinetriggers')
-  implementation "io.spinnaker.kork:kork-artifacts"
-  implementation "io.spinnaker.kork:kork-web"
-  implementation "io.spinnaker.kork:kork-retrofit"
-  implementation "com.squareup.retrofit2:converter-jackson"
-  implementation "javax.inject:javax.inject:1"
+package com.netflix.spinnaker.echo.test.config;
+
+import okhttp3.logging.HttpLoggingInterceptor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class Retrofit2HeadersLogTestConfig {
+
+  @Bean
+  public HttpLoggingInterceptor.Level retrofit2LogLevel() {
+    return HttpLoggingInterceptor.Level.HEADERS;
+  }
 }
