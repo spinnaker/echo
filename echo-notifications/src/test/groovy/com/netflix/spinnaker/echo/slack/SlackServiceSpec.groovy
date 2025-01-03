@@ -66,7 +66,7 @@ class SlackServiceSpec extends Specification {
     wireMockServer.start();
     configProperties.baseUrl = wireMockServer.baseUrl()
 
-    wireMockServer.stubFor(WireMock.post(WireMock.urlEqualTo("/NEW%2FTYPE%2FTOKEN"))
+    wireMockServer.stubFor(WireMock.post(WireMock.urlEqualTo("/NEW/TYPE/TOKEN"))
       .willReturn(WireMock.aResponse()
         .withHeader("Content-Type", "application/json")
         .withBody("{\"message\": \"response\", \"code\": 200}")))
@@ -87,7 +87,7 @@ class SlackServiceSpec extends Specification {
     configProperties.forceUseIncomingWebhook = true
     configProperties.token = "NEW/TYPE/TOKEN"
 
-    def expectedUrl = wireMockServer.baseUrl() + "/NEW%2FTYPE%2FTOKEN"
+    def expectedUrl = wireMockServer.baseUrl() + "/NEW/TYPE/TOKEN"
 
     def slackService = slackConfig.slackService(configProperties, okHttpClientConfig)
 

@@ -26,5 +26,5 @@ import retrofit2.http.Path;
 public interface CDEventsSenderClient {
   @POST("/{brokerUrl}")
   Call<Response<ResponseBody>> sendCDEvent(
-      @Body String cdEvent, @Path(value = "brokerUrl") String brokerUrl);
+      @Body String cdEvent, @Path(value = "brokerUrl", encoded = true) String brokerUrl);
 }

@@ -29,13 +29,13 @@ public interface GithubService {
   @POST("/repos/{repo}/statuses/{sha}")
   Call<Response<ResponseBody>> updateCheck(
       @Header("Authorization") String token,
-      @Path(value = "repo") String repo,
+      @Path(value = "repo", encoded = true) String repo,
       @Path("sha") String sha,
       @Body GithubStatus status);
 
   @GET("/repos/{repo}/commits/{sha}")
   Call<GithubCommit> getCommit(
       @Header("Authorization") String token,
-      @Path(value = "repo") String repo,
+      @Path(value = "repo", encoded = true) String repo,
       @Path("sha") String sha);
 }

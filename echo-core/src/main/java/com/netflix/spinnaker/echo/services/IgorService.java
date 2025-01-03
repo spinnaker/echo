@@ -34,7 +34,7 @@ public interface IgorService {
   Call<Map<String, Object>> getBuild(
       @Path("buildNumber") Integer buildNumber,
       @Path("master") String master,
-      @Path(value = "job") String job);
+      @Path(value = "job", encoded = true) String job);
 
   @GET("/builds/status/{buildNumber}/{master}")
   Call<Map<String, Object>> getBuildStatusWithJobQueryParameter(
@@ -47,7 +47,7 @@ public interface IgorService {
       @Path("buildNumber") Integer buildNumber,
       @Path("fileName") String fileName,
       @Path("master") String master,
-      @Path(value = "job") String job);
+      @Path(value = "job", encoded = true) String job);
 
   @GET("/builds/properties/{buildNumber}/{fileName}/{master}")
   Call<Map<String, Object>> getPropertyFileWithJobQueryParameter(
@@ -61,7 +61,7 @@ public interface IgorService {
       @Path("buildNumber") Integer buildNumber,
       @Query("propertyFile") String propertyFile,
       @Path("master") String master,
-      @Path(value = "job") String job);
+      @Path(value = "job", encoded = true) String job);
 
   @GET("/builds/artifacts/{buildNumber}/{master}")
   Call<List<Artifact>> getArtifactsWithJobQueryParameter(

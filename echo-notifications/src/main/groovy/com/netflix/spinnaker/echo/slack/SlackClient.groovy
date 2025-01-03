@@ -50,7 +50,7 @@ interface SlackClient {
    */
   @POST('/{token}')
   Call<ResponseBody> sendUsingIncomingWebHook(
-    @Path(value = "token") String token,
+    @Path(value = "token", encoded = true) String token,
     @Body SlackRequest slackRequest)
 
   /**

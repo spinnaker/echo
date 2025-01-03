@@ -174,6 +174,6 @@ class SlackInteractiveNotificationService extends SlackNotificationService imple
 
   interface SlackHookService {
     @POST('/{path}')
-    Call<ResponseBody> respondToMessage(@Path(value = "path", encoded = false) path, @Body Map content)
+    Call<ResponseBody> respondToMessage(@Path(value = "path", encoded = true) path, @Body Map content)
   }
 }

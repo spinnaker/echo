@@ -25,5 +25,5 @@ import retrofit2.http.Path;
 public interface GoogleChatClient {
   @POST("/v1/spaces/{address}")
   Call<ResponseBody> sendMessage(
-      @Path(value = "address") String webhook, @Body GoogleChatMessage message);
+      @Path(value = "address", encoded = true) String webhook, @Body GoogleChatMessage message);
 }
