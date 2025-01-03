@@ -22,9 +22,13 @@ import com.netflix.spinnaker.echo.api.events.Event
 import com.netflix.spinnaker.echo.api.events.Metadata
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerNetworkException
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
-import io.mockk.*
+import io.mockk.Called
+import io.mockk.CapturingSlot
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.slot
+import io.mockk.verify
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -144,7 +148,7 @@ class TelemetryEventListenerTest {
     val event = createLoggableEvent()
     val request: Request = Request.Builder().url("http://url").build()
     every { telemetryService.log(any()) } throws
-      SpinnakerNetworkException(IOException("timeout"), request)
+      SpinnakerNetworkException(IOException("network error"), request)
     expectCatching {
       telemetryEventListener.processEvent(event)
     }.isSuccess()

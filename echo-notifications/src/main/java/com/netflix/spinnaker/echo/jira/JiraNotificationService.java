@@ -189,11 +189,7 @@ public class JiraNotificationService implements NotificationService {
 
   private Map errors(Exception exception) {
     if (exception instanceof SpinnakerHttpException) {
-      try {
-        return ((SpinnakerHttpException) exception).getResponseBody();
-      } catch (Exception e) {
-        LOGGER.warn("failed retrieving error messages {}", e.getMessage());
-      }
+      return ((SpinnakerHttpException) exception).getResponseBody();
     }
 
     return ImmutableMap.of("errors", exception.getMessage());

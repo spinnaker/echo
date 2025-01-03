@@ -24,6 +24,7 @@ import com.netflix.spinnaker.echo.github.GithubService;
 import com.netflix.spinnaker.echo.github.GithubStatus;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -127,9 +128,12 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
   }
 
   private String getBranchCommit(String repo, String sha) {
-    GithubCommit message =
-        Retrofit2SyncCall.execute(githubService.getCommit("token " + token, repo, sha));
-
+    GithubCommit message;
+    try {
+      message = Retrofit2SyncCall.execute(githubService.getCommit("token " + token, repo, sha));
+    } catch (SpinnakerServerException e) {
+      return sha;
+    }
     Pattern pattern =
         Pattern.compile(
             "Merge (?<branchCommit>[0-9a-f]{5,40}) into (?<masterCommit>[0-9a-f]{5,40})");
@@ -137,6 +141,7 @@ public class GithubNotificationAgent extends AbstractEventNotificationAgent {
     if (matcher.matches()) {
       return matcher.group("branchCommit");
     }
+
     return sha;
   }
 

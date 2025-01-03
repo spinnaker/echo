@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.echo.microsoftteams;
 
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
+import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException;
 import java.net.MalformedURLException;
@@ -42,6 +43,7 @@ public class MicrosoftTeamsService {
         new Retrofit.Builder()
             .baseUrl(webhookUrl)
             .client(okHttp3ClientConfiguration.createForRetrofit2().build())
+            .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
             .addConverterFactory(JacksonConverterFactory.create())
             .build()
             .create(MicrosoftTeamsClient.class);

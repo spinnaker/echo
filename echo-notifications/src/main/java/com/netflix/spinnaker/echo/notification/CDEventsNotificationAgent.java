@@ -82,10 +82,12 @@ public class CDEventsNotificationAgent extends AbstractEventNotificationAgent {
             response.body() != null ? response.body().string() : "");
       } catch (IOException e) {
         log.info(
-            "Received response from events broker : {} {} for execution id {}",
+            "Received response from events broker : {} {} for execution id {} "
+                + "but unable to serialize the response body: {}",
             response.code(),
             response.message(),
-            executionId);
+            executionId,
+            e.getMessage());
       }
     }
   }

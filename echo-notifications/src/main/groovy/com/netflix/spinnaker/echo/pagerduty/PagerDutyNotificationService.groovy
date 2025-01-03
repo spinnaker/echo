@@ -19,10 +19,12 @@ package com.netflix.spinnaker.echo.pagerduty
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.echo.api.Notification
+import com.netflix.spinnaker.echo.config.PagerDutyConfigurationProperties
 import com.netflix.spinnaker.echo.controller.EchoResponse
 import com.netflix.spinnaker.echo.notification.NotificationService
 import com.netflix.spinnaker.echo.services.Front50Service
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall
+import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerHttpException
 import com.netflix.spinnaker.kork.retrofit.exceptions.SpinnakerServerException
 import groovy.transform.InheritConstructors
 import groovy.util.logging.Slf4j
@@ -46,8 +48,8 @@ class PagerDutyNotificationService implements NotificationService {
   @Autowired
   PagerDutyService pagerDuty
 
-  @Value('${pager-duty.token:}')
-  String token
+  @Autowired
+  PagerDutyConfigurationProperties pagerDutyConfigurationProperties
 
   @Autowired
   Front50Service front50Service
@@ -65,7 +67,7 @@ class PagerDutyNotificationService implements NotificationService {
     notification.to.each { serviceKey ->
       try {
         Map response = Retrofit2SyncCall.execute(pagerDuty.createEvent(
-          "Token token=${token}",
+          "Token token=${pagerDutyConfigurationProperties.token}",
           new PagerDutyService.PagerDutyCreateEvent(
             service_key: serviceKey,
             client: "Spinnaker (${notification.source.user})",
@@ -82,10 +84,20 @@ class PagerDutyNotificationService implements NotificationService {
           pdErrors.put(serviceKey, response.message)
         }
       } catch (SpinnakerServerException e){
+        def errorMessage = null
+        if (e instanceof SpinnakerHttpException){
+          Map<String, Object> errorResponse = ((SpinnakerHttpException) e).responseBody
+          if (errorResponse != null) {
+            if (errorResponse.errors && errorResponse.errors.size() > 0) {
+              errorMessage = errorResponse.errors.join(", ")
+            }
+          }
+        }
+        errorMessage = errorMessage == null ? e.message : errorMessage
         log.error('Failed to send page {} {} {}',
           kv('serviceKey', serviceKey), kv('message',
           notification.additionalContext.message),
-          kv('error', e.message)
+          kv('error', errorMessage)
         )
         errors.put(serviceKey, e.message)
       }

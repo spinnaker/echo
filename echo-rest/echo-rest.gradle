@@ -19,7 +19,6 @@ dependencies {
   implementation project(':echo-model')
   implementation project(':echo-api')
   implementation project(':echo-core')
-  implementation project(':echo-test')
 
   implementation "commons-codec:commons-codec"
 
@@ -29,6 +28,7 @@ dependencies {
   implementation "javax.validation:validation-api"
   implementation "org.apache.commons:commons-lang3"
 
+  testImplementation project(':echo-test')
   testImplementation "com.github.tomakehurst:wiremock-jre8"
   testImplementation "org.springframework.boot:spring-boot-starter-test"
 }

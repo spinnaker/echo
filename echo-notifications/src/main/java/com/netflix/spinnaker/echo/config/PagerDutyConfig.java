@@ -21,31 +21,27 @@ import com.netflix.spinnaker.echo.pagerduty.PagerDutyService;
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 @Configuration
+@EnableConfigurationProperties(PagerDutyConfigurationProperties.class)
 @ConditionalOnProperty("pager-duty.enabled")
 public class PagerDutyConfig {
   private static final Logger log = LoggerFactory.getLogger(PagerDutyConfig.class);
 
-  private final String endpoint;
-
-  public PagerDutyConfig(
-      @Value("${pager-duty.endpoint:https://events.pagerduty.com}") String endpoint) {
-    this.endpoint = endpoint;
-  }
-
   @Bean
-  PagerDutyService pagerDutyService(OkHttp3ClientConfiguration okHttpClientConfig) {
+  PagerDutyService pagerDutyService(
+      OkHttp3ClientConfiguration okHttpClientConfig,
+      PagerDutyConfigurationProperties pagerDutyProps) {
     log.info("Pager Duty service loaded");
 
     return new Retrofit.Builder()
-        .baseUrl(endpoint)
+        .baseUrl(pagerDutyProps.getEndpoint())
         .client(okHttpClientConfig.createForRetrofit2().build())
         .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
         .addConverterFactory(JacksonConverterFactory.create())

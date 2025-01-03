@@ -4,16 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.google.common.collect.ImmutableList
 import com.netflix.spinnaker.config.DefaultServiceEndpoint
 import com.netflix.spinnaker.config.okhttp3.OkHttpClientProvider
 import com.netflix.spinnaker.config.okhttp3.InsecureOkHttpClientBuilderProvider
+import com.netflix.spinnaker.echo.model.Trigger
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall
 import okhttp3.OkHttpClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import retrofit2.Retrofit
-import retrofit2.converter.jackson.JacksonConverterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory
+import spock.lang.Ignore;
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariable
 
@@ -107,6 +110,22 @@ class Front50ServiceSpec extends Specification {
 
     then:
     pipelines.first().parallel
+  }
+
+  @Ignore
+  def "list properties are immutable"() {
+    given:
+    def pipelines = front50Service.getPipelines()
+    def pipeline = pipelines.find { it.application == "kato" }
+
+    expect:
+    pipeline.triggers instanceof ImmutableList
+
+    when:
+    pipeline.triggers << Trigger.builder().enabled(false).type('jenkins').master('foo').job('bar').propertyFile('baz').build()
+
+    then:
+    thrown UnsupportedOperationException
   }
 
   private Front50Service front50Service(String baseUrl){

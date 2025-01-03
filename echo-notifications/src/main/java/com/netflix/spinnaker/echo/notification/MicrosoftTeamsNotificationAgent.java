@@ -150,7 +150,7 @@ public class MicrosoftTeamsNotificationAgent extends AbstractEventNotificationAg
           response.string());
     } catch (IOException e) {
       log.info(
-          "Received response from Microsoft Teams Webhook  for execution id {} but failed to deserialize",
+          "Received response from Microsoft Teams Webhook for execution id {} but failed to deserialize",
           executionId);
     }
   }

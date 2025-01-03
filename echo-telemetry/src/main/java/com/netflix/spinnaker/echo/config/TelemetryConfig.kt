@@ -15,11 +15,15 @@
  */
 package com.netflix.spinnaker.echo.config
 
+import com.netflix.spinnaker.config.DefaultServiceEndpoint
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration
+import com.netflix.spinnaker.config.okhttp3.DefaultOkHttpClientBuilderProvider
 import com.netflix.spinnaker.echo.config.TelemetryConfig.TelemetryConfigProps
 import com.netflix.spinnaker.echo.telemetry.TelemetryService
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory
+import com.netflix.spinnaker.okhttp.OkHttpClientConfigurationProperties
 import de.huxhorn.sulky.ulid.ULID
+import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -41,12 +45,15 @@ open class TelemetryConfig {
   @Bean
   open fun telemetryService(
     configProps: TelemetryConfigProps,
-    okHttpClientConfig: OkHttp3ClientConfiguration
+    okHttpClientConfig: OkHttp3ClientConfiguration,
+    okHttpClient: OkHttpClient
   ): TelemetryService {
+    val clientProps = OkHttpClientConfigurationProperties(configProps.connectionTimeoutMillis.toLong(), configProps.readTimeoutMillis.toLong())
+    val clientProvider = DefaultOkHttpClientBuilderProvider(okHttpClient, clientProps)
     log.info("Telemetry service loaded")
     return Retrofit.Builder()
       .baseUrl(configProps.endpoint)
-      .client(okHttpClientConfig.createForRetrofit2().build())
+      .client(clientProvider.get(DefaultServiceEndpoint("telemetry", configProps.endpoint)).build())
       .addCallAdapterFactory(ErrorHandlingExecutorCallAdapterFactory.getInstance())
       .addConverterFactory(JacksonConverterFactory.create())
       .build()
@@ -65,6 +72,8 @@ open class TelemetryConfig {
     var instanceId = ULID().nextULID()
     var spinnakerVersion = "unknown"
     var deploymentMethod = DeploymentMethod()
+    var connectionTimeoutMillis = 3000
+    var readTimeoutMillis = 5000
 
     class DeploymentMethod {
       var type: String? = null
