@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.echo.config;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.netflix.spinnaker.config.OkHttp3ClientConfiguration;
 import com.netflix.spinnaker.echo.test.config.Retrofit2BasicLogTestConfig;
@@ -42,10 +41,9 @@ public class SlackConfigTest {
     slackLegacyProperties.setBaseUrl(
         "http://localhost/slack"); // baseUrl having one / but not ending with /
     SlackConfig slackConfig = new SlackConfig();
-    assertThrows(
-        IllegalArgumentException.class,
+    assertDoesNotThrow(
         () -> slackConfig.slackService(slackLegacyProperties, okHttpClientConfig),
-        "Expected IllegalArgumentException when baseUrl does not end with /");
+        "Trailing / is handled and hence no exception is thrown");
   }
 
   @Test
