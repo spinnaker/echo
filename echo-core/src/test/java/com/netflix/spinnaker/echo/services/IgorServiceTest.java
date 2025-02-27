@@ -18,9 +18,10 @@ package com.netflix.spinnaker.echo.services;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -74,10 +75,9 @@ public class IgorServiceTest {
                     .withStatus(200)
                     .withBody("[{\"id\": \"gs://this/is/my/id1\", \"type\": \"gcs/object\"}]")));
 
-    assertThrows(
-        java.lang.IllegalArgumentException.class,
-        () ->
-            Retrofit2SyncCall.execute(igorService.getArtifacts(1, "propertyFile", "master", "job")),
-        "A @Path parameter must not come after a @Query");
+    Retrofit2SyncCall.execute(igorService.getArtifacts(1, "master", "job", "propertyFile"));
+
+    verify(
+        1, getRequestedFor(urlEqualTo("/builds/artifacts/1/master/job?propertyFile=propertyFile")));
   }
 }
