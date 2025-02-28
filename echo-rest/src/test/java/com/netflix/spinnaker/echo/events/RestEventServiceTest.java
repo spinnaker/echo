@@ -38,22 +38,23 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.util.Map;
 import okhttp3.OkHttpClient;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 public class RestEventServiceTest {
-  private Map<String, Object> eventMap;
-  private RestEventService restEventService;
-  private RestUrls.Service service;
+  private static Map<String, Object> eventMap;
+  private static RestEventService restEventService;
+  private static RestUrls.Service service;
 
-  WireMockServer wireMockServer;
-  int port;
-  String baseUrl = "http://localhost:PORT/api";
+  static WireMockServer wireMockServer;
+  static int port;
+  static String baseUrl = "http://localhost:PORT/api";
 
-  @BeforeEach
-  void setup() {
+  @BeforeAll
+  static void setup() {
     wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
     wireMockServer.start();
     port = wireMockServer.port();
@@ -101,10 +102,14 @@ public class RestEventServiceTest {
             .build();
   }
 
+  @AfterAll
+  static void cleanup() {
+    wireMockServer.stop();
+  }
+
   @Test
   void testSendEvent() {
     restEventService.sendEvent(eventMap, service);
-    // TODO: fix this issue so that the call is actually made
-    verify(0, postRequestedFor(urlEqualTo("/api/")));
+    verify(1, postRequestedFor(urlEqualTo("/api/")));
   }
 }
