@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.echo.bearychat;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.netflix.spinnaker.echo.api.Notification;
 import com.netflix.spinnaker.echo.notification.NotificationTemplateEngine;
@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
-import org.codehaus.groovy.runtime.typehandling.GroovyCastException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,10 +74,7 @@ public class BearychatNotificationServiceTest {
     notification.setTo(List.of("foo@bar.com"));
     notification.setAdditionalContext(Map.of("body", "notification Body"));
 
-    assertThrows(
-        GroovyCastException.class,
-        () -> bearychatNotificationService.handle(notification),
-        "Cannot cast object 'retrofit2.mock.Calls$FakeCall' with class 'retrofit2.mock.Calls$FakeCall' to class 'java.util.List");
+    assertDoesNotThrow(() -> bearychatNotificationService.handle(notification));
   }
 
   @Configuration
