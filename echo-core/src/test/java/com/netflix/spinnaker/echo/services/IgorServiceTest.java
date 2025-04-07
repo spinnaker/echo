@@ -34,22 +34,24 @@ import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFacto
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import java.nio.charset.StandardCharsets;
 import okhttp3.OkHttpClient;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import retrofit.mime.TypedByteArray;
 import retrofit.mime.TypedInput;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 public class IgorServiceTest {
-  WireMockServer wireMockServer;
-  int port;
-  IgorService igorService;
-  String baseUrl = "http://localhost:PORT";
+  private static WireMockServer wireMockServer;
+  private static int port;
+  private static IgorService igorService;
+  private static String baseUrl = "http://localhost:PORT";
 
-  @BeforeEach
-  void setUp() {
+  @BeforeAll
+  static void setUpOnce() {
     wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
     wireMockServer.start();
     port = wireMockServer.port();
@@ -67,8 +69,13 @@ public class IgorServiceTest {
             .create(IgorService.class);
   }
 
-  @AfterEach
-  void tearDown() {
+  @BeforeEach
+  void setup(TestInfo testInfo) {
+    System.out.println("--------------- Test " + testInfo.getDisplayName());
+  }
+
+  @AfterAll
+  static void tearDown() {
     wireMockServer.stop();
   }
 
