@@ -19,9 +19,12 @@ package com.netflix.spinnaker.echo.services;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -29,10 +32,13 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.netflix.spinnaker.echo.util.RetrofitUtils;
 import com.netflix.spinnaker.kork.retrofit.ErrorHandlingExecutorCallAdapterFactory;
 import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
+import java.nio.charset.StandardCharsets;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import retrofit.mime.TypedByteArray;
+import retrofit.mime.TypedInput;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
@@ -79,5 +85,29 @@ public class IgorServiceTest {
 
     verify(
         1, getRequestedFor(urlEqualTo("/builds/artifacts/1/master/job?propertyFile=propertyFile")));
+  }
+
+  @Test
+  void testIgorService_extractGoogleCloudBuildArtifacts() {
+    TypedInput build =
+        new TypedByteArray(
+            "application/json", "{\"key\":\"value\"}".getBytes(StandardCharsets.UTF_8));
+    stubFor(
+        put(urlEqualTo("/gcb/artifacts/extract/my-acc"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withBody("[{\"id\": \"gs://this/is/my/id1\", \"type\": \"gcs/object\"}]")));
+
+    Throwable thrown =
+        catchThrowable(
+            () ->
+                Retrofit2SyncCall.execute(
+                    igorService.extractGoogleCloudBuildArtifacts("my-acc", build)));
+    assertThat(thrown).isInstanceOf(IllegalArgumentException.class);
+    assertThat(thrown.getMessage())
+        .contains(
+            "Unable to convert TypedByteArray[length=15] to RequestBody (parameter #2)\n"
+                + "    for method IgorService.extractGoogleCloudBuildArtifacts");
   }
 }
