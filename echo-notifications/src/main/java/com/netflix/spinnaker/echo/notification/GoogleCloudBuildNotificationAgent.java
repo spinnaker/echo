@@ -21,6 +21,7 @@ import com.netflix.spinnaker.echo.api.events.EventListener;
 import com.netflix.spinnaker.echo.model.pubsub.MessageDescription;
 import com.netflix.spinnaker.echo.services.IgorService;
 import com.netflix.spinnaker.kork.core.RetrySupport;
+import com.netflix.spinnaker.kork.retrofit.Retrofit2SyncCall;
 import com.netflix.spinnaker.security.AuthenticatedRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,23 +44,29 @@ public class GoogleCloudBuildNotificationAgent implements EventListener {
 
   @Override
   public void processEvent(Event event) {
+    log.info("Process Event: {}", event.getDetails());
     if (event.getDetails() != null && event.getDetails().getType().equals("googleCloudBuild")) {
       MessageDescription messageDescription =
           (MessageDescription) event.getContent().get("messageDescription");
-      retrySupport.retry(
-          () ->
-              AuthenticatedRequest.allowAnonymous(
-                  () ->
-                      igorService.updateBuildStatus(
-                          messageDescription.getSubscriptionName(),
-                          messageDescription.getMessageAttributes().get("buildId"),
-                          messageDescription.getMessageAttributes().get("status"),
-                          RequestBody.create(
-                              messageDescription.getMessagePayload(),
-                              MediaType.parse("application/json")))),
-          5,
-          2000,
-          false);
+      try {
+        retrySupport.retry(
+            () ->
+                AuthenticatedRequest.allowAnonymous(
+                    () ->
+                        Retrofit2SyncCall.execute(
+                            igorService.updateBuildStatus(
+                                messageDescription.getSubscriptionName(),
+                                messageDescription.getMessageAttributes().get("buildId"),
+                                messageDescription.getMessageAttributes().get("status"),
+                                RequestBody.create(
+                                    messageDescription.getMessagePayload(),
+                                    MediaType.parse("application/json"))))),
+            5,
+            2000,
+            false);
+      } catch (Exception e) {
+        log.error("Failed to update google build status: {}", e);
+      }
     }
   }
 }
