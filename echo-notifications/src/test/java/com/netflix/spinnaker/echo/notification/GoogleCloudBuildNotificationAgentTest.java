@@ -17,9 +17,8 @@
 package com.netflix.spinnaker.echo.notification;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
@@ -80,9 +79,11 @@ public class GoogleCloudBuildNotificationAgentTest {
             .willReturn(aResponse().withStatus(200).withBody("[]")));
 
     notificationAgent.processEvent(createEvent());
-    // TODO: Fix this issue. The Retrofit2 call to igorService.updateBuildStatus() is not being
-    // made.
-    wmIgor.verify(0, anyRequestedFor(urlMatching(".*")));
+
+    wmIgor.verify(
+        1,
+        putRequestedFor(urlPathEqualTo(updateBuildStatusUrl))
+            .withQueryParam("status", equalTo(BUILD_STATUS)));
   }
 
   private Event createEvent() throws JsonProcessingException {
