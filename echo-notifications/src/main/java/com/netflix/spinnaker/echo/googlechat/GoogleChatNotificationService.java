@@ -50,7 +50,22 @@ class GoogleChatNotificationService implements NotificationService {
       // Example: https://chat.googleapis.com/v1/spaces/{partialWebhookUrl}
       String baseUrl = "https://chat.googleapis.com/v1/spaces/";
       String completeLink = addr;
-      String partialWebhookURL = completeLink.substring(baseUrl.length());
+      
+      // Fix for issue #7022: Handle URLs with query parameters correctly
+      // Extract only the path part without encoding the query parameters
+      String partialWebhookURL;
+      if (completeLink.contains("?")) {
+        // If URL contains query parameters, we need to handle them separately
+        int questionMarkIndex = completeLink.indexOf("?");
+        String path = completeLink.substring(baseUrl.length(), questionMarkIndex);
+        String queryParams = completeLink.substring(questionMarkIndex);
+        // The path will be URL-encoded by Retrofit, but we need to preserve the query string as-is
+        partialWebhookURL = path + queryParams;
+      } else {
+        // No query parameters, just extract the path
+        partialWebhookURL = completeLink.substring(baseUrl.length());
+      }
+      
       chat.sendMessage(partialWebhookURL, new GoogleChatMessage(body));
     }
     return new EchoResponse.Void();
